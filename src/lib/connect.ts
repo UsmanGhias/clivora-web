@@ -33,7 +33,7 @@ export async function listPublicConnectNeeds(search?: string) {
     .eq("is_open", true)
     .in("moderation_status", ["approved", "auto_approved", "pending"])
     .order("created_at", { ascending: false })
-    .limit(60);
+    .limit(200);
   if (search?.trim()) {
     const s = `%${search.trim()}%`;
     q = q.or(`title.ilike.${s},summary.ilike.${s}`);

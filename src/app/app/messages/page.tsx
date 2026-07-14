@@ -25,14 +25,22 @@ export default async function MessagesPage() {
   let rows: MessageRow[] = [];
 
   try {
-    const { data, error } = await supabase
+    const email = (profile?.email || "").trim();
+    let q = supabase
       .from("client_messages")
       .select(
         "id, body, subject, created_at, from_email, to_email, from_uid, to_uid, parent_message_id, read_at, is_read, attachments",
       )
-      .or(`from_uid.eq.${uid},to_uid.eq.${uid}`)
       .order("created_at", { ascending: true })
-      .limit(100);
+      .limit(200);
+    if (email) {
+      q = q.or(
+        `from_uid.eq.${uid},to_uid.eq.${uid},from_email.eq.${email},to_email.eq.${email}`,
+      );
+    } else {
+      q = q.or(`from_uid.eq.${uid},to_uid.eq.${uid}`);
+    }
+    const { data, error } = await q;
     if (!error && data) rows = data;
   } catch {
     rows = [];

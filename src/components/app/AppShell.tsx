@@ -37,6 +37,7 @@ import { isProPlus, planLabel } from "@/lib/plan";
 import { Logo } from "@/components/ui/Logo";
 import type { PortalNavCounts } from "@/lib/portal-nav";
 import { CommandPalette, type CommandItem } from "@/components/app/CommandPalette";
+import { UserAvatar } from "@/components/app/UserAvatar";
 
 type NavItem = {
   href: string;
@@ -316,8 +317,14 @@ export function AppShell({
             aria-expanded={profileMenuOpen}
             aria-haspopup="menu"
           >
-            <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-sm font-bold">
-              {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
+            <span className="relative shrink-0">
+              <UserAvatar
+                name={profile.name}
+                email={profile.email}
+                avatarUrl={profile.avatar_url}
+                size="lg"
+                className="bg-white/10"
+              />
               <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-navy bg-success" />
             </span>
             <div className="min-w-0 flex-1">
@@ -473,13 +480,13 @@ export function AppShell({
               {plus ? "Renews on Oct 10, 2026" : "Upgrade for Connect credits"}
             </p>
             <Link
-              href="/pro?plan=pro_plus"
+              href={plus ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
               className={cn(
                 "mt-2 block rounded-lg px-3 py-1.5 text-center text-xs font-semibold text-white",
                 isClient ? "bg-white/15 hover:bg-white/25" : "bg-primary",
               )}
             >
-              Manage plan
+              {plus ? "You're on Plus — enjoy" : "Manage plan"}
             </Link>
           </div>
         </div>
@@ -536,20 +543,23 @@ export function AppShell({
                 )}
               </Link>
               <Link
-                href={plus ? "/pro" : "/pro?plan=pro_plus"}
+                href={plus ? "/app/settings?tab=billing" : "/pro?plan=pro_plus"}
                 className={cn(
                   "hidden items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex",
                   isClient ? "bg-navy" : "bg-primary",
                 )}
+                title={plus ? `You're on ${plan}` : "Upgrade to Pro Plus"}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                {plus ? plan : "Pro Plus"}
+                {plus ? `${plan} · Enjoy` : "Pro Plus"}
               </Link>
-              <Link
-                href={profileHref}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-navy text-xs font-bold text-white"
-              >
-                {(profile.name || profile.email || "?").charAt(0).toUpperCase()}
+              <Link href={profileHref} className="block shrink-0">
+                <UserAvatar
+                  name={profile.name}
+                  email={profile.email}
+                  avatarUrl={profile.avatar_url}
+                  size="md"
+                />
               </Link>
               <button
                 type="button"

@@ -51,12 +51,28 @@ function counterpartEmail(row: MessageRow, myUid: string, myEmail: string) {
   if (row.from_uid === myUid) {
     return (row.to_email || "").trim() || "";
   }
-  return (row.from_email || "").trim() || "";
+  if (row.to_uid === myUid) {
+    return (row.from_email || "").trim() || "";
+  }
+  // Fallback when uids missing: pick the other email
+  const from = (row.from_email || "").trim().toLowerCase();
+  const to = (row.to_email || "").trim().toLowerCase();
+  const me = (myEmail || "").trim().toLowerCase();
+  if (from && from !== me) return row.from_email || "";
+  if (to && to !== me) return row.to_email || "";
+  return (row.from_email || row.to_email || "").trim();
+}
+
+function counterpartUid(row: MessageRow, myUid: string) {
+  if (row.from_uid && row.from_uid !== myUid) return row.from_uid;
+  if (row.to_uid && row.to_uid !== myUid) return row.to_uid;
+  return null;
 }
 
 function ComposeForm({
   fromEmail,
   defaultTo,
+  defaultToUid,
   parentId,
   parentSubject,
   onSent,
@@ -65,6 +81,7 @@ function ComposeForm({
 }: {
   fromEmail: string;
   defaultTo?: string;
+  defaultToUid?: string | null;
   parentId?: string;
   parentSubject?: string;
   onSent?: () => void;
@@ -83,6 +100,19 @@ function ComposeForm({
     setToEmail(defaultTo ?? "");
   }, [defaultTo]);
 
+  useEffect(() => {
+    if (toEmail.trim() || !defaultToUid) return;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("id", defaultToUid)
+        .maybeSingle();
+      if (data?.email) setToEmail(data.email);
+    })();
+  }, [defaultToUid, toEmail]);
+
   async function onSend(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -95,19 +125,31 @@ function ComposeForm({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sign in required");
       const to = toEmail.trim().toLowerCase();
-      if (!to) throw new Error("Recipient email is required");
-      let toUid: string | null = null;
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", to)
-        .maybeSingle();
-      toUid = prof?.id ?? null;
+      let resolvedTo = to;
+      let toUid: string | null = defaultToUid ?? null;
+      if (!resolvedTo && defaultToUid) {
+        const { data: byId } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("id", defaultToUid)
+          .maybeSingle();
+        resolvedTo = (byId?.email || "").trim().toLowerCase();
+        toUid = defaultToUid;
+      }
+      if (!resolvedTo) throw new Error("Recipient email is required");
+      if (!toUid) {
+        const { data: prof } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", resolvedTo)
+          .maybeSingle();
+        toUid = prof?.id ?? null;
+      }
       // client_messages has is_read (boolean) + read_at (timestamptz); to_email is NOT NULL
       const { error: err } = await supabase.from("client_messages").insert({
         from_uid: user.id,
         from_email: fromEmail || user.email || "",
-        to_email: to,
+        to_email: resolvedTo,
         to_uid: toUid,
         subject: subject.trim() || (parentId ? "Reply" : "Message"),
         body: body.trim(),
@@ -205,7 +247,7 @@ function ComposeForm({
       )}
       <button
         type="submit"
-        disabled={busy || (parentId ? !toEmail.trim() : false)}
+        disabled={busy || (parentId ? !(toEmail.trim() || defaultToUid) : false)}
         className={`rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 ${accentBtn}`}
       >
         {busy ? "Sending…" : parentId ? "Reply" : "Send"}
@@ -566,11 +608,14 @@ export function MessagesThreadView({
                           </p>
                         )}
                         <div
+                          className={`flex ${incoming ? "justify-start" : "justify-end"}`}
+                        >
+                        <div
                           className={`max-w-[85%] rounded-2xl px-4 py-3 ${
                             incoming ? "bg-slate-100 text-navy" : outBubbleCls
                           }`}
                         >
-                          <p className="text-sm">{msg.body || "(empty)"}</p>
+                          <p className="text-sm whitespace-pre-wrap">{msg.body || "(empty)"}</p>
                           <div className="mt-1 flex flex-wrap items-center gap-2">
                             <p
                               className={`text-[10px] ${
@@ -584,6 +629,7 @@ export function MessagesThreadView({
                             )}
                           </div>
                         </div>
+                        </div>
                       </div>
                     );
                   })}
@@ -596,6 +642,7 @@ export function MessagesThreadView({
                     compact
                     isClient={isClient}
                     defaultTo={replyTo || undefined}
+                    defaultToUid={counterpartUid(selectedThread, myUid)}
                   />
                 </div>
               </div>

@@ -2,8 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Copy, Gift, Share2, Sparkles, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { SubPageChrome } from "@/components/app/SubPageChrome";
 
 type Stats = {
   code: string;
@@ -18,7 +18,6 @@ export default function ReferralsPage() {
   const [applyCode, setApplyCode] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -30,12 +29,6 @@ export default function ReferralsPage() {
         router.replace("/login?next=/app/referrals");
         return;
       }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("account_type, name")
-        .eq("id", user.id)
-        .maybeSingle();
-      setIsClient((profile?.account_type ?? "").toLowerCase() === "client");
 
       let { data: row } = await supabase
         .from("referral_codes")
@@ -137,78 +130,106 @@ export default function ReferralsPage() {
   }
 
   return (
-    <SubPageChrome
-      isClient={isClient}
-      backHref="/app/hub"
-      backLabel="Hub"
-      crumbs={[
-        { label: "App", href: "/app" },
-        { label: "Hub", href: "/app/hub" },
-        { label: "Referrals" },
-      ]}
-      title="Refer & Earn"
-    >
-      <div className="mx-auto max-w-lg space-y-5">
-        {loading && <p className="text-sm text-text-secondary">Loading…</p>}
-        {!loading && stats && (
-          <>
-            <div className="rounded-2xl bg-navy p-5 text-white">
-              <p className="text-sm text-white/70">Invite friends to CLIVORA</p>
-              <p className="mt-1 text-lg font-extrabold">
+    <div className="space-y-6 pb-10">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Refer & earn</p>
+        <h1 className="mt-1 font-display text-2xl font-extrabold text-navy sm:text-3xl">
+          Grow CLIVORA with friends
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm text-text-secondary">
+          Share your invite code. When they subscribe to Pro or Pro Plus, you earn bonus Pro days.
+        </p>
+      </div>
+
+      {loading && <p className="text-sm text-text-secondary">Loading…</p>}
+
+      {!loading && stats && (
+        <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy via-slate-900 to-teal-950 p-6 text-white shadow-lg sm:p-8">
+            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/30 blur-3xl" />
+            <div className="pointer-events-none absolute bottom-0 left-1/3 h-32 w-32 rounded-full bg-teal-400/20 blur-3xl" />
+            <div className="relative">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-teal-100">
+                <Gift className="h-3.5 w-3.5" />
+                Invite program
+              </span>
+              <p className="mt-4 text-sm text-white/70">Invite friends to CLIVORA</p>
+              <h2 className="mt-1 font-display text-2xl font-extrabold sm:text-3xl">
                 Earn 7 bonus Pro days when they subscribe
-              </p>
-              <div className="mt-4 flex items-center gap-2">
-                <div className="flex-1 rounded-xl bg-white/10 px-4 py-3 font-mono text-lg font-bold tracking-widest">
+              </h2>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex-1 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 font-mono text-lg font-bold tracking-widest">
                   {stats.code}
                 </div>
                 <button
                   type="button"
                   onClick={copyCode}
-                  className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary-dark"
                 >
+                  <Copy className="h-4 w-4" />
                   Copy
                 </button>
               </div>
               <button
                 type="button"
                 onClick={shareLink}
-                className="mt-3 w-full rounded-xl border border-white/20 py-2.5 text-sm font-semibold"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/20 py-3 text-sm font-semibold hover:bg-white/5"
               >
+                <Share2 className="h-4 w-4" />
                 Share invite link
               </button>
             </div>
+          </div>
 
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-border bg-surface p-4">
-                <p className="text-xs font-semibold uppercase text-text-muted">Referrals</p>
-                <p className="mt-1 text-2xl font-extrabold text-navy">{stats.referral_count}</p>
+              <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+                <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-text-muted">
+                  <Users className="h-3.5 w-3.5" />
+                  Referrals
+                </p>
+                <p className="mt-2 font-display text-3xl font-extrabold text-navy">
+                  {stats.referral_count}
+                </p>
               </div>
-              <div className="rounded-2xl border border-border bg-surface p-4">
-                <p className="text-xs font-semibold uppercase text-text-muted">Bonus days</p>
-                <p className="mt-1 text-2xl font-extrabold text-navy">{stats.bonus_days_earned}</p>
+              <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
+                <p className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase text-text-muted">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Bonus days
+                </p>
+                <p className="mt-2 font-display text-3xl font-extrabold text-navy">
+                  {stats.bonus_days_earned}
+                </p>
               </div>
             </div>
 
-            <form onSubmit={onApply} className="space-y-3 rounded-2xl border border-border bg-surface p-5">
+            <form
+              onSubmit={onApply}
+              className="space-y-3 rounded-2xl border border-border bg-surface p-5 shadow-sm"
+            >
               <h2 className="font-bold text-navy">Have a friend’s code?</h2>
+              <p className="text-xs text-text-secondary">
+                Apply once. Bonus days unlock after your paid subscription starts.
+              </p>
               <input
                 value={applyCode}
                 onChange={(e) => setApplyCode(e.target.value.toUpperCase())}
                 placeholder="CLVXXXXXXXX"
-                className="w-full rounded-xl border border-border px-3 py-2 font-mono uppercase"
+                className="w-full rounded-xl border border-border px-3 py-2.5 font-mono uppercase"
               />
               <button
                 type="submit"
-                className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white"
+                className="rounded-xl bg-navy px-4 py-2.5 text-sm font-semibold text-white"
               >
                 Apply code
               </button>
             </form>
-          </>
-        )}
-        {message && <p className="text-sm font-semibold text-primary-dark">{message}</p>}
-        {error && <p className="text-sm text-error">{error}</p>}
-      </div>
-    </SubPageChrome>
+          </div>
+        </div>
+      )}
+
+      {message && <p className="text-sm font-semibold text-primary-dark">{message}</p>}
+      {error && <p className="text-sm text-error">{error}</p>}
+    </div>
   );
 }

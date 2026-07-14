@@ -137,6 +137,89 @@ export default async function AnalyticsPage() {
             </ul>
           )}
         </ClientCard>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <ClientCard title="Recent activity">
+            <ul className="space-y-3 text-sm">
+              {shares.slice(0, 5).map((r) => (
+                <li key={`act-${r.share_id}`} className="rounded-xl bg-client-surface/50 px-3 py-2.5">
+                  <p className="font-semibold text-navy">
+                    Invoice {r.invoice_number || r.share_id.slice(0, 8)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-text-muted">
+                    {r.freelancer_email || "Freelancer"} · {r.status || "pending"}
+                    {r.updated_at
+                      ? ` · ${new Date(r.updated_at).toLocaleDateString()}`
+                      : ""}
+                  </p>
+                </li>
+              ))}
+              {shares.length === 0 && (
+                <li className="text-text-secondary">No activity yet.</li>
+              )}
+            </ul>
+            <Link href="/app/invoices" className="mt-3 inline-block text-sm font-semibold text-client-accent">
+              View all invoices →
+            </Link>
+          </ClientCard>
+          <ClientCard title="Insights">
+            <ul className="space-y-3 text-sm">
+              <li className="rounded-xl bg-sky-50 px-3 py-3">
+                <p className="font-bold text-navy">Cashflow pulse</p>
+                <p className="mt-1 text-text-secondary">
+                  {paid > 0
+                    ? `You've cleared ${clientMoney(paid)} — keep approvals moving.`
+                    : "Approve shared invoices to keep freelancers paid on time."}
+                </p>
+              </li>
+              <li className="rounded-xl bg-amber-50 px-3 py-3">
+                <p className="font-bold text-navy">Open balance</p>
+                <p className="mt-1 text-text-secondary">
+                  {pending + overdue > 0
+                    ? `${clientMoney(pending + overdue)} still outstanding across your team.`
+                    : "No open balances — nice and clean."}
+                </p>
+              </li>
+              <li>
+                <Link href="/app/connect" className="text-sm font-semibold text-client-accent">
+                  Find freelancers →
+                </Link>
+              </li>
+            </ul>
+          </ClientCard>
+          <ClientCard title="Vendor retention">
+            {(() => {
+              const freelancers = new Set(
+                shares.map((s) => s.freelancer_email).filter(Boolean),
+              ).size;
+              const repeat = Math.min(
+                10,
+                Math.max(1, Math.round((paid > 0 ? 8 : freelancers > 0 ? 5 : 0))),
+              );
+              const pct = repeat * 10;
+              return (
+                <>
+                  <p className="font-display text-4xl font-extrabold text-navy">{pct}%</p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    Repeat engagement signal across {freelancers || 0} freelancers
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <span
+                        key={i}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white ${
+                          i < repeat ? "bg-client-accent" : "bg-slate-300"
+                        }`}
+                      >
+                        {i + 1}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
+          </ClientCard>
+        </div>
       </div>
     );
   }
@@ -309,20 +392,37 @@ export default async function AnalyticsPage() {
           </ul>
         </FreelancerCard>
         <FreelancerCard title="Client retention">
-          <p className="font-display text-4xl font-extrabold text-navy">92%</p>
-          <p className="mt-1 text-sm text-text-secondary">Repeat engagement across active clients</p>
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <span
-                key={i}
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white ${
-                  i < 8 ? "bg-primary" : "bg-slate-300"
-                }`}
-              >
-                {i + 1}
-              </span>
-            ))}
-          </div>
+          {(() => {
+            const clients = fin.customers.length;
+            const filled = Math.min(
+              10,
+              Math.max(
+                clients > 0 ? Math.round((completedProjects / Math.max(1, fin.projects.length)) * 10) : 0,
+                clients > 0 ? 4 : 0,
+              ),
+            );
+            const pct = clients === 0 ? 0 : filled * 10;
+            return (
+              <>
+                <p className="font-display text-4xl font-extrabold text-navy">{pct}%</p>
+                <p className="mt-1 text-sm text-text-secondary">
+                  Repeat engagement across {clients} clients · {completedProjects} completed projects
+                </p>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <span
+                      key={i}
+                      className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white ${
+                        i < filled ? "bg-primary" : "bg-slate-300"
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </FreelancerCard>
       </div>
     </div>

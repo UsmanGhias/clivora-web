@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
   Bell,
@@ -27,6 +27,7 @@ import {
   money,
 } from "@/components/client/ui";
 import { ManageBillingButton } from "@/components/app/ManageBillingButton";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/profile-types";
 
@@ -103,12 +104,16 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
                       </p>
                       <p className="text-sm text-text-secondary">{profile.email}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <ClientStatusPill tone="green">
-                          <span className="inline-flex items-center gap-1">
-                            <BadgeCheck className="h-3 w-3" /> Verified
-                          </span>
-                        </ClientStatusPill>
-                        <span className="text-xs text-text-muted">Lahore, Pakistan</span>
+                        {plus ? (
+                          <ClientStatusPill tone="green">
+                            <span className="inline-flex items-center gap-1">
+                              <BadgeCheck className="h-3 w-3" /> Verified
+                            </span>
+                          </ClientStatusPill>
+                        ) : (
+                          <ClientStatusPill tone="blue">{plan}</ClientStatusPill>
+                        )}
+                        <span className="text-xs text-text-muted">Remote</span>
                       </div>
                       <p className="mt-2 text-xs text-text-muted">Member since Aug 1, 2024</p>
                     </div>
@@ -234,15 +239,7 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
           )}
 
           {tab === "security" && (
-            <ClientCard title="Security">
-              <p className="text-sm text-text-secondary">
-                Protect your account with a strong password and optional two-factor authentication.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <ClientPrimaryButton>Change password</ClientPrimaryButton>
-                <ClientOutlineButton>Enable 2FA</ClientOutlineButton>
-              </div>
-            </ClientCard>
+            <ClientSecurityTab />
           )}
 
           {(tab === "payment" || tab === "billing") && (
@@ -292,5 +289,134 @@ export function ClientSettingsPanel({ profile, plan, plus, stats }: Props) {
         </div>
       </div>
     </div>
+  );
+}
+
+function ClientSecurityTab() {
+  const supabase = useMemo(() => createClient(), []);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [hasPasswordProvider, setHasPasswordProvider] = useState<boolean | null>(null);
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [ok, setOk] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      setEmail(user.email ?? "");
+      const identities = user.identities ?? [];
+      const emailIdentity = identities.some((i) => i.provider === "email");
+      const onlyOAuth =
+        !emailIdentity && identities.some((i) => i.provider === "google" || i.provider === "apple");
+      setHasPasswordProvider(!onlyOAuth);
+    })();
+  }, [supabase]);
+
+  async function save() {
+    setError("");
+    setOk("");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (hasPasswordProvider) {
+        if (!currentPassword) {
+          setError("Enter your current password.");
+          return;
+        }
+        if (!email) {
+          setError("No email on this account.");
+          return;
+        }
+        const { error: reauthErr } = await supabase.auth.signInWithPassword({
+          email,
+          password: currentPassword,
+        });
+        if (reauthErr) {
+          setError("Current password is incorrect.");
+          return;
+        }
+      }
+      const { error: updErr } = await supabase.auth.updateUser({ password });
+      if (updErr) {
+        setError(updErr.message);
+        return;
+      }
+      setPassword("");
+      setConfirm("");
+      setCurrentPassword("");
+      setHasPasswordProvider(true);
+      setOk(hasPasswordProvider ? "Password updated." : "Password set successfully.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <ClientCard title={hasPasswordProvider === false ? "Set a password" : "Change password"}>
+      <p className="text-sm text-text-secondary">
+        {hasPasswordProvider === false
+          ? "You signed in with Google. Set a password so you can also use email login."
+          : "Confirm your current password before setting a new one."}
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {hasPasswordProvider !== false && (
+          <label className="block text-sm font-semibold text-navy sm:col-span-2">
+            Current password
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+            />
+          </label>
+        )}
+        <label className="block text-sm font-semibold text-navy">
+          New password
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+          />
+        </label>
+        <label className="block text-sm font-semibold text-navy">
+          Confirm password
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+          />
+        </label>
+      </div>
+      {error && <p className="mt-2 text-sm text-error">{error}</p>}
+      {ok && <p className="mt-2 text-sm font-semibold text-primary-dark">{ok}</p>}
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => void save()}
+          disabled={busy || hasPasswordProvider === null}
+          className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-client-accent px-4 py-2.5 text-sm font-bold text-white hover:bg-client-header disabled:opacity-60"
+        >
+          {busy ? "Saving…" : hasPasswordProvider === false ? "Set password" : "Update password"}
+        </button>
+      </div>
+    </ClientCard>
   );
 }

@@ -121,7 +121,15 @@ export default async function AccountPage({
                 <h2 className="font-display text-xl font-extrabold text-navy">
                   {profile.name || "Freelancer"}
                 </h2>
-                <BadgeCheck className="h-5 w-5 text-success" />
+                {plus && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700"
+                    title="Pro Plus verified"
+                  >
+                    <BadgeCheck className="h-4 w-4" />
+                    Verified
+                  </span>
+                )}
               </div>
               <p className="mt-1 inline-flex items-center gap-1 text-sm text-text-secondary">
                 <MapPin className="h-3.5 w-3.5" />

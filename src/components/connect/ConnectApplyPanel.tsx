@@ -134,6 +134,35 @@ export function ConnectApplyPanel() {
       return;
     }
 
+    if (mode === "contact") {
+      if (coverLetter.trim().length < 20) {
+        setError("Add a short introduction (at least a couple of sentences).");
+        setBusy(false);
+        return;
+      }
+      const contactMessage = [
+        coverLetter.trim(),
+        approach.trim() ? `\n\nWhy this job:\n${approach.trim()}` : "",
+        timelineDays ? `\n\nAvailable to start in: ${timelineDays} day(s)` : "",
+        portfolioLinks.trim() ? `\n\nProof / links:\n${portfolioLinks.trim()}` : "",
+        "\n\n— CLIVORA Contact request (emails unlock after mutual accept)",
+      ]
+        .filter(Boolean)
+        .join("");
+      const { error: err } = await supabase.rpc("connect_send_request", {
+        p_to_user_id: toUserId,
+        p_message: contactMessage.trim(),
+        p_target_need_id: needId || null,
+      });
+      setBusy(false);
+      if (err) {
+        setError(parseConnectCreditError(err).message);
+        return;
+      }
+      setDone(true);
+      return;
+    }
+
     const messageParts = [
       coverLetter.trim(),
       approach.trim() ? `\n\nApproach:\n${approach.trim()}` : "",
@@ -149,21 +178,6 @@ export function ConnectApplyPanel() {
     if (messageParts.trim().length < 40) {
       setError("Please share a stronger proposal (at least a few sentences of detail).");
       setBusy(false);
-      return;
-    }
-
-    if (mode === "contact") {
-      const { error: err } = await supabase.rpc("connect_send_request", {
-        p_to_user_id: toUserId,
-        p_message: messageParts.trim(),
-        p_target_need_id: needId || null,
-      });
-      setBusy(false);
-      if (err) {
-        setError(parseConnectCreditError(err).message);
-        return;
-      }
-      setDone(true);
       return;
     }
 
@@ -232,11 +246,12 @@ export function ConnectApplyPanel() {
           Back to Connect
         </Link>
         <h1 className="mt-3 font-display text-2xl font-extrabold text-navy sm:text-3xl">
-          {mode === "contact" ? "Contact & introduce yourself" : "Submit a proposal"}
+          {mode === "contact" ? "Contact the client" : "Submit a proposal"}
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-text-secondary">
-          Share a complete pitch. Strong proposals include scope, timeline, milestones, and proof of
-          fit — not just a one-line hello.
+          {mode === "contact"
+            ? "Send a private Connect request. Emails unlock only after both sides accept. Use Submit proposal when you have a priced offer."
+            : "Share a complete pitch with scope, timeline, milestones, and proof of fit — not just a one-line hello."}
         </p>
       </div>
 
@@ -263,38 +278,67 @@ export function ConnectApplyPanel() {
           )}
 
           <label className="block">
-            <span className="text-sm font-semibold text-navy">Cover letter *</span>
+            <span className="text-sm font-semibold text-navy">
+              {mode === "contact" ? "Introduction *" : "Cover letter *"}
+            </span>
             <textarea
               required
-              rows={6}
+              rows={mode === "contact" ? 5 : 6}
               value={coverLetter}
               onChange={(e) => setCoverLetter(e.target.value)}
-              placeholder="Why you're the right fit, relevant experience, and how you'll deliver…"
+              placeholder={
+                mode === "contact"
+                  ? "Who you are, why this job fits, and one relevant win…"
+                  : "Why you're the right fit, relevant experience, and how you'll deliver…"
+              }
               className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
             />
           </label>
 
           <label className="block">
-            <span className="text-sm font-semibold text-navy">Your approach</span>
+            <span className="text-sm font-semibold text-navy">
+              {mode === "contact" ? "Why this job / fit" : "Your approach"}
+            </span>
             <textarea
               rows={4}
               value={approach}
               onChange={(e) => setApproach(e.target.value)}
-              placeholder="Phases, tools, communication cadence…"
+              placeholder={
+                mode === "contact"
+                  ? "What you'd clarify on a call, questions, or how you'd help…"
+                  : "Phases, tools, communication cadence…"
+              }
               className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
             />
           </label>
 
-          <label className="block">
-            <span className="text-sm font-semibold text-navy">Suggested milestones</span>
-            <textarea
-              rows={3}
-              value={milestones}
-              onChange={(e) => setMilestones(e.target.value)}
-              placeholder={"1. Discovery & wireframes\n2. Build & review\n3. Launch & handoff"}
-              className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-            />
-          </label>
+          {mode === "proposal" && (
+            <label className="block">
+              <span className="text-sm font-semibold text-navy">Suggested milestones</span>
+              <textarea
+                rows={3}
+                value={milestones}
+                onChange={(e) => setMilestones(e.target.value)}
+                placeholder={"1. Discovery & wireframes\n2. Build & review\n3. Launch & handoff"}
+                className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+              />
+            </label>
+          )}
+
+          {mode === "contact" && (
+            <label className="block">
+              <span className="text-sm font-semibold text-navy">Days until you can start</span>
+              <input
+                type="number"
+                min={0}
+                step="1"
+                value={timelineDays}
+                onChange={(e) => setTimelineDays(e.target.value)}
+                placeholder="e.g. 3"
+                className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+              />
+            </label>
+          )}
 
           {mode === "proposal" && (
             <div className="grid gap-4 sm:grid-cols-2">

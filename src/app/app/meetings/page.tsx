@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/profile";
+import { Suspense } from "react";
 import { MeetingsClient } from "./MeetingsClient";
 
 type MeetingLink = {
@@ -33,10 +34,12 @@ export default async function MeetingsPage() {
       <div>
         <h1 className="text-2xl font-extrabold">Meetings</h1>
         <p className="text-sm text-text-secondary">
-          Create instant Jitsi video rooms and share links with clients.
+          Create instant Jitsi video rooms and connect Google Calendar when available.
         </p>
       </div>
-      <MeetingsClient initial={links} ownerUid={uid} />
+      <Suspense fallback={<p className="text-sm text-text-secondary">Loading meetings…</p>}>
+        <MeetingsClient initial={links} ownerUid={uid} />
+      </Suspense>
     </div>
   );
 }

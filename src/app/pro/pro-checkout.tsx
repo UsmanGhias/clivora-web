@@ -209,9 +209,10 @@ export default function ProCheckout() {
         {!loadingPlan && alreadyProPlus && (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6">
             <Logo size="sm" variant="onLight" />
-            <h2 className="mt-4 text-2xl font-extrabold text-navy">You&apos;re on Pro Plus</h2>
+            <h2 className="mt-4 text-2xl font-extrabold text-navy">You&apos;re on Pro Plus — enjoy</h2>
             <p className="mt-2 text-sm text-text-secondary">
-              Connect posting, MFA, and Plus perks are already unlocked. No extra payment required.
+              Connect posting, MFA, and Plus perks are already unlocked. No extra payment required —
+              get back to winning work.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href="/connect" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white">

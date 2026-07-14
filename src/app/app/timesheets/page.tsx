@@ -200,21 +200,38 @@ export default async function TimesheetsPage() {
 
   let entries: TimeEntry[] = [];
   let projects: Awaited<ReturnType<typeof listProjectsServer>> = [];
+  let profileHourly = 0;
 
   try {
-    const [{ data }, proj] = await Promise.all([
+    const [{ data }, proj, { data: cp }] = await Promise.all([
       supabase
         .from("crm_time_entries")
         .select(
-          "id, owner_uid, project_id, customer_id, description, hours, date, status, minutes, work_date, approval_status, created_at",
+          "id, owner_uid, project_id, customer_id, description, hours, date, status, minutes, work_date, approval_status, hourly_rate, created_at",
         )
         .eq("owner_uid", uid)
         .order("created_at", { ascending: false })
         .limit(100),
       listProjectsServer(),
+      supabase
+        .from("connect_profiles")
+        .select("rate_band, bio")
+        .eq("user_id", uid)
+        .maybeSingle(),
     ]);
     entries = (data ?? []).map((r) => normalizeEntry(r as Record<string, unknown>));
     projects = proj;
+    const fromBand = Number(String(cp?.rate_band ?? "").replace(/[^0-9.]/g, ""));
+    const metaMatch = String(cp?.bio ?? "").match(/<!--clivora-meta:([\s\S]*?)-->/);
+    let fromMeta = 0;
+    if (metaMatch?.[1]) {
+      try {
+        fromMeta = Number((JSON.parse(metaMatch[1]) as { hourlyRate?: number }).hourlyRate) || 0;
+      } catch {
+        fromMeta = 0;
+      }
+    }
+    profileHourly = fromMeta || fromBand || 0;
   } catch {
     entries = [];
   }
@@ -223,7 +240,12 @@ export default async function TimesheetsPage() {
   const billable = entries
     .filter((e) => (e.status || "").toLowerCase() !== "rejected")
     .reduce((s, e) => s + (Number(e.hours) || 0), 0);
-  const earnings = billable * 80;
+  const earnings = entries
+    .filter((e) => (e.status || "").toLowerCase() !== "rejected")
+    .reduce((s, e) => {
+      const rate = Number(e.hourly_rate) > 0 ? Number(e.hourly_rate) : profileHourly || 0;
+      return s + (Number(e.hours) || 0) * rate;
+    }, 0);
   const trackedDays = new Set(entries.map((e) => e.date).filter(Boolean)).size;
 
   const hoursLabel = `${Math.floor(totalHours)}h ${Math.round((totalHours % 1) * 60)
@@ -272,7 +294,11 @@ export default async function TimesheetsPage() {
         <FreelancerStatCard
           label="Earnings"
           value={money(earnings)}
-          trend={earnings > 0 ? undefined : undefined}
+          sub={
+            profileHourly > 0
+              ? `At $${profileHourly}/hr from your Connect rate`
+              : "Set hourly rate in Connect profile"
+          }
           icon={Clock}
           iconTone="bg-emerald-100 text-emerald-700"
         />

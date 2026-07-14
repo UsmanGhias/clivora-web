@@ -243,11 +243,13 @@ function AccountTab({
               </p>
               <p className="text-sm text-text-secondary">{profile.email}</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <StatusPill tone="green">
-                  <span className="inline-flex items-center gap-1">
-                    <BadgeCheck className="h-3 w-3" /> Verified
-                  </span>
-                </StatusPill>
+                {plus && (
+                  <StatusPill tone="green">
+                    <span className="inline-flex items-center gap-1">
+                      <BadgeCheck className="h-3 w-3" /> Verified
+                    </span>
+                  </StatusPill>
+                )}
                 <StatusPill tone="teal">{plan}</StatusPill>
               </div>
             </div>
@@ -391,6 +393,9 @@ function SecurityTab({ plus, onToast }: { plus: boolean; onToast: (m: string) =>
   const supabase = useMemo(() => createClient(), []);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [hasPasswordProvider, setHasPasswordProvider] = useState<boolean | null>(null);
+  const [accountEmail, setAccountEmail] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
   const [pwError, setPwError] = useState("");
 
@@ -418,6 +423,24 @@ function SecurityTab({ plus, onToast }: { plus: boolean; onToast: (m: string) =>
     void refreshMfa();
   }, [refreshMfa]);
 
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      setAccountEmail(user.email ?? "");
+      const providers = (user.app_metadata?.providers as string[] | undefined) ?? [];
+      const identities = user.identities ?? [];
+      const emailIdentity = identities.some((i) => i.provider === "email");
+      const onlyOAuth =
+        !emailIdentity &&
+        (providers.includes("google") ||
+          identities.some((i) => i.provider === "google" || i.provider === "apple"));
+      setHasPasswordProvider(!onlyOAuth);
+    })();
+  }, [supabase]);
+
   async function changePassword() {
     setPwError("");
     if (password.length < 8) {
@@ -429,15 +452,43 @@ function SecurityTab({ plus, onToast }: { plus: boolean; onToast: (m: string) =>
       return;
     }
     setPwBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setPwBusy(false);
-    if (error) {
-      setPwError(error.message);
-      return;
+    try {
+      if (hasPasswordProvider) {
+        if (!currentPassword) {
+          setPwError("Enter your current password to continue.");
+          setPwBusy(false);
+          return;
+        }
+        const email = accountEmail;
+        if (!email) {
+          setPwError("No email on this account.");
+          setPwBusy(false);
+          return;
+        }
+        const { error: reauthErr } = await supabase.auth.signInWithPassword({
+          email,
+          password: currentPassword,
+        });
+        if (reauthErr) {
+          setPwError("Current password is incorrect.");
+          setPwBusy(false);
+          return;
+        }
+      }
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        setPwError(error.message);
+        setPwBusy(false);
+        return;
+      }
+      setPassword("");
+      setConfirm("");
+      setCurrentPassword("");
+      setHasPasswordProvider(true);
+      onToast(hasPasswordProvider ? "Password updated" : "Password set — you can sign in with email too");
+    } finally {
+      setPwBusy(false);
     }
-    setPassword("");
-    setConfirm("");
-    onToast("Password updated");
   }
 
   async function startEnrollment() {
@@ -509,13 +560,29 @@ function SecurityTab({ plus, onToast }: { plus: boolean; onToast: (m: string) =>
 
   return (
     <div className="space-y-4">
-      <FreelancerCard title="Change password">
+      <FreelancerCard
+        title={hasPasswordProvider === false ? "Set a password" : "Change password"}
+      >
         <p className="text-sm text-text-secondary">
-          Update the password for your CLIVORA account (Supabase Auth).
+          {hasPasswordProvider === false
+            ? "You signed in with Google. Set a password first so you can also sign in with email, and to unlock password changes later."
+            : "Enter your current password, then choose a new one (Supabase Auth)."}
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {hasPasswordProvider !== false && (
+            <label className="block text-sm font-semibold text-navy sm:col-span-2">
+              Current password
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-border px-3 py-2.5"
+              />
+            </label>
+          )}
           <label className="block text-sm font-semibold text-navy">
-            New password
+            {hasPasswordProvider === false ? "New password" : "New password"}
             <input
               type="password"
               autoComplete="new-password"
@@ -537,8 +604,12 @@ function SecurityTab({ plus, onToast }: { plus: boolean; onToast: (m: string) =>
         </div>
         {pwError && <p className="mt-2 text-sm text-error">{pwError}</p>}
         <div className="mt-4">
-          <PrimaryButton onClick={changePassword} disabled={pwBusy}>
-            {pwBusy ? "Updating…" : "Update password"}
+          <PrimaryButton onClick={changePassword} disabled={pwBusy || hasPasswordProvider === null}>
+            {pwBusy
+              ? "Updating…"
+              : hasPasswordProvider === false
+                ? "Set password"
+                : "Update password"}
           </PrimaryButton>
         </div>
       </FreelancerCard>
@@ -660,10 +731,21 @@ function AppsTab({
       cta: plus ? "Manage" : "Upgrade",
     },
     {
-      name: "Calendar",
-      desc: "Meetings and schedule sync",
+      name: "Google Calendar",
+      desc: plus
+        ? "Sync meetings (connect Google, then open Meetings)"
+        : "Pro Plus recommended for calendar sync",
       icon: Calendar,
       connected: false,
+      href: "/app/meetings?calendar=google",
+      manage: false,
+      cta: "Connect Google",
+    },
+    {
+      name: "Meetings (Jitsi)",
+      desc: "Instant video rooms for client calls",
+      icon: Calendar,
+      connected: true,
       href: "/app/meetings",
       manage: false,
       cta: "Open",

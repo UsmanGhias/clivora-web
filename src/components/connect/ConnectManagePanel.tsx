@@ -6,11 +6,21 @@ import {
   CheckCircle2,
   Lightbulb,
   ListChecks,
+  Plus,
   Sparkles,
+  Trash2,
   X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CONNECT_CREDIT_COSTS, parseConnectCreditError } from "@/lib/connect-credits";
+import {
+  encodeBioWithMeta,
+  parseHourlyFromRateBand,
+  parsePortfolioMeta,
+  stripPortfolioMeta,
+  type PortfolioCertificate,
+  type PortfolioProject,
+} from "@/lib/connect-portfolio";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -20,10 +30,17 @@ type ProfileRow = {
   headline: string;
   bio: string;
   skills: string;
+  additionalSkills: string;
   rate_band: string;
+  hourlyRate: string;
   availability: string;
   location_label: string;
   is_listed: boolean;
+  education: string;
+  experienceYears: string;
+  languages: string;
+  projects: PortfolioProject[];
+  certificates: PortfolioCertificate[];
   avg_rating?: number;
   review_count?: number;
   profile_completeness?: number;
@@ -31,14 +48,18 @@ type ProfileRow = {
 
 function computeCompleteness(l: ProfileRow): number {
   let score = 0;
-  if (l.display_title.trim()) score += 20;
-  if (l.headline.trim()) score += 15;
-  if (l.bio.trim()) score += 20;
-  if (l.skills.split(",").map((s) => s.trim()).filter(Boolean).length > 0) score += 15;
-  if (l.rate_band.trim()) score += 10;
-  if (l.availability.trim()) score += 10;
-  if (l.location_label.trim()) score += 10;
-  return score;
+  if (l.display_title.trim()) score += 12;
+  if (l.headline.trim()) score += 10;
+  if (l.bio.trim()) score += 12;
+  if (l.skills.split(",").map((s) => s.trim()).filter(Boolean).length > 0) score += 12;
+  if (l.additionalSkills.split(",").map((s) => s.trim()).filter(Boolean).length > 0) score += 6;
+  if (l.rate_band.trim() || l.hourlyRate.trim()) score += 10;
+  if (l.availability.trim()) score += 8;
+  if (l.location_label.trim()) score += 8;
+  if (l.projects.some((p) => p.title.trim())) score += 10;
+  if (l.certificates.some((c) => c.name.trim())) score += 6;
+  if (l.education.trim()) score += 6;
+  return Math.min(100, score);
 }
 
 type NeedRow = {
@@ -75,20 +96,25 @@ function SkillChips({
   value,
   onChange,
   placeholder = "Add a skill and press Enter",
+  maxSkills,
+  hint,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  maxSkills?: number;
+  hint?: string;
 }) {
   const skills = value
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
   const [draft, setDraft] = useState("");
+  const atMax = maxSkills != null && skills.length >= maxSkills;
 
   function add(skill: string) {
     const s = skill.trim();
-    if (!s) return;
+    if (!s || atMax) return;
     if (skills.some((x) => x.toLowerCase() === s.toLowerCase())) {
       setDraft("");
       return;
@@ -124,30 +150,42 @@ function SkillChips({
             </button>
           </span>
         ))}
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={onKey}
-          placeholder={skills.length ? "Add another…" : placeholder}
-          className="min-w-[120px] flex-1 border-0 bg-transparent px-1 py-1 text-sm outline-none"
-        />
+        {!atMax && (
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={onKey}
+            placeholder={skills.length ? "Add another…" : placeholder}
+            className="min-w-[120px] flex-1 border-0 bg-transparent px-1 py-1 text-sm outline-none"
+          />
+        )}
       </div>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {SKILL_SUGGESTIONS.filter(
-          (s) => !skills.some((x) => x.toLowerCase() === s.toLowerCase()),
-        )
-          .slice(0, 6)
-          .map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => add(s)}
-              className="rounded-full border border-dashed border-border px-2.5 py-0.5 text-[11px] font-semibold text-text-secondary hover:border-primary/40 hover:text-primary"
-            >
-              + {s}
-            </button>
-          ))}
-      </div>
+      {(hint || maxSkills != null) && (
+        <p className="mt-1 text-[11px] text-text-muted">
+          {hint ||
+            (maxSkills != null
+              ? `${skills.length}/${maxSkills} verified skills`
+              : null)}
+        </p>
+      )}
+      {!atMax && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {SKILL_SUGGESTIONS.filter(
+            (s) => !skills.some((x) => x.toLowerCase() === s.toLowerCase()),
+          )
+            .slice(0, 6)
+            .map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => add(s)}
+                className="rounded-full border border-dashed border-border px-2.5 py-0.5 text-[11px] font-semibold text-text-secondary hover:border-primary/40 hover:text-primary"
+              >
+                + {s}
+              </button>
+            ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -183,10 +221,17 @@ export function ConnectManagePanel() {
     headline: "",
     bio: "",
     skills: "",
+    additionalSkills: "",
     rate_band: "",
+    hourlyRate: "",
     availability: "Available now",
     location_label: "",
     is_listed: true,
+    education: "",
+    experienceYears: "",
+    languages: "",
+    projects: [{ title: "", url: "", description: "" }],
+    certificates: [{ name: "", issuer: "", year: "" }],
   });
   const [need, setNeed] = useState({
     title: "",
@@ -253,16 +298,47 @@ export function ConnectManagePanel() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (cp) {
+        const meta = parsePortfolioMeta(cp.bio);
+        const visibleBio = stripPortfolioMeta(cp.bio);
+        const skillsArr = Array.isArray(cp.skills)
+          ? cp.skills.map(String)
+          : String(cp.skills ?? "")
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+        const verified = skillsArr.slice(0, 5);
+        const leftover = skillsArr.slice(5);
+        const hourly =
+          meta.hourlyRate != null
+            ? String(meta.hourlyRate)
+            : String(parseHourlyFromRateBand(cp.rate_band) ?? "");
         setListing({
           id: cp.id,
           display_title: cp.display_title ?? "",
           headline: cp.headline ?? "",
-          bio: cp.bio ?? "",
-          skills: Array.isArray(cp.skills) ? cp.skills.join(", ") : String(cp.skills ?? ""),
+          bio: visibleBio,
+          skills: verified.join(", "),
+          additionalSkills: [
+            ...(meta.additionalSkills ?? []),
+            ...leftover,
+          ].join(", "),
           rate_band: cp.rate_band ?? "",
+          hourlyRate: hourly,
           availability: cp.availability ?? "Available now",
           location_label: cp.location_label ?? "",
           is_listed: !!cp.is_listed,
+          education: meta.education ?? "",
+          experienceYears:
+            meta.experienceYears != null ? String(meta.experienceYears) : "",
+          languages: (meta.languages ?? []).join(", "),
+          projects:
+            meta.projects && meta.projects.length
+              ? meta.projects
+              : [{ title: "", url: "", description: "" }],
+          certificates:
+            meta.certificates && meta.certificates.length
+              ? meta.certificates
+              : [{ name: "", issuer: "", year: "" }],
           avg_rating: Number(cp.avg_rating ?? 0),
           review_count: Number(cp.review_count ?? 0),
           profile_completeness: Number(cp.profile_completeness ?? 0),
@@ -293,14 +369,35 @@ export function ConnectManagePanel() {
     const skills = listing.skills
       .split(",")
       .map((s) => s.trim())
+      .filter(Boolean)
+      .slice(0, 5);
+    const additionalSkills = listing.additionalSkills
+      .split(",")
+      .map((s) => s.trim())
       .filter(Boolean);
+    const hourlyNum = Number(listing.hourlyRate.replace(/[^0-9.]/g, "")) || null;
+    const rateBand =
+      listing.rate_band.trim() ||
+      (hourlyNum ? `$${hourlyNum}/hr` : "");
+    const bio = encodeBioWithMeta(listing.bio, {
+      hourlyRate: hourlyNum,
+      additionalSkills,
+      projects: listing.projects,
+      certificates: listing.certificates,
+      languages: listing.languages
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      education: listing.education,
+      experienceYears: Number(listing.experienceYears) || null,
+    });
     const payload = {
       user_id: user.id,
       display_title: listing.display_title.trim(),
       headline: listing.headline.trim(),
-      bio: listing.bio.trim(),
+      bio,
       skills,
-      rate_band: listing.rate_band.trim(),
+      rate_band: rateBand,
       availability: listing.availability.trim(),
       location_label: listing.location_label.trim(),
       is_listed: listing.is_listed,
@@ -312,9 +409,9 @@ export function ConnectManagePanel() {
     if (firstPublish && accountType === "freelancer") {
       const { error: rpcErr } = await supabase.rpc("connect_publish_profile", {
         p_headline: listing.headline.trim() || listing.display_title.trim(),
-        p_bio: listing.bio.trim(),
+        p_bio: stripPortfolioMeta(bio),
         p_skills: skills,
-        p_rate: Number(String(listing.rate_band).replace(/[^0-9.]/g, "")) || 0,
+        p_rate: hourlyNum || Number(String(rateBand).replace(/[^0-9.]/g, "")) || 0,
       });
       if (rpcErr) {
         setSaving(false);
@@ -345,6 +442,21 @@ export function ConnectManagePanel() {
     if (!need.title.trim() || !need.summary.trim()) {
       setError("Title and summary are required.");
       return;
+    }
+    const isClientUser = accountType === "client";
+    if (!isClientUser && !asDraft) {
+      const openCount = needs.filter(
+        (n) =>
+          n.is_open &&
+          (n.moderation_status || "").toLowerCase() !== "draft" &&
+          (n.moderation_status || "").toLowerCase() !== "rejected",
+      ).length;
+      if (openCount >= 1) {
+        setError(
+          "Freelancers may only have one open need at a time. Close or archive your current need first.",
+        );
+        return;
+      }
     }
     setSaving(true);
     setError(null);
@@ -513,15 +625,36 @@ export function ConnectManagePanel() {
               rows={4}
             />
             <div>
-              <p className="mb-1.5 text-xs font-semibold uppercase text-text-muted">Skills</p>
+              <p className="mb-1.5 text-xs font-semibold uppercase text-text-muted">
+                Verified skills (max 5)
+              </p>
               <SkillChips
                 value={listing.skills}
                 onChange={(skills) => setListing({ ...listing, skills })}
+                maxSkills={5}
+                hint="These are your top marketplace skills — pick carefully."
+              />
+            </div>
+            <div>
+              <p className="mb-1.5 text-xs font-semibold uppercase text-text-muted">
+                Additional skills
+              </p>
+              <SkillChips
+                value={listing.additionalSkills}
+                onChange={(additionalSkills) => setListing({ ...listing, additionalSkills })}
+                placeholder="Extra skills (not verified badges)"
               />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <input
-                placeholder="Rate band (e.g. $40–60/hr)"
+                placeholder="Hourly rate (USD) e.g. 45"
+                value={listing.hourlyRate}
+                onChange={(e) => setListing({ ...listing, hourlyRate: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2.5"
+                inputMode="decimal"
+              />
+              <input
+                placeholder="Rate band label (e.g. $40–60/hr)"
                 value={listing.rate_band}
                 onChange={(e) => setListing({ ...listing, rate_band: e.target.value })}
                 className="w-full rounded-xl border border-border px-3 py-2.5"
@@ -538,7 +671,164 @@ export function ConnectManagePanel() {
                 onChange={(e) => setListing({ ...listing, availability: e.target.value })}
                 className="w-full rounded-xl border border-border px-3 py-2.5"
               />
+              <input
+                placeholder="Years of experience"
+                value={listing.experienceYears}
+                onChange={(e) => setListing({ ...listing, experienceYears: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2.5"
+                inputMode="numeric"
+              />
+              <input
+                placeholder="Languages (comma-separated)"
+                value={listing.languages}
+                onChange={(e) => setListing({ ...listing, languages: e.target.value })}
+                className="w-full rounded-xl border border-border px-3 py-2.5"
+              />
             </div>
+            <input
+              placeholder="Education (e.g. BS CS — NUST)"
+              value={listing.education}
+              onChange={(e) => setListing({ ...listing, education: e.target.value })}
+              className="w-full rounded-xl border border-border px-3 py-2.5"
+            />
+
+            <div className="space-y-3 rounded-xl border border-dashed border-border bg-background/60 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-bold text-navy">Portfolio projects</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setListing({
+                      ...listing,
+                      projects: [
+                        ...listing.projects,
+                        { title: "", url: "", description: "" },
+                      ].slice(0, 12),
+                    })
+                  }
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add project
+                </button>
+              </div>
+              {listing.projects.map((p, i) => (
+                <div key={i} className="grid gap-2 rounded-xl border border-border bg-white p-3 sm:grid-cols-[1fr_1fr_auto]">
+                  <input
+                    placeholder="Project title"
+                    value={p.title}
+                    onChange={(e) => {
+                      const projects = [...listing.projects];
+                      projects[i] = { ...p, title: e.target.value };
+                      setListing({ ...listing, projects });
+                    }}
+                    className="rounded-lg border border-border px-2.5 py-2 text-sm"
+                  />
+                  <input
+                    placeholder="URL (optional)"
+                    value={p.url || ""}
+                    onChange={(e) => {
+                      const projects = [...listing.projects];
+                      projects[i] = { ...p, url: e.target.value };
+                      setListing({ ...listing, projects });
+                    }}
+                    className="rounded-lg border border-border px-2.5 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Remove project"
+                    onClick={() =>
+                      setListing({
+                        ...listing,
+                        projects: listing.projects.filter((_, j) => j !== i),
+                      })
+                    }
+                    className="justify-self-end text-text-muted hover:text-error"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                  <textarea
+                    placeholder="What you delivered"
+                    value={p.description || ""}
+                    onChange={(e) => {
+                      const projects = [...listing.projects];
+                      projects[i] = { ...p, description: e.target.value };
+                      setListing({ ...listing, projects });
+                    }}
+                    rows={2}
+                    className="sm:col-span-3 rounded-lg border border-border px-2.5 py-2 text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3 rounded-xl border border-dashed border-border bg-background/60 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-bold text-navy">Certificates</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setListing({
+                      ...listing,
+                      certificates: [
+                        ...listing.certificates,
+                        { name: "", issuer: "", year: "" },
+                      ].slice(0, 12),
+                    })
+                  }
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add certificate
+                </button>
+              </div>
+              {listing.certificates.map((c, i) => (
+                <div key={i} className="grid gap-2 sm:grid-cols-[1.2fr_1fr_0.6fr_auto]">
+                  <input
+                    placeholder="Certificate name"
+                    value={c.name}
+                    onChange={(e) => {
+                      const certificates = [...listing.certificates];
+                      certificates[i] = { ...c, name: e.target.value };
+                      setListing({ ...listing, certificates });
+                    }}
+                    className="rounded-lg border border-border px-2.5 py-2 text-sm"
+                  />
+                  <input
+                    placeholder="Issuer"
+                    value={c.issuer || ""}
+                    onChange={(e) => {
+                      const certificates = [...listing.certificates];
+                      certificates[i] = { ...c, issuer: e.target.value };
+                      setListing({ ...listing, certificates });
+                    }}
+                    className="rounded-lg border border-border px-2.5 py-2 text-sm"
+                  />
+                  <input
+                    placeholder="Year"
+                    value={c.year || ""}
+                    onChange={(e) => {
+                      const certificates = [...listing.certificates];
+                      certificates[i] = { ...c, year: e.target.value };
+                      setListing({ ...listing, certificates });
+                    }}
+                    className="rounded-lg border border-border px-2.5 py-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Remove certificate"
+                    onClick={() =>
+                      setListing({
+                        ...listing,
+                        certificates: listing.certificates.filter((_, j) => j !== i),
+                      })
+                    }
+                    className="text-text-muted hover:text-error"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
@@ -557,6 +847,15 @@ export function ConnectManagePanel() {
           </form>
         )}
 
+        {(() => {
+          const openNeedCount = needs.filter(
+            (n) =>
+              n.is_open &&
+              (n.moderation_status || "").toLowerCase() !== "draft" &&
+              (n.moderation_status || "").toLowerCase() !== "rejected",
+          ).length;
+          const freelancerNeedBlocked = !isClient && openNeedCount >= 1;
+          return (
         <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
           <form
             onSubmit={(e) => {
@@ -579,11 +878,19 @@ export function ConnectManagePanel() {
                 <p className="text-sm text-text-secondary">
                   {isClient
                     ? "Reach Pro Plus freelancers on CLIVORA Connect."
-                    : "Optional — post a need when you want help from peers."}
+                    : freelancerNeedBlocked
+                      ? "You already have one open need. Close it before posting another."
+                      : "Freelancers may post only one open need at a time."}
                 </p>
               </div>
             </div>
 
+            {freelancerNeedBlocked ? (
+              <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                Limit reached: close your open need below, then you can post a new one.
+              </p>
+            ) : (
+              <>
             <label className="block text-sm font-semibold text-navy">
               Title
               <input
@@ -650,6 +957,8 @@ export function ConnectManagePanel() {
                 {saving ? "Posting…" : "Publish"}
               </button>
             </div>
+              </>
+            )}
           </form>
 
           <aside className="space-y-4">
@@ -693,6 +1002,8 @@ export function ConnectManagePanel() {
             </div>
           </aside>
         </div>
+          );
+        })()}
 
         {needs.length > 0 && (
           <div className="space-y-3">
@@ -719,9 +1030,32 @@ export function ConnectManagePanel() {
                       </span>
                     </div>
                     <p className="mt-1 text-sm text-text-secondary line-clamp-2">{n.summary}</p>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-text-muted">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-text-muted">
                       {n.budget_band && <span>{n.budget_band}</span>}
                       {n.skills && <span>· {n.skills}</span>}
+                      {n.is_open && (
+                        <button
+                          type="button"
+                          className="ml-auto rounded-lg border border-border px-2.5 py-1 font-semibold text-navy hover:border-primary/40"
+                          onClick={async () => {
+                            const supabase = createClient();
+                            await supabase
+                              .from("connect_need_posts")
+                              .update({
+                                is_open: false,
+                                updated_at: new Date().toISOString(),
+                              })
+                              .eq("id", n.id);
+                            const {
+                              data: { user },
+                            } = await supabase.auth.getUser();
+                            if (user) await reloadNeeds(user.id);
+                            setMessage("Need closed. You can post a new one.");
+                          }}
+                        >
+                          Close
+                        </button>
+                      )}
                     </div>
                   </li>
                 );
