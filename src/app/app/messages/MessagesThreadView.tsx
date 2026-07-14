@@ -299,9 +299,12 @@ function MarkReadButton({ messageId, readAt }: { messageId: string; readAt?: str
           is_read: true,
           read_at: new Date().toISOString(),
         })
-        .eq("id", messageId);
+        .eq("id", messageId)
+        .throwOnError();
       setDone(true);
       router.refresh();
+    } catch {
+      // Keep button available if RLS/trigger rejects
     } finally {
       setBusy(false);
     }
@@ -335,9 +338,49 @@ export function MessagesThreadView({
   isClient?: boolean;
   prefillToUid?: string | null;
 }) {
+  const router = useRouter();
   const [filter, setFilter] = useState<"all" | "unread" | "archived">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [liveError, setLiveError] = useState<string | null>(null);
+
+  // Live inbox: refresh when postgres_changes arrive for this user
+  useEffect(() => {
+    if (!myUid) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`client-messages-${myUid}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "client_messages",
+          filter: `from_uid=eq.${myUid}`,
+        },
+        () => router.refresh(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "client_messages",
+          filter: `to_uid=eq.${myUid}`,
+        },
+        () => router.refresh(),
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setLiveError("Live updates unavailable — pull to refresh messages.");
+        } else if (status === "SUBSCRIBED") {
+          setLiveError(null);
+        }
+      });
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [myUid, router]);
 
   const accent = isClient ? "client" : "teal";
   const activeTabCls =
@@ -460,6 +503,12 @@ export function MessagesThreadView({
   }
 
   return (
+    <div className="space-y-3">
+      {liveError && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {liveError}
+        </div>
+      )}
     <div className="grid h-full min-h-[32rem] gap-0 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm xl:grid-cols-[300px_minmax(0,1fr)_240px]">
       <aside className="flex max-h-[70vh] flex-col border-b border-border xl:max-h-none xl:border-b-0 xl:border-r">
         <div className="shrink-0 space-y-3 border-b border-border p-3">
@@ -797,6 +846,7 @@ export function MessagesThreadView({
           </Link>
         </div>
       </aside>
+    </div>
     </div>
   );
 }

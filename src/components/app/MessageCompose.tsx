@@ -32,12 +32,35 @@ export function MessageCompose({
       if (!user) throw new Error("Sign in required");
       const to = toEmail.trim().toLowerCase();
       let toUid: string | null = null;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("email", to)
-        .maybeSingle();
-      toUid = profile?.id ?? null;
+
+      // Prefer linked-email resolver (Connect accept / shares / prior thread)
+      const { data: linkedUid } = await supabase.rpc("uid_for_linked_email", {
+        p_email: to,
+      });
+      if (typeof linkedUid === "string" && linkedUid) {
+        toUid = linkedUid;
+      }
+
+      if (!toUid) {
+        const { data: peerByEmail } = await supabase
+          .from("connect_request_details")
+          .select("from_user_id, to_user_id, from_email, to_email, status")
+          .eq("status", "accepted")
+          .or(`from_email.eq.${to},to_email.eq.${to}`)
+          .limit(5);
+        const hit = (peerByEmail ?? []).find((r) => {
+          const from = (r.from_email || "").toLowerCase();
+          const toE = (r.to_email || "").toLowerCase();
+          return from === to || toE === to;
+        });
+        if (hit) {
+          toUid =
+            (hit.from_email || "").toLowerCase() === to
+              ? hit.from_user_id
+              : hit.to_user_id;
+        }
+      }
+
       const { error: err } = await supabase.from("client_messages").insert({
         from_uid: user.id,
         from_email: fromEmail || user.email || "",
@@ -86,7 +109,7 @@ export function MessageCompose({
         className="w-full rounded-xl border border-border px-3 py-2 text-sm"
       />
       {error && <p className="text-sm text-error">{error}</p>}
-      {ok && <p className="text-sm text-green-700">Sent. Live chat & push work best in the app.</p>}
+      {ok && <p className="text-sm text-green-700">Sent. Live updates arrive automatically.</p>}
       <button
         type="submit"
         disabled={busy}

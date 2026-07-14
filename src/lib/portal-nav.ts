@@ -27,11 +27,7 @@ export async function getPortalNavCounts(
         .select("id", { count: "exact", head: true })
         .eq("user_uid", uid)
         .eq("is_read", false),
-      supabase
-        .from("client_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("to_uid", uid)
-        .is("read_at", null),
+      supabase.rpc('unread_message_count'),
       supabase
         .from("project_shares")
         .select("share_id", { count: "exact", head: true })
@@ -39,7 +35,10 @@ export async function getPortalNavCounts(
     ]);
     counts.proposals = proposals.count ?? 0;
     counts.notifications = notifications.count ?? 0;
-    counts.messages = messages.count ?? 0;
+    counts.messages =
+      typeof messages.data === "number"
+        ? messages.data
+        : Number(messages.data ?? 0) || 0;
     counts.projects = projects.count ?? 0;
   } catch {
     /* ignore */
