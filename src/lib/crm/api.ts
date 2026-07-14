@@ -29,6 +29,7 @@ export type CrmProject = {
   currency: string;
   status: string;
   priority: string;
+  pricing_type?: string | null;
   deadline: string | null;
   updated_at: string;
 };

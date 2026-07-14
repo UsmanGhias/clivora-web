@@ -11,7 +11,6 @@ import {
   Check,
 } from "lucide-react";
 import { EarningsLineChart } from "@/components/dashboard/EarningsLineChart";
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { ProjectListCard, type DashboardProject } from "@/components/dashboard/ProjectListCard";
 import { PeopleListCard, type PersonRow } from "@/components/dashboard/PeopleListCard";
 import { DonutChart } from "@/components/dashboard/DonutChart";
@@ -101,7 +100,7 @@ export function ClientDashboard({
   refunds,
   outstanding = 0,
   credits,
-  activities,
+  activities: _activities,
   projects,
   freelancers,
   spendSlices,
@@ -251,7 +250,6 @@ export function ClientDashboard({
         </div>
 
         <aside className="space-y-4">
-          <ActivityFeed items={activities} viewAllHref="/app/activity" accent="slate" />
           <ConnectCreditsWidget signedIn isClient />
           <div className="rounded-2xl bg-navy p-5 text-white shadow-sm">
             <div className="flex items-start gap-3">

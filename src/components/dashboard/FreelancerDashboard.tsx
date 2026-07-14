@@ -13,7 +13,6 @@ import {
   Users,
 } from "lucide-react";
 import { EarningsLineChart } from "@/components/dashboard/EarningsLineChart";
-import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { ProfileCompleteness } from "@/components/dashboard/ProfileCompleteness";
 import { ProjectListCard, type DashboardProject } from "@/components/dashboard/ProjectListCard";
 import { PeopleListCard, type PersonRow } from "@/components/dashboard/PeopleListCard";
@@ -165,7 +164,7 @@ export function FreelancerDashboard({
   credits,
   profileCompleteness,
   successScore,
-  activities,
+  activities: _activities,
   projects,
   clients,
   proposalSlices,
@@ -259,8 +258,8 @@ export function FreelancerDashboard({
 
       <WeekOverview {...week} />
 
-      {/* Chart + activity — equal columns so the left never looks like a blank void */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Earnings chart full width */}
+      <div className="grid gap-4 lg:grid-cols-1">
         <EarningsLineChart
           total={invoiceTotal}
           accent="teal"
@@ -285,7 +284,6 @@ export function FreelancerDashboard({
             },
           ]}
         />
-        <ActivityFeed items={activities} viewAllHref="/app/activity" />
       </div>
 
       {/* Active projects | Top clients | Proposals donut */}

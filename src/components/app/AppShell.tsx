@@ -29,6 +29,8 @@ import {
   CreditCard,
   ArrowLeftRight,
   Banknote,
+  ScrollText,
+  ListTodo,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -124,9 +126,11 @@ export function AppShell({
     { href: "/app/connect/manage", label: "Post a need", icon: Plus },
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
     { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
+    { href: "/app/contracts", label: "Contracts", icon: ScrollText },
+    { href: "/app/invoices", label: "Invoices", icon: Receipt },
+    { href: "/app/tasks", label: "Tasks", icon: ListTodo },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
     { href: "/app/earnings", label: "Earnings", icon: Wallet },
-    { href: "/app/invoices", label: "Invoices", icon: Receipt },
     { href: "/app/timesheets", label: "Time tracking", icon: Clock },
     { href: "/app/clients", label: "Clients", icon: Users },
     { href: "/app/reviews", label: "Reviews", icon: Star },
@@ -143,6 +147,7 @@ export function AppShell({
     { href: "/app/connect", label: "Marketplace / Connect", icon: Network },
     { href: "/app/proposals", label: "Proposals", icon: FileText, badge: counts?.proposals },
     { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
+    { href: "/app/contracts", label: "Contracts", icon: ScrollText },
     { href: "/app/messages", label: "Messages", icon: MessageSquare, badge: counts?.messages },
   ];
 
@@ -161,6 +166,7 @@ export function AppShell({
 
   const clientBottom: NavItem[] = [
     { href: "/app/team", label: "My team", icon: Users },
+    { href: "/app/tasks", label: "Tasks", icon: ListTodo },
     { href: "/app/bookmarks", label: "Bookmarks", icon: Bookmark },
     { href: "/app/reviews", label: "Reviews", icon: Star },
     { href: "/app/timesheets", label: "Time tracking", icon: Clock },
@@ -181,8 +187,8 @@ export function AppShell({
     ? [
         { href: "/app", label: "Home", icon: LayoutDashboard },
         { href: "/app/connect", label: "Connect", icon: Network },
-        { href: "/app/proposals", label: "Proposals", icon: FileText },
         { href: "/app/messages", label: "Messages", icon: MessageSquare },
+        { href: "/app/notifications", label: "Alerts", icon: Bell },
         { href: "/app/settings", label: "Settings", icon: Settings },
       ]
     : [
@@ -285,7 +291,7 @@ export function AppShell({
                 isActive(n.href),
               )?.label ?? "App";
 
-  const profileHref = isClient ? "/app/settings" : "/app/account";
+  const profileHref = "/app/account";
 
   return (
     <div

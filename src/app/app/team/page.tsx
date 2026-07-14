@@ -18,6 +18,7 @@ import {
   StatusPill,
 } from "@/components/freelancer/ui";
 import { TeamInviteForm } from "./TeamInviteForm";
+import { TeamInviteActions } from "./TeamInviteActions";
 
 export const metadata = { title: "Team" };
 
@@ -155,10 +156,32 @@ export default async function TeamPage() {
                       className="flex items-center justify-between gap-2 rounded-xl border border-border px-3 py-2"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-navy">{inv.invitee_email}</p>
-                        <p className="text-xs text-text-muted">Role: {inv.role || "member"}</p>
+                        <p className="text-sm font-semibold text-navy">
+                          {inv.project_name || inv.invitee_email}
+                        </p>
+                        <p className="text-xs text-text-muted">
+                          Role: {inv.role || "member"}
+                          {inv.project_name ? ` · ${inv.invitee_email}` : ""}
+                        </p>
                       </div>
-                      <ClientStatusPill tone="amber">{inv.status || "pending"}</ClientStatusPill>
+                      <div className="flex items-center gap-2">
+                        <ClientStatusPill
+                          tone={
+                            (inv.status || "").toLowerCase() === "accepted"
+                              ? "green"
+                              : (inv.status || "").toLowerCase() === "declined"
+                                ? "red"
+                                : "amber"
+                          }
+                        >
+                          {inv.status || "pending"}
+                        </ClientStatusPill>
+                        <TeamInviteActions
+                          inviteId={inv.id}
+                          status={inv.status}
+                          isClient
+                        />
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -246,10 +269,28 @@ export default async function TeamPage() {
                 className="flex items-center justify-between gap-2 rounded-xl border border-border px-3 py-2"
               >
                 <div>
-                  <p className="text-sm font-semibold text-navy">{inv.invitee_email}</p>
-                  <p className="text-xs text-text-muted">Role: {inv.role || "member"}</p>
+                  <p className="text-sm font-semibold text-navy">
+                    {inv.project_name || inv.invitee_email}
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    Role: {inv.role || "member"}
+                    {inv.project_name ? ` · ${inv.invitee_email}` : ""}
+                  </p>
                 </div>
-                <StatusPill tone="amber">{inv.status || "pending"}</StatusPill>
+                <div className="flex items-center gap-2">
+                  <StatusPill
+                    tone={
+                      (inv.status || "").toLowerCase() === "accepted"
+                        ? "green"
+                        : (inv.status || "").toLowerCase() === "declined"
+                          ? "red"
+                          : "amber"
+                    }
+                  >
+                    {inv.status || "pending"}
+                  </StatusPill>
+                  <TeamInviteActions inviteId={inv.id} status={inv.status} />
+                </div>
               </li>
             ))}
           </ul>

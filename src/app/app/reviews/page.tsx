@@ -220,7 +220,7 @@ export default async function ReviewsPage() {
         actions={
           <>
             <RequestReviewButton fromEmail={profile.email || ""} />
-            <OutlineButton href="/app/settings">
+            <OutlineButton href="/app/reviews#settings">
               <Settings2 className="h-4 w-4" />
               Review Settings
             </OutlineButton>
@@ -379,6 +379,28 @@ export default async function ReviewsPage() {
             </li>
           ))}
         </ul>
+      </FreelancerCard>
+
+      <FreelancerCard title="Review settings">
+        <div id="settings" className="space-y-3 text-sm text-text-secondary">
+          <p>
+            Control how clients can leave feedback and which reviews appear on your Connect
+            profile. Profile visibility and review requests are managed from your account.
+          </p>
+          <ul className="space-y-2">
+            <li className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2">
+              <span className="font-semibold text-navy">Show reviews on Connect profile</span>
+              <span className="text-xs font-bold text-success">On</span>
+            </li>
+            <li className="flex items-center justify-between gap-3 rounded-xl border border-border px-3 py-2">
+              <span className="font-semibold text-navy">Allow review requests</span>
+              <span className="text-xs font-bold text-success">On</span>
+            </li>
+          </ul>
+          <Link href="/app/account" className="inline-block text-sm font-semibold text-primary">
+            Edit profile →
+          </Link>
+        </div>
       </FreelancerCard>
     </div>
   );

@@ -325,6 +325,74 @@ function MarkReadButton({ messageId, readAt }: { messageId: string; readAt?: str
   );
 }
 
+function BlockPeerButton({ peerUid }: { peerUid: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("chat_blocks")
+        .select("id")
+        .eq("blocker_uid", user.id)
+        .eq("blocked_uid", peerUid)
+        .maybeSingle();
+      if (!cancelled) setBlocked(!!data);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [peerUid]);
+
+  async function toggle() {
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Sign in required");
+      if (blocked) {
+        await supabase
+          .from("chat_blocks")
+          .delete()
+          .eq("blocker_uid", user.id)
+          .eq("blocked_uid", peerUid);
+        setBlocked(false);
+      } else {
+        await supabase.from("chat_blocks").insert({
+          blocker_uid: user.id,
+          blocked_uid: peerUid,
+        });
+        setBlocked(true);
+      }
+      router.refresh();
+    } catch {
+      // keep previous state
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={busy}
+      className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-navy disabled:opacity-50"
+    >
+      {busy ? "…" : blocked ? "Unblock" : "Block"}
+    </button>
+  );
+}
+
 export function MessagesThreadView({
   rows,
   fromEmail,
@@ -393,53 +461,84 @@ export function MessagesThreadView({
     accent === "client" ? "ml-auto bg-navy text-white" : "ml-auto bg-primary text-white";
   const linkAccent = accent === "client" ? "text-client-accent" : "text-primary";
 
-  const topLevel = useMemo(() => {
-    const roots = rows.filter((r) => !r.parent_message_id);
-    const sorted = [...roots].sort((a, b) =>
-      String(b.created_at || "").localeCompare(String(a.created_at || "")),
+  const peerThreads = useMemo(() => {
+    type Thread = {
+      key: string;
+      latest: MessageRow;
+      messages: MessageRow[];
+      unread: number;
+      peerEmail: string;
+      peerUid: string | null;
+    };
+    const map = new Map<string, Thread>();
+    for (const r of rows) {
+      const peerUid = counterpartUid(r, myUid);
+      const peerEmail = counterpartEmail(r, myUid, fromEmail).trim().toLowerCase();
+      const key = (peerUid || peerEmail || r.id).toLowerCase();
+      if (!key) continue;
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, {
+          key,
+          latest: r,
+          messages: [r],
+          unread: isUnread(r, myUid) ? 1 : 0,
+          peerEmail: peerEmail || counterpartEmail(r, myUid, fromEmail),
+          peerUid,
+        });
+      } else {
+        existing.messages.push(r);
+        if (isUnread(r, myUid)) existing.unread += 1;
+        if (String(r.created_at || "") > String(existing.latest.created_at || "")) {
+          existing.latest = r;
+        }
+        if (!existing.peerEmail && peerEmail) existing.peerEmail = peerEmail;
+        if (!existing.peerUid && peerUid) existing.peerUid = peerUid;
+      }
+    }
+    let list = Array.from(map.values()).map((t) => ({
+      ...t,
+      messages: [...t.messages].sort((a, b) =>
+        String(a.created_at || "").localeCompare(String(b.created_at || "")),
+      ),
+    }));
+    list.sort((a, b) =>
+      String(b.latest.created_at || "").localeCompare(String(a.latest.created_at || "")),
     );
     const q = search.trim().toLowerCase();
-    const searched = q
-      ? sorted.filter((r) => {
-          const hay = [
-            r.subject,
-            r.body,
-            r.from_email,
-            r.to_email,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-          return hay.includes(q);
-        })
-      : sorted;
+    if (q) {
+      list = list.filter((t) => {
+        const hay = [
+          t.peerEmail,
+          t.latest.subject,
+          t.latest.body,
+          ...t.messages.map((m) => `${m.subject || ""} ${m.body || ""}`),
+        ]
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      });
+    }
     if (filter === "unread") {
-      return searched.filter((r) => isUnread(r, myUid));
+      list = list.filter((t) => t.unread > 0);
     }
     if (filter === "archived") {
-      // Archive storage not wired yet — show empty intentionally
       return [];
     }
-    return searched;
-  }, [rows, filter, myUid, search]);
+    return list;
+  }, [rows, filter, myUid, fromEmail, search]);
 
-  const repliesFor = (parentId: string) =>
-    rows.filter((r) => r.parent_message_id === parentId);
-
-  const unreadCount = rows.filter(
-    (r) => !r.parent_message_id && isUnread(r, myUid),
-  ).length;
-  const selectedThread = topLevel.find((r) => r.id === selectedId) ?? topLevel[0] ?? null;
+  const unreadCount = peerThreads.reduce((n, t) => n + t.unread, 0);
+  const selectedThread =
+    peerThreads.find((t) => t.key === selectedId) ?? peerThreads[0] ?? null;
 
   useEffect(() => {
-    if (selectedId && !topLevel.some((r) => r.id === selectedId)) {
+    if (selectedId && !peerThreads.some((t) => t.key === selectedId)) {
       setSelectedId(null);
     }
-  }, [selectedId, topLevel]);
+  }, [selectedId, peerThreads]);
 
-  const overviewEmail = selectedThread
-    ? counterpartEmail(selectedThread, myUid, fromEmail)
-    : "";
+  const overviewEmail = selectedThread?.peerEmail || "";
   const overviewName = (overviewEmail || "Contact").split("@")[0];
 
   if (rows.length === 0) {
@@ -558,7 +657,7 @@ export function MessagesThreadView({
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-2">
-          {topLevel.length === 0 ? (
+          {peerThreads.length === 0 ? (
             <p className="mt-3 rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-text-secondary">
               {filter === "archived"
                 ? "No archived conversations."
@@ -568,15 +667,15 @@ export function MessagesThreadView({
             </p>
           ) : (
             <ul className="space-y-1.5">
-              {topLevel.map((r) => {
-                const incoming = isUnread(r, myUid) || r.from_uid !== myUid;
-                const active = selectedThread?.id === r.id;
-                const label = counterpartEmail(r, myUid, fromEmail) || r.from_email || "CLIVORA";
+              {peerThreads.map((t) => {
+                const r = t.latest;
+                const active = selectedThread?.key === t.key;
+                const label = t.peerEmail || r.from_email || "CLIVORA";
                 return (
-                  <li key={r.id}>
+                  <li key={t.key}>
                     <button
                       type="button"
-                      onClick={() => setSelectedId(r.id)}
+                      onClick={() => setSelectedId(t.key)}
                       className={`w-full rounded-xl border px-3 py-2.5 text-left transition ${
                         active ? activeThreadCls : "border-transparent bg-transparent hover:bg-slate-50"
                       }`}
@@ -594,9 +693,9 @@ export function MessagesThreadView({
                             <span className="truncate text-sm font-bold text-navy">
                               {label.split("@")[0]}
                             </span>
-                            {incoming && isUnread(r, myUid) && (
+                            {t.unread > 0 && (
                               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-sky-500 px-1 text-[10px] font-bold text-white">
-                                1
+                                {t.unread}
                               </span>
                             )}
                           </span>
@@ -621,10 +720,11 @@ export function MessagesThreadView({
       <section className="flex min-h-[28rem] flex-col xl:min-h-0">
         {selectedThread ? (
           (() => {
-            const replies = repliesFor(selectedThread.id);
-            const isIncoming = selectedThread.from_uid !== myUid;
-            const replyTo = counterpartEmail(selectedThread, myUid, fromEmail);
-            const threadMessages = [selectedThread, ...replies];
+            const threadMessages = selectedThread.messages;
+            const replyTo = selectedThread.peerEmail;
+            const latestIncoming = [...threadMessages]
+              .reverse()
+              .find((m) => isUnread(m, myUid));
             let lastDate = "";
             return (
               <div className="flex h-full min-h-[28rem] flex-col">
@@ -632,12 +732,12 @@ export function MessagesThreadView({
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h2 className="font-bold text-navy">
-                        {(replyTo || selectedThread.from_email || "CLIVORA").split("@")[0]}
+                        {(replyTo || "CLIVORA").split("@")[0]}
                       </h2>
                       <p className="text-xs text-text-muted">
-                        {selectedThread.subject || "Conversation"}
-                        {selectedThread.created_at
-                          ? ` · ${formatTime(selectedThread.created_at)}`
+                        {selectedThread.latest.subject || "Conversation"}
+                        {selectedThread.latest.created_at
+                          ? ` · ${formatTime(selectedThread.latest.created_at)}`
                           : ""}
                       </p>
                     </div>
@@ -648,28 +748,16 @@ export function MessagesThreadView({
                       >
                         View project
                       </Link>
-                      {isIncoming && isUnread(selectedThread, myUid) && (
+                      {selectedThread.peerUid && (
+                        <BlockPeerButton peerUid={selectedThread.peerUid} />
+                      )}
+                      {latestIncoming && (
                         <MarkReadButton
-                          messageId={selectedThread.id}
-                          readAt={selectedThread.read_at}
+                          messageId={latestIncoming.id}
+                          readAt={latestIncoming.read_at}
                         />
                       )}
                     </div>
-                  </div>
-                  <div
-                    className={`mt-3 rounded-xl border border-border px-3 py-2 text-xs ${
-                      isClient ? "bg-client-surface/50" : "bg-primary/5"
-                    }`}
-                  >
-                    <span className="font-semibold text-navy">
-                      {selectedThread.subject || "Shared project"}
-                    </span>
-                    <span className="mx-2 text-text-muted">·</span>
-                    <span className="text-text-secondary">Fixed Price</span>
-                    <span className="mx-2 inline-flex items-center gap-1 font-semibold text-sky-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-sky-500" />
-                      In Progress
-                    </span>
                   </div>
                 </div>
                 <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
@@ -693,6 +781,15 @@ export function MessagesThreadView({
                             incoming ? "bg-slate-100 text-navy" : outBubbleCls
                           }`}
                         >
+                          {msg.subject && (
+                            <p
+                              className={`mb-1 text-[11px] font-semibold ${
+                                incoming ? "text-text-muted" : "text-white/70"
+                              }`}
+                            >
+                              {msg.subject}
+                            </p>
+                          )}
                           <p className="text-sm whitespace-pre-wrap">{msg.body || "(empty)"}</p>
                           <div className="mt-1 flex flex-wrap items-center gap-2">
                             <p
@@ -715,12 +812,12 @@ export function MessagesThreadView({
                 <div className="border-t border-border p-3">
                   <ComposeForm
                     fromEmail={fromEmail}
-                    parentId={selectedThread.id}
-                    parentSubject={selectedThread.subject ?? undefined}
+                    parentId={selectedThread.messages[0]?.id}
+                    parentSubject={selectedThread.latest.subject ?? undefined}
                     compact
                     isClient={isClient}
                     defaultTo={replyTo || undefined}
-                    defaultToUid={counterpartUid(selectedThread, myUid)}
+                    defaultToUid={selectedThread.peerUid}
                   />
                 </div>
               </div>
@@ -762,7 +859,7 @@ export function MessagesThreadView({
             <p className="mt-2 text-sm text-text-secondary">Select a conversation.</p>
           )}
           <p className="mt-3 text-xs text-text-secondary">
-            {selectedThread?.subject || "Project conversation"}
+            {selectedThread?.latest.subject || "Project conversation"}
           </p>
         </div>
 
@@ -812,13 +909,10 @@ export function MessagesThreadView({
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
           <p className="mb-3 text-sm font-bold text-navy">Recent contacts</p>
           <ul className="space-y-3">
-            {rows
-              .filter((r) => !r.parent_message_id)
-              .slice(0, 4)
-              .map((r) => {
-                const email = counterpartEmail(r, myUid, fromEmail) || r.from_email || "?";
+            {peerThreads.slice(0, 4).map((t) => {
+                const email = t.peerEmail || t.latest.from_email || "?";
                 return (
-                  <li key={r.id} className="flex items-center gap-2">
+                  <li key={t.key} className="flex items-center gap-2">
                     <span
                       className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white ${
                         isClient ? "bg-navy" : "bg-primary"
@@ -831,7 +925,7 @@ export function MessagesThreadView({
                         {email.split("@")[0]}
                       </p>
                       <p className="truncate text-[11px] text-text-muted">
-                        {r.subject || (isClient ? "Freelancer" : "Client")}
+                        {t.latest.subject || (isClient ? "Freelancer" : "Client")}
                       </p>
                     </div>
                   </li>

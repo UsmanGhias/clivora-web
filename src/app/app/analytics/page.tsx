@@ -369,7 +369,7 @@ export default async function AnalyticsPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <ActivityFeed items={fin.activities} viewAllHref="/app/notifications" />
+        <ActivityFeed items={fin.activities} viewAllHref="/app/notifications" defaultCollapsed />
         <FreelancerCard title="Insights">
           <ul className="space-y-3 text-sm">
             <li className="rounded-xl bg-primary/5 px-3 py-3">

@@ -12,21 +12,35 @@ function formatElapsed(ms: number) {
   return [h, m, s].map((n) => String(n).padStart(2, "0")).join(":");
 }
 
+type ProjectOption = { id: string; name: string; pricing_type?: string | null; budget?: number | null };
+
 export function LiveTimer({
   ownerUid,
   projectName,
   projectId,
+  projects = [],
+  defaultHourlyRate = 0,
 }: {
   ownerUid: string;
   projectName?: string;
   projectId?: string;
+  projects?: ProjectOption[];
+  defaultHourlyRate?: number;
 }) {
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState(projectId || projects[0]?.id || "");
   const startedAt = useRef<number | null>(null);
+  const startedAtIso = useRef<string | null>(null);
+
+  const selected =
+    projects.find((p) => p.id === selectedProjectId) ||
+    (projectId
+      ? { id: projectId, name: projectName || "Project", pricing_type: "hourly", budget: defaultHourlyRate }
+      : null);
 
   useEffect(() => {
     if (!running) return;
@@ -42,6 +56,7 @@ export function LiveTimer({
     setMsg(null);
     if (!running) {
       startedAt.current = Date.now() - elapsed;
+      if (!startedAtIso.current) startedAtIso.current = new Date().toISOString();
       setRunning(true);
       return;
     }
@@ -57,23 +72,33 @@ export function LiveTimer({
     setMsg(null);
     try {
       const hours = Math.round((elapsed / 3600000) * 100) / 100;
+      const minutes = Math.max(1, Math.round(elapsed / 60000));
+      const rate =
+        selected?.pricing_type === "hourly" && Number(selected.budget) > 0
+          ? Number(selected.budget)
+          : defaultHourlyRate > 0
+            ? defaultHourlyRate
+            : 0;
       const supabase = createClient();
       const { error } = await supabase.from("crm_time_entries").insert({
         owner_uid: ownerUid,
-        description: `Timer · ${projectName || "Work session"}`,
+        description: `Timer · ${selected?.name || projectName || "Work session"}`,
         hours: Math.max(0.01, hours),
-        minutes: Math.round(elapsed / 60000),
+        minutes,
+        hourly_rate: rate,
         date: new Date().toISOString().slice(0, 10),
         work_date: new Date().toISOString().slice(0, 10),
         status: "pending",
         approval_status: "pending",
-        project_id: projectId || null,
+        project_id: selectedProjectId || projectId || null,
+        billable: true,
       });
       if (error) throw error;
       setElapsed(0);
       startedAt.current = null;
+      startedAtIso.current = null;
       setRunning(false);
-      setMsg(`Saved ${hours.toFixed(2)}h`);
+      setMsg(`Saved ${hours.toFixed(2)}h${rate > 0 ? ` @ ${rate}/hr` : ""}`);
       router.refresh();
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Could not save timer");
@@ -88,7 +113,31 @@ export function LiveTimer({
       <p className="mt-2 font-display text-3xl font-extrabold tracking-wider">
         {formatElapsed(elapsed)}
       </p>
-      <p className="mt-2 text-sm text-white/70">{projectName || "General work"}</p>
+      {projects.length > 0 ? (
+        <label className="mt-3 block text-xs text-white/70">
+          Project
+          <select
+            value={selectedProjectId}
+            onChange={(e) => setSelectedProjectId(e.target.value)}
+            disabled={running}
+            className="mt-1 w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm text-white"
+          >
+            {projects.map((p) => (
+              <option key={p.id} value={p.id} className="text-navy">
+                {p.name}
+                {p.pricing_type === "hourly" ? " · Hourly" : " · Fixed"}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <p className="mt-2 text-sm text-white/70">{projectName || "General work"}</p>
+      )}
+      {startedAtIso.current && (
+        <p className="mt-1 text-[11px] text-white/50">
+          Started {new Date(startedAtIso.current).toLocaleTimeString()}
+        </p>
+      )}
       <div className="mt-4 flex items-center gap-3">
         <button
           type="button"
@@ -100,13 +149,13 @@ export function LiveTimer({
         <button
           type="button"
           disabled={busy || elapsed < 1000}
-          onClick={() => void saveEntry()}
-          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-bold text-white hover:bg-white/20 disabled:opacity-40"
+          onClick={saveEntry}
+          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15 disabled:opacity-50"
         >
           {busy ? "Saving…" : "Save entry"}
         </button>
       </div>
-      {msg && <p className="mt-3 text-xs text-primary-light">{msg}</p>}
+      {msg && <p className="mt-3 text-xs text-white/80">{msg}</p>}
     </div>
   );
 }

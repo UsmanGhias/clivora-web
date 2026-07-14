@@ -329,6 +329,13 @@ export default async function TimesheetsPage() {
             ownerUid={uid}
             projectName={projects[0]?.name}
             projectId={projects[0]?.id}
+            defaultHourlyRate={profileHourly}
+            projects={projects.map((p) => ({
+              id: p.id,
+              name: p.name || "Project",
+              pricing_type: p.pricing_type ?? "fixed",
+              budget: Number(p.budget ?? 0) || null,
+            }))}
           />
           <DonutChart
             title="Today’s summary"
