@@ -130,8 +130,15 @@ export async function odooJsonRpc(
       id: Date.now(),
     }),
   });
-  const json = (await res.json()) as { result?: unknown; error?: { message?: string } };
-  if (json.error) throw new Error(json.error.message || "Odoo RPC error");
+  const json = (await res.json()) as {
+    result?: unknown;
+    error?: { message?: string; data?: { message?: string; name?: string } };
+  };
+  if (json.error) {
+    const detail =
+      json.error.data?.message || json.error.message || json.error.data?.name || "Odoo RPC error";
+    throw new Error(detail);
+  }
   return json.result;
 }
 
@@ -492,29 +499,24 @@ export async function pullContactsFromOdoo(options: {
     "write_date",
   ];
 
-  // Active Contacts with any identity signal (email/phone/company) — existing Contacts app only.
+  // Active contacts — simple domain (complex email!=false domains break on some Odoo 19 builds).
   const partners = (await odooJsonRpc(cfg.url, "object", "execute_kw", [
     cfg.db,
     uid,
     cfg.apiKey,
     "res.partner",
     "search_read",
-    [
-      [
-        "&",
-        ["active", "=", true],
-        "|",
-        "|",
-        ["email", "!=", false],
-        ["phone", "!=", false],
-        ["is_company", "=", true],
-      ],
-    ],
-    { fields: partnerFields, limit: 2000 },
+    [[["active", "=", true]]],
+    { fields: partnerFields, limit: 2000, order: "write_date desc" },
   ])) as OdooPartner[];
 
   const byId = new Map<number, OdooPartner>();
-  for (const p of partners) byId.set(p.id, p);
+  for (const p of partners) {
+    const email = p.email ? String(p.email).trim() : "";
+    const phone = (p.phone ? String(p.phone) : p.mobile ? String(p.mobile) : "").trim();
+    if (!p.is_company && !email && !phone) continue;
+    byId.set(p.id, p);
+  }
   const all = [...byId.values()];
 
   const existing = await fetchAllCrmCustomers();
@@ -608,21 +610,35 @@ export async function runBidirectionalSync(options: {
     direction: OdooSyncDirection;
     push?: Awaited<ReturnType<typeof pushContactsToOdoo>>;
     pull?: Awaited<ReturnType<typeof pullContactsFromOdoo>>;
+    warnings: string[];
     apps: string[];
     note: string;
   } = {
     ok: true,
     direction,
+    warnings: [],
     apps: ["Contacts"],
     note: "Two-way Contacts sync via existing Odoo Contacts app only — no new modules. Projects/invoices are mirrored into partner Internal Notes for tracking.",
   };
 
   // Pull first on "both" so Odoo-only contacts exist before we push back with tracking.
   if (direction === "pull" || direction === "both") {
-    result.pull = await pullContactsFromOdoo(options);
+    try {
+      result.pull = await pullContactsFromOdoo(options);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Odoo pull failed";
+      result.warnings.push(`Pull failed: ${msg}`);
+      if (direction === "pull") throw e;
+    }
   }
   if (direction === "push" || direction === "both") {
-    result.push = await pushContactsToOdoo(options);
+    try {
+      result.push = await pushContactsToOdoo(options);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Odoo push failed";
+      result.warnings.push(`Push failed: ${msg}`);
+      if (direction === "push") throw e;
+    }
   }
   return result;
 }

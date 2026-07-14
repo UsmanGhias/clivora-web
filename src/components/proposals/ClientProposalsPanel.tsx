@@ -1,22 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
-  CheckCircle2,
-  Headphones,
   MapPin,
   MessageSquare,
-  MoreHorizontal,
   Search,
-  ShieldCheck,
   Star,
   Plus,
   UserPlus,
   Bookmark,
   Settings,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { proposalStatusLabel, type ProposalRow } from "@/lib/connect-proposals-shared";
+import { parseConnectCreditError } from "@/lib/connect-credits";
 import { cn } from "@/lib/utils";
 import {
   ClientCard,
@@ -26,14 +25,14 @@ import {
   money,
 } from "@/components/client/ui";
 
-const TABS = ["all", "shortlisted", "hired", "declined", "withdrawn"] as const;
+const TABS = ["all", "pending", "shortlisted", "hired", "declined"] as const;
 
 function statusBucket(status: string) {
   const s = status.toLowerCase();
   if (s === "accepted") return "hired";
   if (s === "shortlisted") return "shortlisted";
   if (s === "declined") return "declined";
-  if (s === "withdrawn") return "withdrawn";
+  if (s === "pending" || s === "viewed") return "pending";
   return "all";
 }
 
@@ -48,11 +47,15 @@ function relTime(iso: string) {
 }
 
 export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }) {
+  const router = useRouter();
   const [tab, setTab] = useState<(typeof TABS)[number]>("all");
   const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const counts = useMemo(() => {
-    const c = { all: proposals.length, shortlisted: 0, hired: 0, declined: 0, withdrawn: 0 };
+    const c = { all: proposals.length, pending: 0, shortlisted: 0, hired: 0, declined: 0 };
     for (const p of proposals) {
       const b = statusBucket(p.status);
       if (b !== "all") c[b as keyof typeof c] += 1;
@@ -80,184 +83,186 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
         )
       : 0;
 
+  async function runAction(id: string, action: "accept" | "decline" | "shortlist") {
+    setBusyId(id);
+    setActionError(null);
+    try {
+      const supabase = createClient();
+      const rpc =
+        action === "accept"
+          ? "connect_accept_proposal"
+          : action === "decline"
+            ? "connect_decline_proposal"
+            : "connect_shortlist_proposal";
+      const { error } = await supabase.rpc(rpc, { p_proposal_id: id });
+      if (error) throw error;
+      startTransition(() => router.refresh());
+    } catch (e) {
+      setActionError(parseConnectCreditError(e).message);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
-    <div className="space-y-6 pb-10">
+    <div className="space-y-6">
       <ClientPageHeader
         title="Proposals"
-        subtitle="Review and manage proposals from freelancers."
+        subtitle="Review freelancer proposals, shortlist, hire, or message after accept."
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <ClientStatCard
-          label="Total proposals"
-          value={counts.all}
-          trend={counts.all > 0 ? "+18%" : undefined}
-          icon={Star}
-          iconTone="bg-sky-100 text-sky-800"
-        />
-        <ClientStatCard
-          label="Shortlisted"
-          value={counts.shortlisted}
-          trend="+12%"
-          icon={Bookmark}
-          iconTone="bg-violet-100 text-violet-700"
-        />
-        <ClientStatCard
-          label="Hired"
-          value={counts.hired}
-          trend="+25%"
-          icon={CheckCircle2}
-          iconTone="bg-emerald-100 text-emerald-700"
-        />
-        <ClientStatCard
-          label="Declined"
-          value={counts.declined}
-          trend={counts.declined > 0 ? "-8%" : undefined}
-          trendDown
-          icon={Star}
-          iconTone="bg-red-100 text-red-700"
-        />
-        <ClientStatCard
-          label="Withdrawn"
-          value={counts.withdrawn}
-          trend={counts.withdrawn > 0 ? "-4%" : undefined}
-          trendDown
-          icon={Star}
-          iconTone="bg-slate-100 text-slate-600"
-        />
+      {actionError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          {actionError}
+        </div>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <ClientStatCard label="Total" value={counts.all} />
+        <ClientStatCard label="Pending" value={counts.pending} />
+        <ClientStatCard label="Shortlisted" value={counts.shortlisted} />
+        <ClientStatCard label="Hired" value={counts.hired} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         <div className="space-y-4">
-          <div className="flex gap-1 overflow-x-auto border-b border-border">
+          <div className="flex flex-wrap items-center gap-2">
             {TABS.map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setTab(t)}
                 className={cn(
-                  "shrink-0 border-b-2 px-3 py-2.5 text-sm font-semibold capitalize",
+                  "rounded-full px-3 py-1.5 text-xs font-bold capitalize",
                   tab === t
-                    ? "border-client-accent text-navy"
-                    : "border-transparent text-text-muted",
+                    ? "bg-navy text-white"
+                    : "bg-client-surface text-text-secondary hover:bg-slate-100",
                 )}
               >
-                {t === "all" ? `All (${counts.all})` : `${t} (${counts[t]})`}
+                {t} ({counts[t as keyof typeof counts] ?? 0})
               </button>
             ))}
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <div className="ml-auto flex items-center gap-2 rounded-xl border border-border bg-white px-3 py-1.5">
+              <Search className="h-3.5 w-3.5 text-text-muted" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search proposals, skills, freelancers…"
-                className="w-full rounded-xl border border-border py-2.5 pl-10 pr-3 text-sm outline-none ring-client-accent focus:ring-2"
+                placeholder="Search proposals…"
+                className="w-40 bg-transparent text-sm outline-none"
               />
             </div>
-            <select className="rounded-xl border border-border px-3 py-2 text-sm font-semibold text-text-secondary">
-              <option>Sort by: Newest first</option>
-              <option>Highest bid</option>
-              <option>Lowest bid</option>
-            </select>
           </div>
 
           {filtered.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
-              <p className="font-semibold text-navy">No proposals in this view</p>
-              <p className="mt-2 text-sm text-text-secondary">
-                Post a job on Connect to start receiving freelancer bids.
+            <ClientCard title="No proposals">
+              <p className="text-sm text-text-secondary">
+                Post a job on Connect to receive proposals from freelancers.
               </p>
               <Link
                 href="/app/connect/manage"
-                className="mt-4 inline-block text-sm font-semibold text-client-accent"
+                className="mt-3 inline-flex rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white"
               >
-                Post a job →
+                Post a job
               </Link>
-            </div>
+            </ClientCard>
           ) : (
-            <ul className="space-y-4">
+            <ul className="space-y-3">
               {filtered.map((p) => {
                 const bucket = statusBucket(p.status);
+                const busy = busyId === p.id || pending;
                 return (
                   <li
                     key={p.id}
-                    className="rounded-2xl border border-border bg-surface p-5 shadow-sm transition hover:border-client-accent/30"
+                    className="rounded-2xl border border-border bg-white p-4 shadow-sm"
                   >
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-                      <div className="flex min-w-0 flex-1 gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-navy text-lg font-bold text-white">
-                          {(p.from_name || "F").charAt(0)}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-bold text-navy">{p.from_name}</h3>
-                            <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">
-                              <ShieldCheck className="h-3 w-3" />
-                              Verified
-                            </span>
-                            <ClientStatusPill
-                              tone={
-                                bucket === "hired"
-                                  ? "green"
-                                  : bucket === "shortlisted"
-                                    ? "violet"
-                                    : bucket === "declined"
-                                      ? "red"
-                                      : "blue"
-                              }
-                            >
-                              {bucket === "all" ? "New" : bucket}
-                            </ClientStatusPill>
-                          </div>
-                          <p className="mt-0.5 flex items-center gap-1 text-xs text-text-muted">
-                            <MapPin className="h-3 w-3" />
-                            {p.from_headline || "Freelancer"}
+                    <div className="flex flex-col gap-4 lg:flex-row lg:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-display text-lg font-bold text-navy">
+                            {p.from_name || "Freelancer"}
                           </p>
-                          <p className="mt-2 font-semibold text-navy">
-                            {p.need_title || "Open job"}
-                          </p>
-                          <p className="mt-1 line-clamp-2 text-sm text-text-secondary">{p.message}</p>
+                          <ClientStatusPill
+                            tone={
+                              bucket === "hired"
+                                ? "green"
+                                : bucket === "shortlisted"
+                                  ? "violet"
+                                  : bucket === "declined"
+                                    ? "red"
+                                    : "blue"
+                            }
+                          >
+                            {proposalStatusLabel(p.status)}
+                          </ClientStatusPill>
                         </div>
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-text-muted">
+                          <MapPin className="h-3 w-3" />
+                          {p.from_headline || "Freelancer"}
+                        </p>
+                        <p className="mt-2 font-semibold text-navy">
+                          {p.need_title || "Open job"}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-sm text-text-secondary">
+                          {p.message}
+                        </p>
                       </div>
                       <div className="shrink-0 space-y-1 text-right lg:w-40">
-                        <p className="text-xs text-text-muted">Proposal · {relTime(p.created_at)}</p>
+                        <p className="text-xs text-text-muted">
+                          Proposal · {relTime(p.created_at)}
+                        </p>
                         <p className="font-display text-xl font-extrabold text-navy">
                           {money(Number(p.amount ?? 0), 0)}
                         </p>
                         <p className="text-xs text-text-muted">Bid amount</p>
                         <p className="text-xs font-semibold text-text-secondary">
-                          Delivery · 10 days
+                          Delivery · {p.timeline_days ?? "—"} days
                         </p>
                       </div>
                     </div>
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                       <div className="flex items-center gap-1 text-xs text-amber-700">
                         <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                        5.0 · 100% job success
+                        {proposalStatusLabel(p.status)}
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="rounded-xl px-4 py-2 text-sm font-semibold text-client-accent"
-                        >
-                          Shortlist
-                        </button>
-                        <Link
-                          href="/app/messages"
-                          className="rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white"
-                        >
-                          View proposal
-                        </Link>
-                        <button
-                          type="button"
-                          className="rounded-lg p-2 text-text-muted hover:bg-client-surface"
-                          aria-label="More"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {(bucket === "pending" || bucket === "shortlisted") && (
+                          <>
+                            {bucket === "pending" && (
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void runAction(p.id, "shortlist")}
+                                className="rounded-xl px-4 py-2 text-sm font-semibold text-client-accent disabled:opacity-50"
+                              >
+                                Shortlist
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void runAction(p.id, "accept")}
+                              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                            >
+                              Hire
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void runAction(p.id, "decline")}
+                              className="rounded-xl border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50"
+                            >
+                              Decline
+                            </button>
+                          </>
+                        )}
+                        {bucket === "hired" && (
+                          <Link
+                            href={`/app/messages?to=${encodeURIComponent(p.from_user_id)}`}
+                            className="inline-flex items-center gap-1 rounded-xl bg-navy px-4 py-2 text-sm font-semibold text-white"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" /> Message
+                          </Link>
+                        )}
                       </div>
                     </div>
                   </li>
@@ -268,33 +273,20 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
         </div>
 
         <aside className="space-y-4">
-          <ClientCard
-            title="Proposal insights"
-            action={
-              <select className="rounded-lg border border-border px-2 py-1 text-[10px] font-semibold">
-                <option>This month</option>
-              </select>
-            }
-          >
+          <ClientCard title="Proposal insights">
             <ul className="space-y-4 text-sm">
-              {[
-                { label: "Response rate", value: "75%", pct: 75 },
-                { label: "Avg. bid amount", value: money(avgBid || 1120, 0), pct: 62 },
-                { label: "Avg. delivery time", value: "9 days", pct: 80 },
-              ].map((m) => (
-                <li key={m.label}>
-                  <div className="flex justify-between">
-                    <span className="text-text-secondary">{m.label}</span>
-                    <span className="font-bold text-navy">{m.value}</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-client-accent"
-                      style={{ width: `${m.pct}%` }}
-                    />
-                  </div>
-                </li>
-              ))}
+              <li className="flex justify-between">
+                <span className="text-text-secondary">Avg. bid</span>
+                <span className="font-bold text-navy">{money(avgBid, 0)}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-text-secondary">Pending</span>
+                <span className="font-bold text-navy">{counts.pending}</span>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-text-secondary">Hired</span>
+                <span className="font-bold text-navy">{counts.hired}</span>
+              </li>
             </ul>
           </ClientCard>
 
@@ -320,23 +312,6 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
                 );
               })}
             </ul>
-          </ClientCard>
-
-          <ClientCard>
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-client-surface text-client-accent">
-                <Headphones className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="font-semibold text-navy">Need help?</p>
-                <Link
-                  href="/app/support"
-                  className="mt-2 inline-flex rounded-xl bg-client-accent px-3 py-2 text-xs font-bold text-white"
-                >
-                  Visit Help Center
-                </Link>
-              </div>
-            </div>
           </ClientCard>
         </aside>
       </div>

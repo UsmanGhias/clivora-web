@@ -291,20 +291,15 @@ export function ConnectBoard({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Sign in required");
-      const { error: err } = await supabase
-        .from("connect_requests")
-        .update({
-          status: accept ? "accepted" : "declined",
-          ...(accept ? { revealed_at: new Date().toISOString() } : {}),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", requestId)
-        .eq("to_user_id", user.id);
+      const { error: err } = await supabase.rpc("connect_respond_request", {
+        p_request_id: requestId,
+        p_accept: accept,
+      });
       if (err) throw err;
-      setOk(accept ? "Accepted, emails are now visible." : "Request declined.");
+      setOk(accept ? "Accepted — you can message each other now." : "Request declined.");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      setError(parseConnectCreditError(err).message);
     } finally {
       setBusyId(null);
     }
@@ -1003,7 +998,11 @@ export function ConnectBoard({
                     >
                       Contact
                     </Link>
-                    {signedIn && isProPlus && myUserId && n.client_user_id !== myUserId && (
+                    {signedIn &&
+                      isProPlus &&
+                      !isClient &&
+                      myUserId &&
+                      n.client_user_id !== myUserId && (
                       <Link
                         href={`/app/connect/apply?needId=${encodeURIComponent(n.id)}&to=${encodeURIComponent(n.client_user_id)}&mode=proposal`}
                         className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary-dark hover:bg-primary/20"
@@ -1012,7 +1011,11 @@ export function ConnectBoard({
                       </Link>
                     )}
                   </div>
-                  {signedIn && isProPlus && myUserId && n.client_user_id !== myUserId && (
+                  {signedIn &&
+                    isProPlus &&
+                    isClient &&
+                    myUserId &&
+                    n.client_user_id === myUserId && (
                     <ConnectTrust
                       requestId={n.id}
                       myUserId={myUserId}

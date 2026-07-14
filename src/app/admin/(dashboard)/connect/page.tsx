@@ -15,18 +15,21 @@ import {
   PageLayout,
   SidePanel,
   SideCard,
-  money,
   fmtDate,
   ErrorBanner,
 } from "@/components/admin/ui";
 
 function nameOf(u: Record<string, unknown>) {
-  return String(u.full_name || u.name || u.display_name || u.email || "—");
+  return String(
+    u.display_title || u.full_name || u.name || u.display_name || u.headline || u.email || "—",
+  );
 }
 
 export default function AdminConnectPage() {
-  const { data, loading } = useAdminData();
+  const { data, loading, refresh } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const connect = data?.connect;
   const profiles = connect?.profiles ?? [];
   const needs = connect?.needs ?? [];
@@ -47,6 +50,35 @@ export default function AdminConnectPage() {
     requests: requests.length,
   };
 
+  async function moderate(
+    table: "connect_profiles" | "connect_need_posts",
+    id: string,
+    action: "approve" | "hide" | "verify",
+  ) {
+    setBusyId(id);
+    setActionError(null);
+    try {
+      const res = await fetch("/api/admin/marketplace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          table,
+          id,
+          verify: action === "verify",
+          verified: true,
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "Moderation failed");
+      await refresh();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Moderation failed");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div>
       {data?.warning && (
@@ -57,6 +89,7 @@ export default function AdminConnectPage() {
           }}
         />
       )}
+      {actionError && <ErrorBanner message={actionError} />}
 
       <AdminPageHeader
         title="Connect"
@@ -127,26 +160,51 @@ export default function AdminConnectPage() {
                       {profiles.length === 0 ? (
                         <EmptyRows cols={6} />
                       ) : (
-                        profiles.map((p) => (
-                          <tr key={String(p.id)} className="hover:bg-slate-50/80">
-                            <td className="px-3 py-3">
-                              <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />
-                            </td>
-                            <td className="px-3 py-3">
-                              <AvatarCell name={nameOf(p)} subtitle={p.verified ? "Verified" : undefined} />
-                            </td>
-                            <td className="max-w-[200px] truncate px-3 py-3 text-sm text-slate-600">
-                              {String(p.headline || "—")}
-                            </td>
-                            <td className="px-3 py-3">
-                              <StatusPill status={String(p.status || "active")} />
-                            </td>
-                            <td className="px-3 py-3 text-sm text-slate-600">{fmtDate(String(p.created_at ?? ""))}</td>
-                            <td className="px-3 py-3">
-                              <RowActions />
-                            </td>
-                          </tr>
-                        ))
+                        profiles.map((p) => {
+                          const mod = String(p.moderation_status || "pending");
+                          return (
+                            <tr key={String(p.id)} className="hover:bg-slate-50/80">
+                              <td className="px-3 py-3">
+                                <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />
+                              </td>
+                              <td className="px-3 py-3">
+                                <AvatarCell
+                                  name={nameOf(p)}
+                                  subtitle={p.is_verified ? "Verified" : undefined}
+                                />
+                              </td>
+                              <td className="max-w-[200px] truncate px-3 py-3 text-sm text-slate-600">
+                                {String(p.headline || "—")}
+                              </td>
+                              <td className="px-3 py-3">
+                                <StatusPill status={mod.replace(/_/g, " ")} />
+                              </td>
+                              <td className="px-3 py-3 text-sm text-slate-600">
+                                {fmtDate(String(p.created_at ?? ""))}
+                              </td>
+                              <td className="px-3 py-3">
+                                <RowActions
+                                  busy={busyId === String(p.id)}
+                                  onApprove={
+                                    mod !== "approved"
+                                      ? () => void moderate("connect_profiles", String(p.id), "approve")
+                                      : undefined
+                                  }
+                                  onVerify={
+                                    !p.is_verified
+                                      ? () => void moderate("connect_profiles", String(p.id), "verify")
+                                      : undefined
+                                  }
+                                  onHide={
+                                    mod !== "hidden"
+                                      ? () => void moderate("connect_profiles", String(p.id), "hide")
+                                      : undefined
+                                  }
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </AdminTable>
                   </div>
@@ -164,24 +222,44 @@ export default function AdminConnectPage() {
                       {needs.length === 0 ? (
                         <EmptyRows cols={6} />
                       ) : (
-                        needs.map((n) => (
-                          <tr key={String(n.id)} className="hover:bg-slate-50/80">
-                            <td className="px-3 py-3">
-                              <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />
-                            </td>
-                            <td className="px-3 py-3 font-bold text-slate-900">{String(n.title || "Need")}</td>
-                            <td className="px-3 py-3 text-sm font-semibold text-slate-700">
-                              {money(Number(n.budget_min ?? 0))} – {money(Number(n.budget_max ?? 0))}
-                            </td>
-                            <td className="px-3 py-3">
-                              <StatusPill status={String(n.status || "open").replace(/_/g, " ")} />
-                            </td>
-                            <td className="px-3 py-3 text-sm text-slate-600">{fmtDate(String(n.created_at ?? ""))}</td>
-                            <td className="px-3 py-3">
-                              <RowActions />
-                            </td>
-                          </tr>
-                        ))
+                        needs.map((n) => {
+                          const mod = String(n.moderation_status || "pending");
+                          const status = n.is_open ? mod : "closed";
+                          return (
+                            <tr key={String(n.id)} className="hover:bg-slate-50/80">
+                              <td className="px-3 py-3">
+                                <input type="checkbox" className="rounded border-slate-300" aria-label="Select row" />
+                              </td>
+                              <td className="px-3 py-3 font-bold text-slate-900">
+                                {String(n.title || "Need")}
+                              </td>
+                              <td className="px-3 py-3 text-sm font-semibold text-slate-700">
+                                {String(n.budget_band || "—")}
+                              </td>
+                              <td className="px-3 py-3">
+                                <StatusPill status={String(status).replace(/_/g, " ")} />
+                              </td>
+                              <td className="px-3 py-3 text-sm text-slate-600">
+                                {fmtDate(String(n.created_at ?? ""))}
+                              </td>
+                              <td className="px-3 py-3">
+                                <RowActions
+                                  busy={busyId === String(n.id)}
+                                  onApprove={
+                                    mod !== "approved"
+                                      ? () => void moderate("connect_need_posts", String(n.id), "approve")
+                                      : undefined
+                                  }
+                                  onHide={
+                                    mod !== "hidden"
+                                      ? () => void moderate("connect_need_posts", String(n.id), "hide")
+                                      : undefined
+                                  }
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </AdminTable>
                   </div>
@@ -208,12 +286,15 @@ export default function AdminConnectPage() {
                               {String(r.id).slice(0, 10)}
                             </td>
                             <td className="px-3 py-3 text-xs text-slate-600">
-                              {String(r.from_user_id ?? "—").slice(0, 8)} → {String(r.to_user_id ?? "—").slice(0, 8)}
+                              {String(r.from_user_id ?? "—").slice(0, 8)} →{" "}
+                              {String(r.to_user_id ?? "—").slice(0, 8)}
                             </td>
                             <td className="px-3 py-3">
                               <StatusPill status={String(r.status || "pending").replace(/_/g, " ")} />
                             </td>
-                            <td className="px-3 py-3 text-sm text-slate-600">{fmtDate(String(r.created_at ?? ""))}</td>
+                            <td className="px-3 py-3 text-sm text-slate-600">
+                              {fmtDate(String(r.created_at ?? ""))}
+                            </td>
                             <td className="px-3 py-3">
                               <RowActions />
                             </td>
@@ -259,8 +340,8 @@ export default function AdminConnectPage() {
 function EmptyRows({ cols }: { cols: number }) {
   return (
     <tr>
-      <td colSpan={cols} className="px-3 py-8 text-center text-sm text-slate-500">
-        No records found.
+      <td colSpan={cols} className="px-3 py-10 text-center text-sm text-slate-500">
+        No rows found.
       </td>
     </tr>
   );

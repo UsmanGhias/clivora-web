@@ -402,7 +402,6 @@ export function ConnectManagePanel() {
       location_label: listing.location_label.trim(),
       is_listed: listing.is_listed,
       account_type: accountType,
-      moderation_status: "pending",
       updated_at: new Date().toISOString(),
     };
     const firstPublish = listing.is_listed && !listing.id;
@@ -429,7 +428,7 @@ export function ConnectManagePanel() {
     }
     setMessage(
       firstPublish
-        ? `Profile published (−${CONNECT_CREDIT_COSTS.publish_profile} credits). It may appear after moderation.`
+        ? `Profile published (−${CONNECT_CREDIT_COSTS.publish_profile} credits). It is now listed on Connect.`
         : "Profile saved. Editing an active listing is free.",
     );
   }
@@ -1054,6 +1053,52 @@ export function ConnectManagePanel() {
                           }}
                         >
                           Close
+                        </button>
+                      )}
+                      {!n.is_open &&
+                        (n.moderation_status || "").toLowerCase() === "draft" && (
+                        <button
+                          type="button"
+                          className="ml-auto rounded-lg bg-primary px-2.5 py-1 font-semibold text-white"
+                          onClick={async () => {
+                            setSaving(true);
+                            setError(null);
+                            setMessage(null);
+                            const supabase = createClient();
+                            const skills = (n.skills || "")
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean);
+                            const { error: err } = await supabase.rpc("connect_publish_need", {
+                              p_title: n.title,
+                              p_summary: n.summary,
+                              p_skills: skills,
+                              p_budget_band: n.budget_band || "",
+                            });
+                            setSaving(false);
+                            if (err) {
+                              setError(parseConnectCreditError(err).message);
+                              return;
+                            }
+                            // Close the draft row so we don't keep two copies
+                            await supabase
+                              .from("connect_need_posts")
+                              .update({
+                                moderation_status: "archived",
+                                is_open: false,
+                                updated_at: new Date().toISOString(),
+                              })
+                              .eq("id", n.id);
+                            const {
+                              data: { user },
+                            } = await supabase.auth.getUser();
+                            if (user) await reloadNeeds(user.id);
+                            setMessage(
+                              `${isClient ? "Job" : "Need"} published (−${CONNECT_CREDIT_COSTS.publish_need} credits).`,
+                            );
+                          }}
+                        >
+                          Publish draft
                         </button>
                       )}
                     </div>

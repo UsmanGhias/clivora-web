@@ -23,7 +23,8 @@ export type ConnectCreditErrorCode =
   | "PROFILE_INCOMPLETE"
   | "ACTION_NOT_ALLOWED"
   | "DUPLICATE_ACTION"
-  | "AUTH_REQUIRED";
+  | "AUTH_REQUIRED"
+  | "PRO_PLUS_REQUIRED";
 
 export function parseConnectCreditError(error: unknown): {
   code: ConnectCreditErrorCode | "UNKNOWN";
@@ -42,6 +43,7 @@ export function parseConnectCreditError(error: unknown): {
     "ACTION_NOT_ALLOWED",
     "DUPLICATE_ACTION",
     "AUTH_REQUIRED",
+    "PRO_PLUS_REQUIRED",
   ] as const) {
     if (upper.includes(code)) {
       return { code, message: humanizeConnectCreditError(code) };
@@ -62,6 +64,8 @@ export function humanizeConnectCreditError(code: ConnectCreditErrorCode): string
       return "That Connect action was already processed.";
     case "AUTH_REQUIRED":
       return "Sign in to use Connect.";
+    case "PRO_PLUS_REQUIRED":
+      return "Connect writes require Pro Plus. Upgrade to publish jobs, apply, or contact talent.";
   }
 }
 

@@ -17,12 +17,18 @@ export type MessageRow = {
   attachments?: unknown;
 };
 
-export default async function MessagesPage() {
+export default async function MessagesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ to?: string }>;
+}) {
   const profile = await getProfile();
   const supabase = await createClient();
   const uid = profile?.id ?? "";
   const isClient = isClientAccount(profile);
   let rows: MessageRow[] = [];
+  const params = (await searchParams) ?? {};
+  const prefillToUid = params.to?.trim() || null;
 
   try {
     const email = (profile?.email || "").trim();
@@ -53,7 +59,7 @@ export default async function MessagesPage() {
         <p className="mt-1 text-sm text-text-secondary">
           {isClient
             ? "Talk with freelancers after Connect accept or on shared work."
-            : "Talk with clients, share files, and keep project conversations in one place."}
+            : "Talk with clients after Connect accept, share files, and keep conversations in one place."}
         </p>
       </div>
       <div className="min-h-0 flex-1">
@@ -62,6 +68,7 @@ export default async function MessagesPage() {
           fromEmail={profile?.email ?? ""}
           myUid={uid}
           isClient={isClient}
+          prefillToUid={prefillToUid}
         />
       </div>
     </div>

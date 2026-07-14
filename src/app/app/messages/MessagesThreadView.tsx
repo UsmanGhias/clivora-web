@@ -104,6 +104,15 @@ function ComposeForm({
     if (toEmail.trim() || !defaultToUid) return;
     (async () => {
       const supabase = createClient();
+      // Prefer Connect peer contact (revealed only after mutual/accept).
+      const { data: peer } = await supabase.rpc("connect_peer_contact", {
+        p_peer_id: defaultToUid,
+      });
+      const peerRow = Array.isArray(peer) ? peer[0] : peer;
+      if (peerRow?.email) {
+        setToEmail(peerRow.email);
+        return;
+      }
       const { data } = await supabase
         .from("profiles")
         .select("email")
@@ -128,15 +137,33 @@ function ComposeForm({
       let resolvedTo = to;
       let toUid: string | null = defaultToUid ?? null;
       if (!resolvedTo && defaultToUid) {
-        const { data: byId } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("id", defaultToUid)
-          .maybeSingle();
-        resolvedTo = (byId?.email || "").trim().toLowerCase();
+        const { data: peer } = await supabase.rpc("connect_peer_contact", {
+          p_peer_id: defaultToUid,
+        });
+        const peerRow = Array.isArray(peer) ? peer[0] : peer;
+        resolvedTo = (peerRow?.email || "").trim().toLowerCase();
         toUid = defaultToUid;
       }
       if (!resolvedTo) throw new Error("Recipient email is required");
+      if (!toUid) {
+        const { data: peerByEmail } = await supabase
+          .from("connect_request_details")
+          .select("from_user_id, to_user_id, from_email, to_email, status")
+          .eq("status", "accepted")
+          .or(`from_email.eq.${resolvedTo},to_email.eq.${resolvedTo}`)
+          .limit(5);
+        const hit = (peerByEmail ?? []).find((r) => {
+          const from = (r.from_email || "").toLowerCase();
+          const toE = (r.to_email || "").toLowerCase();
+          return from === resolvedTo || toE === resolvedTo;
+        });
+        if (hit) {
+          toUid =
+            (hit.from_email || "").toLowerCase() === resolvedTo
+              ? hit.from_user_id
+              : hit.to_user_id;
+        }
+      }
       if (!toUid) {
         const { data: prof } = await supabase
           .from("profiles")
@@ -300,11 +327,13 @@ export function MessagesThreadView({
   fromEmail,
   myUid,
   isClient = false,
+  prefillToUid = null,
 }: {
   rows: MessageRow[];
   fromEmail: string;
   myUid: string;
   isClient?: boolean;
+  prefillToUid?: string | null;
 }) {
   const [filter, setFilter] = useState<"all" | "unread" | "archived">("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -392,7 +421,7 @@ export function MessagesThreadView({
               : "Message clients from your CRM email, or continue after a Connect match."}
           </p>
           <div className="mx-auto mt-4 max-w-md">
-            <ComposeForm fromEmail={fromEmail} isClient={isClient} />
+            <ComposeForm fromEmail={fromEmail} isClient={isClient} defaultToUid={prefillToUid} />
           </div>
           <Link
             href="/connect"
@@ -723,7 +752,12 @@ export function MessagesThreadView({
 
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
           <p className="mb-3 text-sm font-bold text-navy">New message</p>
-          <ComposeForm fromEmail={fromEmail} isClient={isClient} compact />
+          <ComposeForm
+            fromEmail={fromEmail}
+            isClient={isClient}
+            compact
+            defaultToUid={prefillToUid}
+          />
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-sm">

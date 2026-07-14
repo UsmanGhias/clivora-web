@@ -126,6 +126,7 @@ export function OdooSyncButton() {
         hint?: string;
         push?: { created?: number; updated?: number; linked?: number; total?: number };
         pull?: { created?: number; updated?: number; skipped?: number; total?: number };
+        warnings?: string[];
         note?: string;
       };
       if (!res.ok) {
@@ -144,6 +145,9 @@ export function OdooSyncButton() {
         parts.push(
           `CLIVORA→Odoo created ${json.push.created ?? 0}, updated ${json.push.updated ?? 0} (scanned ${json.push.total ?? 0})`,
         );
+      }
+      if (json.warnings?.length) {
+        parts.push(`Warnings: ${json.warnings.join("; ")}`);
       }
       setMsg(parts.join(" · ") || json.note || "Sync complete");
       await refreshStatus();

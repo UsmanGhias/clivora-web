@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { PlayCircle, Zap } from "lucide-react";
 import { useAdminData } from "@/components/admin/AdminDataProvider";
 import {
@@ -14,22 +14,48 @@ import {
   PageLayout,
   SidePanel,
   SideCard,
-  money,
   fmtDate,
   ErrorBanner,
 } from "@/components/admin/ui";
 
 export default function AdminJobsPage() {
-  const { data, loading } = useAdminData();
+  const { data, loading, refresh } = useAdminData();
   const jobs = data?.jobs ?? [];
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const kpis = useMemo(() => {
     const total = jobs.length;
-    const active = jobs.filter((j) =>
-      ["open", "active", "published"].includes(String(j.status).toLowerCase()),
+    const active = jobs.filter(
+      (j) =>
+        Boolean(j.is_open) &&
+        String(j.moderation_status || "").toLowerCase() === "approved",
     ).length;
     return { total, active };
   }, [jobs]);
+
+  async function moderate(id: string, action: "approve" | "hide") {
+    setBusyId(id);
+    setActionError(null);
+    try {
+      const res = await fetch("/api/admin/marketplace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          table: "connect_need_posts",
+          id,
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(json.error || "Moderation failed");
+      await refresh?.();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Moderation failed");
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   return (
     <div>
@@ -41,6 +67,7 @@ export default function AdminJobsPage() {
           }}
         />
       )}
+      {actionError && <ErrorBanner message={actionError} />}
 
       <AdminPageHeader
         title="Jobs"
@@ -76,7 +103,7 @@ export default function AdminJobsPage() {
               </div>
             ) : (
               <AdminTable
-                headers={["Job title", "Status", "Budget range", "Created", "Actions"]}
+                headers={["Job title", "Status", "Budget", "Created", "Actions"]}
                 footer={<span>Showing {jobs.length} jobs</span>}
               >
                 {jobs.length === 0 ? (
@@ -87,12 +114,8 @@ export default function AdminJobsPage() {
                   </tr>
                 ) : (
                   jobs.map((j) => {
-                    const min = Number(j.budget_min ?? 0);
-                    const max = Number(j.budget_max ?? 0);
-                    const range =
-                      min || max
-                        ? `${money(min)} – ${money(max)}`
-                        : "—";
+                    const mod = String(j.moderation_status || "pending");
+                    const status = j.is_open ? mod : "closed";
                     return (
                       <tr key={String(j.id)} className="hover:bg-slate-50/80">
                         <td className="px-3 py-3">
@@ -100,15 +123,31 @@ export default function AdminJobsPage() {
                         </td>
                         <td className="px-3 py-3">
                           <div className="font-bold text-slate-900">{String(j.title || "Untitled job")}</div>
-                          <div className="text-xs text-slate-400">{String(j.category || j.budget_type || "")}</div>
+                          <div className="text-xs text-slate-400 line-clamp-1">
+                            {String(j.summary || "")}
+                          </div>
                         </td>
                         <td className="px-3 py-3">
-                          <StatusPill status={String(j.status || "draft").replace(/_/g, " ")} />
+                          <StatusPill status={status.replace(/_/g, " ")} />
                         </td>
-                        <td className="px-3 py-3 text-sm font-semibold text-slate-700">{range}</td>
+                        <td className="px-3 py-3 text-sm font-semibold text-slate-700">
+                          {String(j.budget_band || "—")}
+                        </td>
                         <td className="px-3 py-3 text-sm text-slate-600">{fmtDate(String(j.created_at ?? ""))}</td>
                         <td className="px-3 py-3">
-                          <RowActions />
+                          <RowActions
+                            busy={busyId === String(j.id)}
+                            onApprove={
+                              mod !== "approved"
+                                ? () => void moderate(String(j.id), "approve")
+                                : undefined
+                            }
+                            onHide={
+                              mod !== "hidden"
+                                ? () => void moderate(String(j.id), "hide")
+                                : undefined
+                            }
+                          />
                         </td>
                       </tr>
                     );
@@ -120,16 +159,11 @@ export default function AdminJobsPage() {
         }
         side={
           <SidePanel>
-            <SideCard title="Jobs by category">
-              <p className="text-xs text-slate-500">Jobs by category placeholder — category charts coming soon.</p>
-              <ul className="mt-3 space-y-2 text-sm">
-                {["Design", "Development", "Marketing", "Writing"].map((c) => (
-                  <li key={c} className="flex items-center justify-between">
-                    <span className="text-slate-600">{c}</span>
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">—</span>
-                  </li>
-                ))}
-              </ul>
+            <SideCard title="Moderation">
+              <p className="text-xs text-slate-500">
+                New jobs publish as approved so freelancers can apply immediately. Use Hide to
+                remove a listing from Connect.
+              </p>
             </SideCard>
           </SidePanel>
         }

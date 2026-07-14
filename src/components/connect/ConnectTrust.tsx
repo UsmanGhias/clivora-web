@@ -420,14 +420,16 @@ function ProposalsInbox({
 
   async function decline(proposalId: string) {
     setBusy(true);
+    setError(null);
     try {
       const supabase = createClient();
-      await supabase
-        .from("connect_proposals")
-        .update({ status: "declined", updated_at: new Date().toISOString() })
-        .eq("id", proposalId)
-        .eq("to_user_id", myUserId);
+      const { error: err } = await supabase.rpc("connect_decline_proposal", {
+        p_proposal_id: proposalId,
+      });
+      if (err) throw err;
       await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not decline proposal");
     } finally {
       setBusy(false);
     }

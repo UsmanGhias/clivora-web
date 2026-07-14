@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   MessageSquare,
@@ -9,7 +10,9 @@ import {
   ShoppingBag,
   Smartphone,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { proposalStatusLabel, type ProposalRow } from "@/lib/connect-proposals-shared";
+import { parseConnectCreditError } from "@/lib/connect-credits";
 import { cn } from "@/lib/utils";
 
 const TABS = ["all", "pending", "viewed", "shortlisted", "hired", "declined"] as const;
@@ -43,8 +46,12 @@ function JobIcon({ title }: { title: string }) {
 }
 
 export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow[] }) {
+  const router = useRouter();
   const [tab, setTab] = useState<(typeof TABS)[number]>("all");
   const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
   const counts = useMemo(() => {
     const fresh = { all: proposals.length, pending: 0, viewed: 0, shortlisted: 0, hired: 0, declined: 0 };
@@ -71,14 +78,37 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
     });
   }, [proposals, tab, query]);
 
+  async function withdraw(id: string) {
+    setBusyId(id);
+    setActionError(null);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("connect_withdraw_proposal", {
+        p_proposal_id: id,
+      });
+      if (error) throw error;
+      startTransition(() => router.refresh());
+    } catch (e) {
+      setActionError(parseConnectCreditError(e).message);
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-extrabold text-navy">My proposals</h1>
         <p className="mt-1 text-sm text-text-secondary">
-          Track and manage all proposals you&apos;ve submitted.
+          Track and manage all proposals you&apos;ve submitted. Message a client after they hire you.
         </p>
       </div>
+
+      {actionError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          {actionError}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2 border-b border-border pb-2">
         {TABS.map((t) => (
@@ -123,6 +153,9 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
           {filtered.map((p) => {
             const bucket = statusBucket(p.status);
             const hired = bucket === "hired";
+            const canWithdraw =
+              bucket === "pending" || bucket === "viewed" || bucket === "shortlisted";
+            const busy = busyId === p.id || pending;
             return (
               <li
                 key={p.id}
@@ -142,9 +175,13 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
                         <span className="text-sm font-semibold text-text-secondary">your bid</span>
                       </p>
                       <p className="mt-1 inline-flex items-center gap-1 text-xs text-text-secondary">
-                        Client: {p.to_name}
-                        <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                        <span className="text-success">Verified</span>
+                        Client: {hired ? p.to_name || "Client" : "Hidden until hire"}
+                        {hired && (
+                          <>
+                            <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                            <span className="text-success">Connected</span>
+                          </>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -159,17 +196,16 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
                   {!hired ? (
-                    <>
-                      <button type="button" className="text-sm font-semibold text-text-secondary">
-                        Withdraw
-                      </button>
+                    canWithdraw && (
                       <button
                         type="button"
-                        className="rounded-xl border-2 border-primary px-4 py-2 text-sm font-semibold text-primary"
+                        disabled={busy}
+                        onClick={() => void withdraw(p.id)}
+                        className="text-sm font-semibold text-text-secondary disabled:opacity-50"
                       >
-                        Edit proposal
+                        Withdraw
                       </button>
-                    </>
+                    )
                   ) : (
                     <Link
                       href="/app/projects"
@@ -178,13 +214,19 @@ export function FreelancerProposalsPanel({ proposals }: { proposals: ProposalRow
                       View project
                     </Link>
                   )}
-                  <Link
-                    href="/app/messages"
-                    className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-primary"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Message client
-                  </Link>
+                  {hired ? (
+                    <Link
+                      href={`/app/messages?to=${encodeURIComponent(p.to_user_id)}`}
+                      className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-primary"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      Message client
+                    </Link>
+                  ) : (
+                    <span className="ml-auto text-xs text-text-muted">
+                      Messaging unlocks after the client hires you
+                    </span>
+                  )}
                 </div>
               </li>
             );

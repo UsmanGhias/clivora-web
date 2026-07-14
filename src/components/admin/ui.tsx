@@ -283,18 +283,64 @@ export function AdminTable({
   );
 }
 
-export function RowActions() {
+export function RowActions({
+  onApprove,
+  onHide,
+  onVerify,
+  busy,
+}: {
+  onApprove?: () => void;
+  onHide?: () => void;
+  onVerify?: () => void;
+  busy?: boolean;
+} = {}) {
+  if (!onApprove && !onHide && !onVerify) {
+    return (
+      <div className="flex items-center gap-1 text-slate-400">
+        <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="View">
+          <Eye className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="Edit">
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="More">
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
   return (
-    <div className="flex items-center gap-1 text-slate-400">
-      <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="View">
-        <Eye className="h-3.5 w-3.5" />
-      </button>
-      <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="Edit">
-        <Pencil className="h-3.5 w-3.5" />
-      </button>
-      <button type="button" className="rounded-lg p-1.5 hover:bg-slate-100 hover:text-slate-700" title="More">
-        <MoreHorizontal className="h-3.5 w-3.5" />
-      </button>
+    <div className="flex flex-wrap items-center gap-1">
+      {onApprove && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onApprove}
+          className="rounded-lg bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+        >
+          Approve
+        </button>
+      )}
+      {onVerify && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onVerify}
+          className="rounded-lg bg-teal-50 px-2 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-100 disabled:opacity-50"
+        >
+          Verify
+        </button>
+      )}
+      {onHide && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onHide}
+          className="rounded-lg bg-rose-50 px-2 py-1 text-[11px] font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+        >
+          Hide
+        </button>
+      )}
     </div>
   );
 }
