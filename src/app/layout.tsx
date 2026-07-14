@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Sora } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -66,7 +67,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${jakarta.variable} ${sora.variable}`}>
-      <body className="min-h-screen overflow-x-hidden font-sans">{children}</body>
+      <body className="min-h-screen overflow-x-hidden font-sans">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
