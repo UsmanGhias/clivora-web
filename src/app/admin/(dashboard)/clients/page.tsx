@@ -26,7 +26,7 @@ function nameOf(u: Record<string, unknown>) {
 
 export default function AdminClientsPage() {
   const { data, loading } = useAdminData();
-  const clients = data?.clients ?? [];
+  const clients = useMemo(() => data?.clients ?? [], [data?.clients]);
 
   const kpis = useMemo(() => {
     const total = clients.length;

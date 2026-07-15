@@ -26,7 +26,7 @@ function nameOf(u: Record<string, unknown>) {
 
 export default function AdminPayoutsPage() {
   const { data, loading } = useAdminData();
-  const payments = data?.payments ?? [];
+  const payments = useMemo(() => data?.payments ?? [], [data?.payments]);
 
   const payouts = useMemo(
     () =>

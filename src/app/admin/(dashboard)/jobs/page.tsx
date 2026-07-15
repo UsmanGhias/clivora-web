@@ -20,7 +20,7 @@ import {
 
 export default function AdminJobsPage() {
   const { data, loading, refresh } = useAdminData();
-  const jobs = data?.jobs ?? [];
+  const jobs = useMemo(() => data?.jobs ?? [], [data?.jobs]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 

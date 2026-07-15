@@ -29,7 +29,7 @@ export default function AdminPaymentsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const payments = data?.payments ?? [];
+  const payments = useMemo(() => data?.payments ?? [], [data?.payments]);
 
   const kpis = useMemo(() => {
     const volume = payments.reduce((s, p) => s + Number(p.amount_usd ?? p.amount ?? 0), 0);

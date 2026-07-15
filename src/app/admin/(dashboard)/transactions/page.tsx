@@ -27,7 +27,7 @@ function nameOf(u: Record<string, unknown>) {
 
 export default function AdminTransactionsPage() {
   const { data, loading } = useAdminData();
-  const payments = data?.payments ?? [];
+  const payments = useMemo(() => data?.payments ?? [], [data?.payments]);
 
   const volume = useMemo(
     () => payments.reduce((s, p) => s + Number(p.amount_usd ?? p.amount ?? 0), 0),

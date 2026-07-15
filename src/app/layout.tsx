@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Sora } from "next/font/google";
 import { site } from "@/lib/site";
 import "./globals.css";
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
-  display: "swap",
-});
-
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-sora",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -65,7 +52,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${sora.variable}`}>
+    <html lang="en">
       <body className="min-h-screen overflow-x-hidden font-sans">{children}</body>
     </html>
   );

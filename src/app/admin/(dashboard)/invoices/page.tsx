@@ -22,7 +22,7 @@ import {
 export default function AdminInvoicesPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
-  const invoices = data?.invoices ?? [];
+  const invoices = useMemo(() => data?.invoices ?? [], [data?.invoices]);
 
   const kpis = useMemo(() => {
     const total = invoices.length;

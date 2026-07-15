@@ -27,7 +27,7 @@ function nameOf(u: Record<string, unknown>) {
 export default function AdminUsersPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
-  const users = data?.users ?? [];
+  const users = useMemo(() => data?.users ?? [], [data?.users]);
 
   const kpis = useMemo(() => {
     const total = data?.overview?.totalUsers || users.length;

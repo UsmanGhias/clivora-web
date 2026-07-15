@@ -22,7 +22,7 @@ import {
 export default function AdminProjectsPage() {
   const { data, loading } = useAdminData();
   const [activeTab, setActiveTab] = useState("all");
-  const projects = data?.projects ?? [];
+  const projects = useMemo(() => data?.projects ?? [], [data?.projects]);
 
   const kpis = useMemo(() => {
     const total = projects.length;

@@ -21,7 +21,7 @@ import {
 
 export default function AdminProposalsPage() {
   const { data, loading } = useAdminData();
-  const proposals = data?.proposals ?? [];
+  const proposals = useMemo(() => data?.proposals ?? [], [data?.proposals]);
 
   const kpis = useMemo(() => {
     const total = proposals.length;

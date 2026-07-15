@@ -21,7 +21,7 @@ import {
 
 export default function AdminEscrowPage() {
   const { data, loading } = useAdminData();
-  const escrow = data?.escrow ?? [];
+  const escrow = useMemo(() => data?.escrow ?? [], [data?.escrow]);
 
   const kpis = useMemo(() => {
     const total = escrow.reduce((s, e) => s + Number(e.amount ?? 0), 0);

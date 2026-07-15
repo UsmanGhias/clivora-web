@@ -1,6 +1,7 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr/dist/module/createServerClient";
+import type { CookieOptions } from "@supabase/ssr/dist/module/types";
 import { NextResponse, type NextRequest } from "next/server";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase-browser";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

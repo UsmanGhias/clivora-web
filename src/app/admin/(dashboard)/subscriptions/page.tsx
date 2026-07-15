@@ -27,7 +27,7 @@ function nameOf(u: Record<string, unknown>) {
 
 export default function AdminSubscriptionsPage() {
   const { data, loading } = useAdminData();
-  const users = data?.users ?? [];
+  const users = useMemo(() => data?.users ?? [], [data?.users]);
 
   const subs = useMemo(
     () =>

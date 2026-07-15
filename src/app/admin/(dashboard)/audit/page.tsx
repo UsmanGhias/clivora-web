@@ -23,7 +23,7 @@ import {
 
 export default function AdminAuditPage() {
   const { data, loading } = useAdminData();
-  const events = data?.events ?? [];
+  const events = useMemo(() => data?.events ?? [], [data?.events]);
 
   const audit = useMemo(
     () =>

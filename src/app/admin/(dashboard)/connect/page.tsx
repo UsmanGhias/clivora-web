@@ -31,9 +31,9 @@ export default function AdminConnectPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const connect = data?.connect;
-  const profiles = connect?.profiles ?? [];
-  const needs = connect?.needs ?? [];
-  const requests = connect?.requests ?? [];
+  const profiles = useMemo(() => connect?.profiles ?? [], [connect?.profiles]);
+  const needs = useMemo(() => connect?.needs ?? [], [connect?.needs]);
+  const requests = useMemo(() => connect?.requests ?? [], [connect?.requests]);
 
   const connections = useMemo(() => {
     return [
