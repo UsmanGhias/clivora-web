@@ -40,6 +40,7 @@ import { Logo } from "@/components/ui/Logo";
 import type { PortalNavCounts } from "@/lib/portal-nav";
 import { CommandPalette, type CommandItem } from "@/components/app/CommandPalette";
 import { UserAvatar } from "@/components/app/UserAvatar";
+import { EarlyAccessProPopup } from "@/components/app/EarlyAccessProPopup";
 
 type NavItem = {
   href: string;
@@ -492,7 +493,7 @@ export function AppShell({
                 isClient ? "bg-white/15 hover:bg-white/25" : "bg-primary",
               )}
             >
-              {plus ? "You're on Plus — enjoy" : "Manage plan"}
+              {plus ? "You're on Plus, enjoy" : "Manage plan"}
             </Link>
           </div>
         </div>
@@ -557,7 +558,7 @@ export function AppShell({
                 title={plus ? `You're on ${plan}` : "Upgrade to Pro Plus"}
               >
                 <Sparkles className="h-3.5 w-3.5" />
-                {plus ? `${plan} · Enjoy` : "Pro Plus"}
+                {plus ? `${plan} Enjoy` : "Pro Plus"}
               </Link>
               <Link href={profileHref} className="block shrink-0">
                 <UserAvatar
@@ -607,6 +608,8 @@ export function AppShell({
           })}
         </div>
       </nav>
+
+      <EarlyAccessProPopup isClient={isClient} />
 
       <CommandPalette
         open={commandOpen}

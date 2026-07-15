@@ -8,6 +8,7 @@ import { site } from "@/lib/site";
 import { authErrorMessage, isRateLimitError } from "@/lib/auth-errors";
 import { ResendVerification } from "@/components/auth/ResendVerification";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { earlyAccessPlanForSignup } from "@/lib/early-access";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function SignupForm() {
         email: trimmedEmail,
         name: name.trim(),
         account_type: accountType,
-        subscription_plan: "free",
+        subscription_plan: earlyAccessPlanForSignup(),
         updated_at: new Date().toISOString(),
       });
     }
@@ -80,7 +81,7 @@ export default function SignupForm() {
     <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60 sm:p-8">
       <h1 className="font-display text-2xl font-extrabold text-navy">Create account</h1>
       <p className="mt-1.5 text-sm text-slate-500">
-        Free to start. Same account works on web and Android.
+        Register before July 22, 2026 and your account gets Pro free, not Pro Plus.
       </p>
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-slate-200 bg-[#F8FAFC] p-1">
@@ -146,7 +147,7 @@ export default function SignupForm() {
           disabled={loading}
           className="w-full rounded-xl bg-primary py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:bg-primary-dark disabled:opacity-60"
         >
-          {loading ? "Creating…" : "Create free account"}
+          {loading ? "Creating…" : "Create account and claim Pro"}
         </button>
       </form>
       <div className="my-5 flex items-center gap-3 text-xs font-medium text-slate-400">
