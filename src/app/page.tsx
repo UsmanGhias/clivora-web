@@ -10,6 +10,7 @@ import { WorkspaceSection } from "@/components/marketing/WorkspaceSection";
 import { FAQSection } from "@/components/marketing/FAQSection";
 import { PlayStorePromoSection } from "@/components/marketing/PlayStorePromoSection";
 import { CTASection } from "@/components/marketing/CTASection";
+import { EarlyAccessRewardPopup } from "@/components/marketing/EarlyAccessRewardPopup";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <MarketingShell>
+      <EarlyAccessRewardPopup />
       <HomeHero />
       <TrustLogos />
       <DualPortalSection />
