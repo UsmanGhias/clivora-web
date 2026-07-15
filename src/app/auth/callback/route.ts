@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
+import { earlyAccessPlanForSignup } from "@/lib/early-access";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -20,6 +21,14 @@ export async function GET(request: Request) {
         (meta.account_type as string | undefined) ||
         (meta.accountType as string | undefined) ||
         "freelancer";
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("subscription_plan")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      const existingPlan = String(existingProfile?.subscription_plan ?? "").toLowerCase();
+      const subscriptionPlan = existingPlan && existingPlan !== "free" ? existingPlan : earlyAccessPlanForSignup();
+
       await supabase.from("profiles").upsert({
         id: data.user.id,
         email: data.user.email ?? "",
@@ -29,6 +38,7 @@ export async function GET(request: Request) {
           data.user.email?.split("@")[0] ||
           "",
         account_type: accountType === "client" ? "client" : "freelancer",
+        subscription_plan: subscriptionPlan,
         updated_at: new Date().toISOString(),
       });
       return NextResponse.redirect(`${base}${next.startsWith("/") ? next : `/${next}`}`);
