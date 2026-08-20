@@ -5,8 +5,8 @@
 export function toMinorUnits(amount: number | string | null | undefined, fractionDigits = 2): number {
   const n = typeof amount === "string" ? Number(amount) : Number(amount ?? 0);
   if (!Number.isFinite(n)) return 0;
-  const factor = 10 ** fractionDigits;
-  return Math.round(n * factor);
+  // Exponential form avoids IEEE 754 cases like 1.005 * 100 === 100.4999…
+  return Math.round(Number(`${n}e${fractionDigits}`));
 }
 
 export function fromMinorUnits(minor: number | null | undefined, fractionDigits = 2): number {

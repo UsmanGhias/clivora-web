@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  joinRetrievedContext,
+  sanitizeIlikeTerm,
+  type CrmEmbeddingRow,
+} from "@/lib/crm-rag";
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ?? "https://jtzjwgovqczlccyeujhq.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -226,25 +228,39 @@ function buildCrmTip(query: string, agg: CrmAggregates): string {
   return lines.join("\n\n");
 }
 
-async function hasEmbeddings(ownerUid: string): Promise<boolean> {
-  if (!SUPABASE_SERVICE_ROLE_KEY) return false;
+async function retrieveEmbeddingContext(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ownerUid: string,
+  query: string,
+): Promise<{ text: string; source: "keyword" | "recent" | "none" }> {
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/crm_embeddings?owner_uid=eq.${encodeURIComponent(ownerUid)}&select=id&limit=1`,
-      {
-        headers: {
-          apikey: SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-        cache: "no-store",
-      },
-    );
-    if (!res.ok) return false;
-    const rows = (await res.json()) as unknown[];
-    return rows.length > 0;
+    const term = sanitizeIlikeTerm(query);
+    if (term.length >= 2) {
+      const { data, error } = await supabase
+        .from("crm_embeddings")
+        .select("content, entity_type")
+        .eq("owner_uid", ownerUid)
+        .ilike("content", `%${term}%`)
+        .limit(8);
+      if (!error && data?.length) {
+        const text = joinRetrievedContext(data as CrmEmbeddingRow[]);
+        if (text) return { text, source: "keyword" };
+      }
+    }
+    const { data, error } = await supabase
+      .from("crm_embeddings")
+      .select("content, entity_type")
+      .eq("owner_uid", ownerUid)
+      .order("updated_at", { ascending: false })
+      .limit(8);
+    if (!error && data?.length) {
+      const text = joinRetrievedContext(data as CrmEmbeddingRow[]);
+      if (text) return { text, source: "recent" };
+    }
   } catch {
-    return false;
+    /* Keep aggregate Ask AI if embeddings are empty or unavailable. */
   }
+  return { text: "", source: "none" };
 }
 
 async function callOpenAi(query: string, context: string): Promise<string | null> {
@@ -355,35 +371,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    let context = "";
-    context = [
+    const retrieved = await retrieveEmbeddingContext(supabase, user.id, query);
+    const context = [
       `CRM aggregates: ${aggregates.customers} clients, ${aggregates.projects} projects (${aggregates.activeProjects} active), ${aggregates.invoices} invoices (${aggregates.paidInvoices} paid / ${formatMoney(aggregates.paidTotal)}, ${aggregates.overdueInvoices} overdue, ~${formatMoney(aggregates.unpaidTotal)} open).`,
-    ].join("\n");
-
-    if (SUPABASE_SERVICE_ROLE_KEY && (await hasEmbeddings(user.id))) {
-      try {
-        const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/crm_embeddings?owner_uid=eq.${encodeURIComponent(user.id)}&select=content,source_type&limit=8`,
-          {
-            headers: {
-              apikey: SUPABASE_SERVICE_ROLE_KEY,
-              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            cache: "no-store",
-          },
-        );
-        if (res.ok) {
-          const rows = (await res.json()) as Array<{ content?: string; source_type?: string }>;
-          const emb = rows
-            .map((r) => `[${r.source_type ?? "crm"}] ${r.content ?? ""}`)
-            .join("\n")
-            .slice(0, 4000);
-          if (emb) context = `${context}\n${emb}`;
-        }
-      } catch {
-        /* keep aggregate context */
-      }
-    }
+      retrieved.text,
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     const answer =
       (await callOpenAi(query, context)) || (await callAnthropic(query, context));
@@ -399,7 +393,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       answer,
-      source: "llm_with_context",
+      source:
+        retrieved.source === "none" ? "llm_with_aggregates" : `llm_with_${retrieved.source}_rag`,
       mode: "llm",
     });
   } catch (err) {

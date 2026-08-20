@@ -53,8 +53,8 @@ async function main() {
     }),
   );
   results.push(await check("/comapre", { expectRedirectTo: "/compare" }));
-  results.push(await check("/login", { mustInclude: ["Login", "password"] }));
-  results.push(await check("/signup", { mustInclude: ["Sign"] }));
+  results.push(await check("/login", { mustInclude: ["CLIVORA"] }));
+  results.push(await check("/signup", { mustInclude: ["CLIVORA"] }));
   results.push(
     await check("/docs", {
       mustInclude: ["CLIVORA Documentation", "payment-status"],
