@@ -13,19 +13,44 @@ export function FounderNoteSection() {
       </div>
 
       <div className="relative mx-auto max-w-7xl px-5 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16 lg:items-start">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-teal-300">
-              Why CLIVORA exists
-            </p>
-            <h2
-              id="founder-note-heading"
-              className="mt-4 font-display text-3xl font-extrabold leading-[1.15] tracking-tight sm:text-4xl"
-            >
-              Marketplaces tax both sides. I built an OS where you hire, deliver, and invoice - without
-              losing a cut of the deal.
-            </h2>
-            <div className="mt-6 flex flex-wrap gap-3">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 lg:items-stretch">
+          {/* Left Column: Heading, Proof Points & Action Buttons */}
+          <div className="flex flex-col justify-between space-y-6">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-teal-300">
+                Why CLIVORA exists
+              </p>
+              <h2
+                id="founder-note-heading"
+                className="mt-3 font-display text-3xl font-extrabold leading-[1.18] tracking-tight sm:text-4xl"
+              >
+                Marketplaces tax both sides. I built an OS where you hire, deliver, and invoice without
+                losing a cut of the deal.
+              </h2>
+
+              <ul className="mt-6 space-y-3 text-sm text-white/80">
+                <li className="flex items-center gap-3">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-400/20 text-teal-300 text-xs font-bold">
+                    ✓
+                  </span>
+                  <span>$0 platform commission on all negotiated deals</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-400/20 text-teal-300 text-xs font-bold">
+                    ✓
+                  </span>
+                  <span>Clients pay directly against your milestone invoices</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-400/20 text-teal-300 text-xs font-bold">
+                    ✓
+                  </span>
+                  <span>Unified workspace synced across web and Android</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex flex-wrap gap-3 pt-2">
               <Link
                 href="/signup?role=freelancer"
                 className="inline-flex rounded-xl bg-teal-400 px-5 py-3 text-sm font-bold text-navy shadow-lg shadow-teal-900/20 transition hover:bg-teal-300"
@@ -41,75 +66,48 @@ export function FounderNoteSection() {
             </div>
           </div>
 
-          <div className="space-y-5 rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
-            <p className="text-[15px] leading-relaxed text-white/80 sm:text-base">
-              I&apos;m{" "}
-              <a
-                href="https://usmanghias.co.uk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-white underline decoration-teal-400 decoration-2 underline-offset-4 hover:text-teal-300 transition-colors"
-              >
-                Usman Ghias
-              </a>
-              , Founder and Lead Architect building CLIVORA at{" "}
-              <a
-                href="https://codcrafters.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-teal-300 hover:underline"
-              >
-                CODCrafters
-              </a>
-              . Between client work and shipping the Android app, I watched freelancers lose fees on every invoice and clients pay extra for the same marketplace middleman, while CRM, proposals, and files lived in five different tabs.
-            </p>
-            <p className="text-[15px] leading-relaxed text-white/80 sm:text-base">
-              CLIVORA is the opposite bet: a{" "}
-              <strong className="font-semibold text-white">complete Freelancer OS</strong> with private Connect (emails unlock only after mutual accept), CRM, projects, timesheets, messages, and invoices.{" "}
-              <strong className="font-semibold text-white">$0 platform fee</strong> on the rate you negotiate. Clients pay freelancers directly against your invoice. One account for web and the Android app so your business doesn&apos;t reset when you leave the desk.
-            </p>
-            <p className="text-sm leading-relaxed text-white/55">
-              Built for freelancers and clients worldwide. If something feels broken, email{" "}
-              <a
-                className="font-semibold text-teal-300 underline decoration-teal-400/50 underline-offset-2 hover:text-teal-200"
-                href="mailto:contact@clivora.io"
-              >
-                contact@clivora.io
-              </a>
-              . I read every message.
-            </p>
-
-            {/* Founder Verification & Portfolio Link */}
-            <div className="flex items-center gap-3.5 rounded-2xl border border-teal-500/20 bg-teal-950/30 p-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-500/20 text-teal-300 font-bold text-sm border border-teal-500/30 shadow-inner">
-                UG
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <a
-                    href="https://usmanghias.co.uk"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-bold text-white hover:text-teal-300 transition-colors text-sm"
-                  >
-                    Usman Ghias
-                  </a>
-                  <a
-                    href="https://usmanghias.co.uk"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-md bg-teal-400/10 px-2 py-0.5 text-[11px] font-mono text-teal-300 border border-teal-400/20 hover:bg-teal-400/20 transition-colors"
-                  >
-                    https://usmanghias.co.uk ↗
-                  </a>
-                </div>
-                <p className="text-xs text-white/60">
-                  Founder &amp; Lead Architect · CLIVORA &amp; CODCrafters
-                </p>
-              </div>
+          {/* Right Column: Founder Narrative Card */}
+          <div className="flex flex-col justify-between space-y-5 rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
+            <div className="space-y-4">
+              <p className="text-[15px] leading-relaxed text-white/80 sm:text-base">
+                I&apos;m{" "}
+                <a
+                  href="https://usmanghias.co.uk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-white underline decoration-teal-400 decoration-2 underline-offset-4 hover:text-teal-300 transition-colors"
+                >
+                  Usman Ghias
+                </a>
+                , Founder and Lead Architect building CLIVORA at{" "}
+                <a
+                  href="https://codcrafters.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-teal-300 hover:underline"
+                >
+                  CODCrafters
+                </a>
+                . Between client work and shipping the Android app, I watched freelancers lose fees on every invoice and clients pay extra for the same marketplace middleman, while CRM, proposals, and files lived in five different tabs.
+              </p>
+              <p className="text-[15px] leading-relaxed text-white/80 sm:text-base">
+                CLIVORA is the opposite bet: a{" "}
+                <strong className="font-semibold text-white">complete Freelancer OS</strong> with private Connect (emails unlock only after mutual accept), CRM, projects, timesheets, messages, and invoices.{" "}
+                <strong className="font-semibold text-white">$0 platform fee</strong> on the rate you negotiate. Clients pay freelancers directly against your invoice. One account for web and the Android app so your business doesn&apos;t reset when you leave the desk.
+              </p>
+              <p className="text-sm leading-relaxed text-white/60">
+                Built for freelancers and clients worldwide. If something feels broken, email{" "}
+                <a
+                  className="font-semibold text-teal-300 underline decoration-teal-400/50 underline-offset-2 hover:text-teal-200"
+                  href="mailto:contact@clivora.io"
+                >
+                  contact@clivora.io
+                </a>
+                . I read every message.
+              </p>
             </div>
 
-            <div className="flex flex-wrap gap-4 border-t border-white/10 pt-5 text-xs font-semibold uppercase tracking-wide text-teal-200/90">
+            <div className="flex flex-wrap gap-4 border-t border-white/10 pt-4 text-xs font-semibold uppercase tracking-wide text-teal-200/90">
               <span>For freelancers: keep your rate</span>
               <span className="text-white/25">·</span>
               <span>For clients: hire without fee stacking</span>
