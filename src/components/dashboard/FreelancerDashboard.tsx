@@ -401,7 +401,7 @@ export function FreelancerDashboard({
             </div>
           </div>
           <Link
-            href="/app/hub"
+            href="/app/ai"
             className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-primary-dark"
           >
             Try AI Assistant

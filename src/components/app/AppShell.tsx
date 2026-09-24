@@ -46,6 +46,7 @@ import type { PortalNavCounts } from "@/lib/portal-nav";
 import { CommandPalette, type CommandItem } from "@/components/app/CommandPalette";
 import { UserAvatar } from "@/components/app/UserAvatar";
 import { EarlyAccessProPopup } from "@/components/app/EarlyAccessProPopup";
+import { ClivoraAiModal } from "@/components/ai/ClivoraAiModal";
 
 type NavItem = {
   href: string;
@@ -155,6 +156,7 @@ export function AppShell({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [aiModalOpen, setAiModalOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const [enabledFlags, setEnabledFlags] = useState<Record<string, boolean>>({});
 
@@ -229,6 +231,11 @@ export function AppShell({
         label: "Growth & tools",
         icon: Sparkles,
         items: [
+          {
+            href: "/app/ai",
+            label: "CLIVORA AI",
+            icon: Sparkles,
+          },
           {
             href: "/app/campaigns",
             label: "Campaigns",
@@ -326,6 +333,11 @@ export function AppShell({
         label: "Growth & tools",
         icon: Sparkles,
         items: [
+          {
+            href: "/app/ai",
+            label: "CLIVORA AI",
+            icon: Sparkles,
+          },
           {
             href: "/app/campaigns",
             label: "Campaigns",
@@ -931,6 +943,15 @@ export function AppShell({
                   </span>
                 )}
               </Link>
+              <button
+                type="button"
+                onClick={() => setAiModalOpen(true)}
+                className="group relative flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition shadow-sm"
+                title="CLIVORA AI Assistant (Proposals, Invoices & Health)"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span className="hidden sm:inline">AI Assistant</span>
+              </button>
               <Link
                 href="/app/settings"
                 className={cn(
@@ -992,6 +1013,11 @@ export function AppShell({
       </nav>
 
       <EarlyAccessProPopup isClient={isClient} />
+
+      <ClivoraAiModal
+        open={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+      />
 
       <CommandPalette
         open={commandOpen}

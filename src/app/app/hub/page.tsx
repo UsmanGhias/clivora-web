@@ -103,6 +103,7 @@ export default async function HubPage() {
           Available on web
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
+          <HubLink href="/app/ai" title="CLIVORA AI" body="Proposals, invoices & health advisory" icon={Sparkles} tone="teal" />
           <HubLink href="/app/clients" title="Clients" body="Cloud CRM" icon={Users} />
           <HubLink href="/app/projects" title="Work" body="Projects" icon={FolderKanban} />
           <HubLink href="/app/invoices" title="Billing" body="Invoices" icon={FileText} />
@@ -127,7 +128,7 @@ export default async function HubPage() {
           Best in the mobile app
         </h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <AppPreferred title="AI assistant" body="Drafts, summaries, coaching" icon={Sparkles} />
+          <AppPreferred title="Offline SQLite Outbox" body="Local Drift sync & biometrics" icon={Sparkles} />
           <AppPreferred title="Calendar & time" body="Scheduling and timers" icon={Calendar} />
           <AppPreferred title="Reports & analytics" body="Revenue charts" icon={LayoutDashboard} />
           <AppPreferred title="Contracts & vault" body="PDFs and secure files" icon={FileText} />

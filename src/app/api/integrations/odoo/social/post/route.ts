@@ -19,6 +19,9 @@ export async function POST(request: Request) {
       imageName?: string;
       jobId?: string;
       accountIds?: number[];
+      firstComment?: string;
+      facebookFirstComment?: string;
+      linkedinFirstComment?: string;
       autoPublish?: boolean;
     };
 
@@ -69,6 +72,9 @@ export async function POST(request: Request) {
       imageBase64: body.imageBase64,
       imageName: body.imageName,
       accountIds: body.accountIds,
+      firstComment: body.firstComment,
+      facebookFirstComment: body.facebookFirstComment,
+      linkedinFirstComment: body.linkedinFirstComment,
       autoPublish: body.autoPublish !== false,
     });
 

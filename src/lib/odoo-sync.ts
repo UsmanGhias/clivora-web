@@ -1174,6 +1174,9 @@ export async function publishToOdooSocial(options: {
   imageBase64?: string;
   imageName?: string;
   accountIds?: number[];
+  firstComment?: string;
+  facebookFirstComment?: string;
+  linkedinFirstComment?: string;
   autoPublish?: boolean;
 }): Promise<OdooSocialPublishResult> {
   try {
@@ -1219,6 +1222,16 @@ export async function publishToOdooSocial(options: {
       state: "draft",
     };
 
+    if (options.firstComment) {
+      postValues.first_comment = options.firstComment;
+    }
+    if (options.facebookFirstComment) {
+      postValues.facebook_first_comment = options.facebookFirstComment;
+    }
+    if (options.linkedinFirstComment) {
+      postValues.linkedin_first_comment = options.linkedinFirstComment;
+    }
+
     if (imageIds.length > 0) {
       postValues.image_ids = [[6, 0, imageIds]];
     }
@@ -1259,6 +1272,8 @@ export async function publishToOdooSocial(options: {
 
 /**
  * Formats and broadcasts a CLIVORA remote job directly to social media channels
+ * Places the direct canonical job URL into the first comment to avoid platform penalties
+ * and prevent Odoo link tracker short-url rewriting.
  */
 export async function publishJobToSocial(job: {
   title: string;
@@ -1284,29 +1299,35 @@ export async function publishJobToSocial(job: {
   const jobUrl = job.seo_slug
     ? `https://clivora.io/jobs/${categorySlug}/${job.seo_slug}`
     : "https://clivora.io/jobs";
+  const cleanDomainUrl = jobUrl.replace("https://", "").replace("http://", "");
 
   const message = [
-    `🚀 NEW REMOTE ROLE: ${job.title} at ${job.company_name}`,
-    `💰 Compensation: ${salaryText}`,
-    `📍 Location: ${job.location || "Remote (Worldwide)"}`,
-    `⚡ 0% Platform Fees for Freelancers & Clients!`,
+    `New Remote Position: ${job.title} at ${job.company_name}`,
+    `Compensation: ${salaryText}`,
+    `Location: ${job.location || "Remote (Worldwide)"}`,
+    `Platform Fee: 0% on direct agreements`,
     ``,
-    `👉 Review proposal details & apply: ${jobUrl}`,
+    `Direct application link in the first comment below.`,
     ``,
-    `#RemoteJobs #Hiring #TechCareers #WorkFromAnywhere #Clivora #FreelanceOS #USD`,
+    `#RemoteWork #Engineering #TechJobs #Clivora #Jobs`,
   ].join("\n");
 
   const twitterMessage = [
-    `🚀 Remote Role: ${job.title} at ${job.company_name}`,
-    `💰 ${salaryText}`,
-    `⚡ 0% Platform Fee!`,
-    `👉 Apply: ${jobUrl}`,
+    `Remote Role: ${job.title} at ${job.company_name}`,
+    `Compensation: ${salaryText}`,
+    `Platform fee: $0`,
+    `Apply: ${cleanDomainUrl}`,
     `#RemoteWork #Clivora`,
   ].join("\n");
+
+  const firstComment = `Apply and view contract details:\n${cleanDomainUrl}`;
 
   return publishToOdooSocial({
     message,
     twitterMessage,
+    firstComment,
+    facebookFirstComment: firstComment,
+    linkedinFirstComment: firstComment,
     imageBase64: job.imageBase64,
     imageName: job.imageName,
     accountIds: job.accountIds,
