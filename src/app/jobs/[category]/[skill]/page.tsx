@@ -4,35 +4,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
-import { cleanText } from "@/lib/clean-text";
-import { getJobExecutiveSummary } from "@/lib/job-formatter";
+import { JobListingCard, type JobCardData } from "@/components/jobs/JobListingCard";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
-import {
-  MapPin,
-  Clock,
-  DollarSign,
-  Briefcase,
-  ChevronRight,
-  ArrowLeft,
-  CheckCircle2,
-  Building2,
-  Globe,
-  ShieldCheck,
-} from "lucide-react";
-
+import { Building2 } from "lucide-react";
 import {
   VALID_CATEGORY_SLUGS,
   formatCategoryTitle,
 } from "@/lib/job-categories";
 
-const EXCLUDED_TAGS = new Set([
-  "hackernews",
-  "who-is-hiring",
-  "arbeitnow",
-  "remotive",
-  "source",
-  "external",
-]);
+export const revalidate = 3600;
 
 type Props = {
   params: Promise<{ category: string; skill: string }>;
@@ -43,8 +23,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!VALID_CATEGORY_SLUGS.includes(category)) return {};
 
   const decodedSkill = decodeURIComponent(skill);
-  const title = `Remote ${formatCategoryTitle(decodedSkill)} Jobs in ${formatCategoryTitle(category)} - $0 Fee | CLIVORA`;
-  const description = `Find the best remote ${formatCategoryTitle(decodedSkill)} jobs. Apply directly with $0 platform fees.`;
+  const catTitle = formatCategoryTitle(category);
+  const skillTitle = formatCategoryTitle(decodedSkill);
+
+  const title = `Remote ${skillTitle} Jobs in ${catTitle} - $0 Fee | CLIVORA`;
+  const description = `Find top remote ${skillTitle} jobs in ${catTitle}. Direct client communication with zero platform fees on CLIVORA.`;
 
   return {
     title,
@@ -54,38 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function formatSalary(min?: number, max?: number, currency: string = "USD") {
-  if (!min && !max) return "Competitive Pay";
-  const curr = currency || "USD";
-  if (min && !max) return `From ${min.toLocaleString()} ${curr}`;
-  if (!min && max) return `Up to ${max.toLocaleString()} ${curr}`;
-  return `${min?.toLocaleString()} - ${max?.toLocaleString()} ${curr}`;
-}
-
-function getInitials(name: string): string {
-  const clean = cleanText(name).trim();
-  if (!clean) return "CL";
-  const parts = clean.split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return clean.slice(0, 2).toUpperCase();
-}
-
-function getAvatarGradient(name: string): string {
-  const gradients = [
-    "from-teal-500 to-emerald-600",
-    "from-blue-600 to-cyan-600",
-    "from-indigo-600 to-violet-600",
-    "from-slate-700 to-slate-900",
-    "from-emerald-600 to-teal-700",
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
-  return gradients[Math.abs(hash) % gradients.length];
-}
-
-export default async function SkillPage({ params }: Props) {
+export default async function CategorySkillPage({ params }: Props) {
   const { category, skill } = await params;
 
   if (!VALID_CATEGORY_SLUGS.includes(category)) {
@@ -107,6 +59,7 @@ export default async function SkillPage({ params }: Props) {
 
   const catName = formatCategoryTitle(category);
   const skillName = formatCategoryTitle(decodedSkill);
+  const jobList = (jobs || []) as JobCardData[];
 
   return (
     <main className="min-h-screen bg-slate-50/50 py-10">
@@ -119,9 +72,9 @@ export default async function SkillPage({ params }: Props) {
           <span className="text-slate-900">{skillName}</span>
         </div>
 
-        <div className="mb-10">
+        <div className="mb-8">
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            Remote {skillName} Jobs <span className="text-teal-600"> -  $0 Fee</span>
+            Remote {skillName} Jobs <span className="text-teal-600"> - $0 Fee</span>
           </h1>
           <p className="mt-3 text-base text-slate-600">
             Browse remote opportunities for {skillName} specialists in {catName}. Zero commission, direct client contracts.
@@ -129,138 +82,32 @@ export default async function SkillPage({ params }: Props) {
         </div>
 
         <div className="space-y-4">
-          {jobs && jobs.length > 0 ? (
-            jobs.map((job, idx) => {
-              const displayTags = (job.tags || [])
-                .filter((t: string) => !EXCLUDED_TAGS.has(t.toLowerCase()))
-                .slice(0, 4);
+          {jobList.length > 0 ? (
+            jobList.map((job, idx) => (
+              <React.Fragment key={job.id}>
+                <JobListingCard job={job} isFeatured={idx === 0} />
 
-              const companyInitials = getInitials(job.company_name);
-              const avatarGradient = getAvatarGradient(job.company_name);
-              const isExternal = Boolean(job.source_url || (job.source && job.source !== "client" && job.source !== "clivora"));
-
-              return (
-                <React.Fragment key={job.id}>
-                  <Link
-                    href={`/jobs/view/${job.seo_slug}`}
-                    className="group relative flex flex-col justify-between gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs transition-all hover:-translate-y-0.5 hover:border-teal-500/80 hover:shadow-md md:flex-row md:items-center"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient} text-base font-bold text-white shadow-xs`}
-                      >
-                        {companyInitials}
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-lg font-bold text-slate-900 transition-colors group-hover:text-teal-700">
-                            {cleanText(job.title)}
-                          </h2>
-                          {isExternal ? (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 border border-slate-200">
-                              <Globe className="h-3 w-3 text-slate-500" />
-                              Curated Remote
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-700 border border-teal-200/60">
-                              <CheckCircle2 className="h-3 w-3 text-teal-600" />
-                              CLIVORA Client &bull; $0 Fee
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
-                          <span>{cleanText(job.company_name)}</span>
-                          <span className="text-slate-300">&bull;</span>
-                          {isExternal ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
-                              <Globe className="h-3 w-3 text-slate-400" />
-                              Official Listing
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-teal-700 font-medium">
-                              <ShieldCheck className="h-3 w-3 text-teal-600" />
-                              Direct Client Contact
-                            </span>
-                          )}
-                        </div>
-
-                        {job.description && (
-                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed pt-0.5">
-                            {getJobExecutiveSummary(job.description, 160)}
-                          </p>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-500">
-                          {job.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                              <span>{cleanText(job.location)}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1 font-semibold text-slate-700">
-                            <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
-                            <span>{formatSalary(job.salary_min, job.salary_max, job.currency)}</span>
-                          </div>
-                          {job.job_type && (
-                            <div className="flex items-center gap-1 capitalize">
-                              <Briefcase className="h-3.5 w-3.5 text-slate-400" />
-                              <span>{job.job_type.replace("_", " ")}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5 text-slate-400" />
-                            <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-
-                        {displayTags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {displayTags.map((tag: string) => (
-                              <span
-                                key={tag}
-                                className="rounded-md bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
-                              >
-                                {cleanText(tag)}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex shrink-0 items-center justify-end gap-3 pt-2 md:pt-0">
-                      <span className="inline-flex items-center gap-1 rounded-xl bg-teal-50 px-4 py-2 text-xs font-bold text-teal-700 transition-colors group-hover:bg-teal-600 group-hover:text-white">
-                        Apply Role
-                        <ChevronRight className="h-4 w-4" />
-                      </span>
-                    </div>
-                  </Link>
-
-                  {/* Interleave In-Feed Native Ad every 5 jobs */}
-                  {(idx + 1) % 5 === 0 && idx !== jobs.length - 1 && (
-                    <JobAdSenseSlot
-                      slotId="in-feed-skill-slot"
-                      format="in-feed"
-                      className="my-3 shadow-2xs"
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })
+                {(idx + 1) % 5 === 0 && idx !== jobList.length - 1 && (
+                  <JobAdSenseSlot
+                    slotId="in-feed-job-skill-slot"
+                    format="in-feed"
+                    className="my-3 shadow-2xs"
+                  />
+                )}
+              </React.Fragment>
+            ))
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
               <Building2 className="mx-auto h-10 w-10 text-slate-400" />
-              <h3 className="mt-3 text-base font-semibold text-slate-900">No jobs found for {skillName}</h3>
+              <h3 className="mt-3 text-base font-semibold text-slate-900">No {skillName} jobs found</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Try browsing other skills or explore the main job board.
+                Explore other skills in {catName} or browse all categories.
               </p>
               <Link
-                href="/jobs"
+                href={`/jobs/${category}`}
                 className="mt-4 inline-flex items-center gap-1 rounded-xl bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700"
               >
-                Browse All Jobs
+                Browse {catName}
               </Link>
             </div>
           )}

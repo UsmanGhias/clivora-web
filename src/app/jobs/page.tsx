@@ -1,24 +1,16 @@
-import React from "react";
+import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
 import { cleanText } from "@/lib/clean-text";
-import { getJobExecutiveSummary } from "@/lib/job-formatter";
+import { JobFilterBar } from "@/components/jobs/JobFilterBar";
+import { JobListingCard, type JobCardData } from "@/components/jobs/JobListingCard";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import {
-  MapPin,
-  Clock,
-  DollarSign,
   Briefcase,
-  Search,
-  ChevronRight,
-  ShieldCheck,
-  Zap,
-  Sparkles,
   Building2,
-  CheckCircle2,
-  Globe,
+  Sparkles,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -33,56 +25,27 @@ export const metadata: Metadata = {
   },
 };
 
-import { JOB_CATEGORIES } from "@/lib/job-categories";
-
-const EXCLUDED_TAGS = new Set([
-  "hackernews",
-  "who-is-hiring",
-  "arbeitnow",
-  "remotive",
-  "source",
-  "external",
-]);
-
-function formatSalary(min?: number, max?: number, currency: string = "USD") {
-  if (!min && !max) return "Competitive Pay";
-  const curr = currency || "USD";
-  if (min && !max) return `From ${min.toLocaleString()} ${curr}`;
-  if (!min && max) return `Up to ${max.toLocaleString()} ${curr}`;
-  return `${min?.toLocaleString()} - ${max?.toLocaleString()} ${curr}`;
-}
-
-function getInitials(name: string): string {
-  const clean = cleanText(name).trim();
-  if (!clean) return "CL";
-  const parts = clean.split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
-  return clean.slice(0, 2).toUpperCase();
-}
-
-function getAvatarGradient(name: string): string {
-  const gradients = [
-    "from-teal-500 to-emerald-600",
-    "from-blue-600 to-cyan-600",
-    "from-indigo-600 to-violet-600",
-    "from-slate-700 to-slate-900",
-    "from-emerald-600 to-teal-700",
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) hash += name.charCodeAt(i);
-  return gradients[Math.abs(hash) % gradients.length];
+interface SearchParamsProps {
+  q?: string;
+  lang?: string;
+  category?: string;
+  tech?: string;
+  type?: string;
+  page?: string;
 }
 
 export default async function JobsIndexPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string; page?: string }>;
+  searchParams?: Promise<SearchParamsProps>;
 }) {
   const sp = searchParams ? await searchParams : undefined;
-  const q = sp?.q || "";
-  const page = parseInt(sp?.page || "1", 10) || 1;
+  const q = (sp?.q || "").trim();
+  const lang = (sp?.lang || "all").toLowerCase();
+  const category = sp?.category || "all";
+  const tech = (sp?.tech || "all").toLowerCase();
+  const jobType = (sp?.type || "all").toLowerCase();
+  const page = Math.max(parseInt(sp?.page || "1", 10) || 1, 1);
   const perPage = 20;
 
   const supabase = await createClient();
@@ -93,12 +56,41 @@ export default async function JobsIndexPage({
     .eq("status", "published")
     .order("created_at", { ascending: false });
 
+  if (lang !== "all") {
+    query = query.eq("language", lang);
+  }
+
+  if (category !== "all") {
+    query = query.eq("category", category);
+  }
+
+  if (jobType !== "all") {
+    query = query.eq("job_type", jobType);
+  }
+
+  if (tech !== "all") {
+    query = query.contains("tags", [tech]);
+  }
+
   if (q) {
     query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%,company_name.ilike.%${q}%`);
   }
 
   const { data: jobs, count } = await query.range((page - 1) * perPage, page * perPage - 1);
   const totalJobs = count || 0;
+  const jobList = (jobs || []) as JobCardData[];
+
+  // Helper to build pagination URL
+  const buildPageUrl = (targetPage: number) => {
+    const p = new URLSearchParams();
+    if (q) p.set("q", q);
+    if (lang !== "all") p.set("lang", lang);
+    if (category !== "all") p.set("category", category);
+    if (tech !== "all") p.set("tech", tech);
+    if (jobType !== "all") p.set("type", jobType);
+    p.set("page", String(targetPage));
+    return `/jobs?${p.toString()}`;
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 py-10">
@@ -111,7 +103,7 @@ export default async function JobsIndexPage({
               className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-slate-900 shadow-xs"
             >
               <Briefcase className="h-3.5 w-3.5 text-teal-600" />
-              Remote Jobs ({totalJobs}+)
+              Remote Jobs ({totalJobs > 0 ? totalJobs.toLocaleString() : "6,650+"})
             </Link>
             <Link
               href="/connect"
@@ -141,7 +133,7 @@ export default async function JobsIndexPage({
         {/* Hero Section */}
         <div className="mt-6 text-center">
           <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-            Browse Remote Jobs <span className="text-teal-600"> -  $0 Fee</span>
+            Browse Remote Jobs <span className="text-teal-600"> - $0 Fee</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-base sm:text-lg text-slate-600">
             Direct opportunities from high-growth companies and startups worldwide. 
@@ -151,7 +143,7 @@ export default async function JobsIndexPage({
           {/* Quick Value Metrics */}
           <div className="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-slate-200/80 bg-white/80 p-3 shadow-xs backdrop-blur">
-              <p className="text-xl font-bold text-slate-900">{totalJobs > 0 ? `${totalJobs}+` : "200+"}</p>
+              <p className="text-xl font-bold text-slate-900">{totalJobs > 0 ? totalJobs.toLocaleString() : "6,650+"}</p>
               <p className="text-xs font-medium text-slate-500">Active Roles</p>
             </div>
             <div className="rounded-xl border border-teal-200/80 bg-teal-50/60 p-3 shadow-xs">
@@ -169,163 +161,42 @@ export default async function JobsIndexPage({
           </div>
         </div>
 
-        {/* Search & Category Pills */}
-        <div className="mt-10 space-y-5">
-          <form method="get" action="/jobs" className="mx-auto flex max-w-2xl items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-              <input
-                type="search"
-                name="q"
-                defaultValue={q}
-                placeholder="Search by role, tech stack, or company name..."
-                className="w-full rounded-2xl border border-slate-300 bg-white py-3.5 pl-12 pr-4 text-sm text-slate-900 shadow-xs outline-none transition-all placeholder:text-slate-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
-              />
-            </div>
-            <button
-              type="submit"
-              className="rounded-2xl bg-teal-600 px-6 py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-teal-700 hover:shadow active:scale-95"
-            >
-              Search
-            </button>
-          </form>
+        {/* Search, Language Division & Rich Filters with Suspense */}
+        <div className="mt-10">
+          <Suspense fallback={<div className="h-32 rounded-2xl bg-slate-100 animate-pulse" />}>
+            <JobFilterBar />
+          </Suspense>
+        </div>
 
-          {/* Category Chips */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {JOB_CATEGORIES.map((cat) => (
-              <Link
-                key={cat.id}
-                href={cat.id === "general" ? "/jobs" : `/jobs/${cat.id}`}
-                className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-medium text-slate-700 shadow-2xs transition-colors hover:border-teal-500 hover:bg-teal-50 hover:text-teal-800"
-              >
-                {cat.label}
-              </Link>
-            ))}
-          </div>
+        {/* Results Header */}
+        <div className="mt-8 flex items-center justify-between border-b border-slate-200/80 pb-3">
+          <p className="text-sm font-bold text-slate-700">
+            Showing {totalJobs.toLocaleString()} {totalJobs === 1 ? "Opportunity" : "Opportunities"}
+          </p>
+          <span className="text-xs text-slate-500">
+            Page {page} of {Math.max(1, Math.ceil(totalJobs / perPage))}
+          </span>
         </div>
 
         {/* Job Listings Grid */}
-        <div className="mt-10 space-y-4">
-          {jobs && jobs.length > 0 ? (
-            jobs.map((job, idx) => {
-              const displayTags = (job.tags || [])
-                .filter((t: string) => !EXCLUDED_TAGS.has(t.toLowerCase()))
-                .slice(0, 4);
-
-              const companyInitials = getInitials(job.company_name);
-              const avatarGradient = getAvatarGradient(job.company_name);
-              const isExternal = Boolean(job.source_url || (job.source && job.source !== "client" && job.source !== "clivora"));
-
+        <div className="mt-6 space-y-4">
+          {jobList.length > 0 ? (
+            jobList.map((job, idx) => {
+              const isFirstCard = page === 1 && idx === 0;
               return (
                 <React.Fragment key={job.id}>
-                  <Link
-                    href={`/jobs/view/${job.seo_slug}`}
-                    className="group relative flex flex-col justify-between gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs transition-all hover:-translate-y-0.5 hover:border-teal-500/80 hover:shadow-md md:flex-row md:items-center"
-                  >
-                    <div className="flex items-start gap-4">
-                      {/* Company Initial Avatar */}
-                      <div
-                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${avatarGradient} text-base font-bold text-white shadow-xs`}
-                      >
-                        {companyInitials}
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-lg font-bold text-slate-900 transition-colors group-hover:text-teal-700">
-                            {cleanText(job.title)}
-                          </h2>
-                          {isExternal ? (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 border border-slate-200">
-                              <Globe className="h-3 w-3 text-slate-500" />
-                              Curated Remote
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-teal-50 px-2 py-0.5 text-[11px] font-semibold text-teal-700 border border-teal-200/60">
-                              <CheckCircle2 className="h-3 w-3 text-teal-600" />
-                              CLIVORA Client &bull; $0 Fee
-                            </span>
-                          )}
-                          {job.category && (
-                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
-                              {job.category.replace("-", " ")}
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-sm font-medium text-slate-600">
-                          <span>{cleanText(job.company_name)}</span>
-                          <span className="text-slate-300">&bull;</span>
-                          {isExternal ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-slate-500 font-medium">
-                              <Globe className="h-3 w-3 text-slate-400" />
-                              Company Portal Opportunity
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-teal-700 font-medium">
-                              <ShieldCheck className="h-3 w-3 text-teal-600" />
-                              Direct Client Contact
-                            </span>
-                          )}
-                        </div>
-
-                        {job.description && (
-                          <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed pt-0.5">
-                            {getJobExecutiveSummary(job.description, 160)}
-                          </p>
-                        )}
-
-                        {/* Meta information */}
-                        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-500">
-                          {job.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                              <span>{cleanText(job.location)}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
-                            <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
-                            <span>{formatSalary(job.salary_min, job.salary_max, job.currency)}</span>
-                          </div>
-                          {job.job_type && (
-                            <div className="flex items-center gap-1 capitalize">
-                              <Briefcase className="h-3.5 w-3.5 text-slate-400" />
-                              <span>{job.job_type.replace("_", " ")}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5 text-slate-400" />
-                            <span>{new Date(job.created_at).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-
-                        {/* Filtered skill tags */}
-                        {displayTags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {displayTags.map((tag: string) => (
-                              <span
-                                key={tag}
-                                className="rounded-md bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600"
-                              >
-                                {cleanText(tag)}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Apply CTA Button */}
-                    <div className="flex shrink-0 items-center justify-end gap-3 pt-2 md:pt-0">
-                      <span className="inline-flex items-center gap-1 rounded-xl bg-teal-50 px-4 py-2 text-xs font-bold text-teal-700 transition-colors group-hover:bg-teal-600 group-hover:text-white">
-                        Apply Role
-                        <ChevronRight className="h-4 w-4" />
+                  {isFirstCard && (
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-teal-700">
+                        Top Spotlight Opportunity (All Information Visible)
                       </span>
+                      <span className="text-xs text-slate-500 font-medium">100% Retained Earnings</span>
                     </div>
-                  </Link>
+                  )}
+                  <JobListingCard job={job} isFeatured={isFirstCard} />
 
                   {/* Interleave In-Feed Native Ad every 5 jobs */}
-                  {(idx + 1) % 5 === 0 && idx !== jobs.length - 1 && (
+                  {(idx + 1) % 5 === 0 && idx !== jobList.length - 1 && (
                     <JobAdSenseSlot
                       slotId="in-feed-job-index-slot"
                       format="in-feed"
@@ -338,35 +209,35 @@ export default async function JobsIndexPage({
           ) : (
             <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
               <Building2 className="mx-auto h-10 w-10 text-slate-400" />
-              <h3 className="mt-3 text-base font-semibold text-slate-900">No jobs found</h3>
+              <h3 className="mt-3 text-base font-semibold text-slate-900">No jobs match your filter</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Try searching with different keywords or browse all categories.
+                Try selecting a different language, clearing tags, or expanding your search terms.
               </p>
               <Link
                 href="/jobs"
                 className="mt-4 inline-flex items-center gap-1 rounded-xl bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700"
               >
-                Clear Search
+                Reset All Filters
               </Link>
             </div>
           )}
         </div>
 
         {/* Pagination */}
-        {count && count > perPage && (
-          <div className="mt-10 flex justify-center gap-2">
+        {totalJobs > perPage && (
+          <div className="mt-10 flex justify-center gap-3">
             {page > 1 && (
               <Link
-                href={`/jobs?q=${q}&page=${page - 1}`}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+                href={buildPageUrl(page - 1)}
+                className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50"
               >
                 &larr; Previous Page
               </Link>
             )}
-            {page * perPage < count && (
+            {page * perPage < totalJobs && (
               <Link
-                href={`/jobs?q=${q}&page=${page + 1}`}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
+                href={buildPageUrl(page + 1)}
+                className="rounded-xl border border-teal-600 bg-teal-600 px-5 py-2.5 text-xs font-bold text-white shadow-2xs hover:bg-teal-700"
               >
                 Next Page &rarr;
               </Link>
