@@ -43,6 +43,9 @@ export async function GET(req: NextRequest) {
   const page = Math.max(Number(searchParams.get("page") || 1), 1);
   const offset = (page - 1) * limit;
   const category = searchParams.get("category");
+  const language = searchParams.get("lang") || searchParams.get("language");
+  const tag = searchParams.get("tag") || searchParams.get("tech");
+  const jobType = searchParams.get("job_type") || searchParams.get("type");
   const query = searchParams.get("q") || searchParams.get("query");
   const status = searchParams.get("status") || "published";
 
@@ -57,8 +60,20 @@ export async function GET(req: NextRequest) {
       params.set("status", `in.(${status},published,active)`);
     }
 
-    if (category) {
+    if (category && category !== "all" && category !== "general") {
       params.set("category", `eq.${category}`);
+    }
+
+    if (language && language !== "all") {
+      params.set("language", `eq.${language.toLowerCase()}`);
+    }
+
+    if (jobType && jobType !== "all") {
+      params.set("job_type", `eq.${jobType.toLowerCase()}`);
+    }
+
+    if (tag && tag !== "all") {
+      params.set("tags", `cs.{${tag.toLowerCase()}}`);
     }
 
     if (query) {
@@ -97,6 +112,7 @@ export async function GET(req: NextRequest) {
           title: job.title,
           company_name: job.company_name,
           category: job.category,
+          language: job.language || "en",
           tags: job.tags,
           salary_min: job.salary_min,
           salary_max: job.salary_max,

@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { HomeHero } from "@/components/marketing/HomeHero";
 import { TractionStrip } from "@/components/marketing/TractionStrip";
+import { HomeJobsSpotlight } from "@/components/marketing/HomeJobsSpotlight";
 import { DualAudienceSection } from "@/components/marketing/DualAudienceSection";
 import { CTASection } from "@/components/marketing/CTASection";
 import { site } from "@/lib/site";
@@ -105,6 +106,7 @@ export default function Home() {
         </div>
       </section>
       <TractionStrip />
+      <HomeJobsSpotlight />
       <DualAudienceSection />
       <ConnectSection />
       <FounderNoteSection />

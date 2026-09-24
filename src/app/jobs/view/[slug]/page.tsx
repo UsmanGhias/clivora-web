@@ -7,6 +7,7 @@ import { cleanText } from "@/lib/clean-text";
 import { JobStructuredDescription } from "@/components/jobs/JobStructuredDescription";
 import { DirectClientContactCard } from "@/components/jobs/DirectClientContactCard";
 import { formatGoogleJobsHtml } from "@/lib/job-formatter";
+import { getLanguageBadge } from "@/lib/job-languages";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import {
   MapPin,
@@ -120,6 +121,7 @@ export default async function JobViewPage({ params }: Props) {
 
   const companyInitials = getInitials(cleanCompany);
   const avatarGradient = getAvatarGradient(cleanCompany);
+  const langBadge = getLanguageBadge(job.language);
 
   // Schema.org JSON-LD for Google Jobs
   const googleDescription = formatGoogleJobsHtml(job.description);
@@ -266,6 +268,13 @@ export default async function JobViewPage({ params }: Props) {
                         </span>
                       </>
                     )}
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-bold ${langBadge.className}`}
+                      title={`Language: ${langBadge.label}`}
+                    >
+                      <span>{langBadge.flag}</span>
+                      <span>{langBadge.label}</span>
+                    </span>
                   </div>
 
                   <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
