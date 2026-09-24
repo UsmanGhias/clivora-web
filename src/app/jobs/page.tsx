@@ -103,7 +103,7 @@ export default async function JobsIndexPage({
               className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-slate-900 shadow-xs"
             >
               <Briefcase className="h-3.5 w-3.5 text-teal-600" />
-              Remote Jobs ({totalJobs > 0 ? totalJobs.toLocaleString() : "6,650+"})
+              Remote Jobs ({totalJobs > 0 ? totalJobs.toLocaleString() : "Thousands"})
             </Link>
             <Link
               href="/connect"
@@ -143,7 +143,7 @@ export default async function JobsIndexPage({
           {/* Quick Value Metrics */}
           <div className="mx-auto mt-8 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-slate-200/80 bg-white/80 p-3 shadow-xs backdrop-blur">
-              <p className="text-xl font-bold text-slate-900">{totalJobs > 0 ? totalJobs.toLocaleString() : "6,650+"}</p>
+              <p className="text-xl font-bold text-slate-900">{totalJobs > 0 ? totalJobs.toLocaleString() : "Thousands"}</p>
               <p className="text-xs font-medium text-slate-500">Active Roles</p>
             </div>
             <div className="rounded-xl border border-teal-200/80 bg-teal-50/60 p-3 shadow-xs">

@@ -7,7 +7,7 @@ export function FreelancerOSSection() {
   const s = marketing.freelancerOs;
 
   return (
-    <section id="freelancer-os" className="border-t border-slate-200/80 bg-white py-20 lg:py-28">
+    <section id="freelancer-os" className="border-t border-slate-200/80 bg-white py-10 sm:py-14 lg:py-16">
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16 lg:px-8">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">

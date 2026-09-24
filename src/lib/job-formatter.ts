@@ -137,6 +137,9 @@ export function getJobExecutiveSummary(raw?: string | null, maxLength = 180): st
   const preprocessed = preprocessInlineHeadings(cleaned);
   const blocks = preprocessed.split(/\n\n+/).map((b) => b.trim()).filter(Boolean);
 
+  const BUREAUCRATIC_NOISE =
+    /^(?:domaine|statut|nature du poste|corps|cotation|fondement|durée|date|environnement professionnel|cadre d'emploi|contacts? pour tout renseignement)\s*:/i;
+
   let candidateText = "";
   for (const block of blocks) {
     const lines = block
@@ -145,22 +148,32 @@ export function getJobExecutiveSummary(raw?: string | null, maxLength = 180): st
       .filter((l) => l.length > 0 && !l.startsWith("•") && !l.startsWith("-"));
 
     for (const line of lines) {
+      const stripped = line.replace(/^[_\-=*~#]+\s*/, "").trim();
+      // Skip bureaucratic form fields or scraper metadata
+      if (BUREAUCRATIC_NOISE.test(stripped)) continue;
       // Skip lines that are just short headings
-      if (line.length < 25 && !line.includes(".")) continue;
+      if (stripped.length < 25 && !stripped.includes(".")) continue;
       // Skip question run-ups if longer substantive text follows
-      if (line.endsWith("?") && lines.length > 1) continue;
-      candidateText = line;
+      if (stripped.endsWith("?") && lines.length > 1) continue;
+      candidateText = stripped;
       break;
     }
     if (candidateText) break;
   }
 
   if (!candidateText) {
-    candidateText = cleaned.split("\n").filter((l) => l.trim().length > 20)[0] || cleaned;
+    candidateText =
+      cleaned
+        .split("\n")
+        .map((l) => l.replace(/^[_\-=*~#]+\s*/, "").trim())
+        .filter((l) => l.length > 20 && !BUREAUCRATIC_NOISE.test(l))[0] || cleaned;
   }
 
-  // Clean leading emojis or markdown
-  candidateText = candidateText.replace(/^[^\w\s"'(]+/, "").trim();
+  // Clean leading emojis, markdown, and repeated punctuation
+  candidateText = candidateText
+    .replace(/^[_\-=*~#]+\s*/, "")
+    .replace(/^[^\w\s"'(]+/, "")
+    .trim();
 
   if (candidateText.length <= maxLength) return candidateText;
 

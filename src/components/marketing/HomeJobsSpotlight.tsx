@@ -15,19 +15,59 @@ import {
 export async function HomeJobsSpotlight() {
   const supabase = await createClient();
 
-  const { data: jobs, count } = await supabase
+  const { count } = await supabase
+    .from("connect_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("is_public", true)
+    .eq("status", "published");
+
+  const totalCount = count || 6000;
+
+  // Prioritize high-quality tech & developer roles in English with diverse companies
+  const { data: techJobs } = await supabase
     .from("connect_jobs")
     .select(
-      "id, title, company_name, company_domain, description, category, tags, salary_min, salary_max, currency, location, job_type, seo_slug, created_at, language",
-      { count: "exact" }
+      "id, title, company_name, company_domain, description, category, tags, salary_min, salary_max, currency, location, job_type, seo_slug, created_at, language"
     )
     .eq("is_public", true)
     .eq("status", "published")
+    .eq("language", "en")
+    .in("category", [
+      "software-development",
+      "product",
+      "design",
+      "devops-sysadmin",
+      "data-science",
+      "marketing",
+    ])
     .order("created_at", { ascending: false })
-    .limit(5);
+    .limit(30);
 
-  const totalCount = count || 6650;
-  const jobList = (jobs || []) as JobCardData[];
+  // Guarantee company diversity (no multiple cards from the same company)
+  const seenCompanies = new Set<string>();
+  const diverseJobs: JobCardData[] = [];
+  for (const j of ((techJobs || []) as JobCardData[])) {
+    const comp = (j.company_name || "").toLowerCase().trim();
+    if (!comp || seenCompanies.has(comp)) continue;
+    seenCompanies.add(comp);
+    diverseJobs.push(j);
+    if (diverseJobs.length >= 5) break;
+  }
+
+  // Fallback if needed
+  let jobList = diverseJobs;
+  if (jobList.length === 0) {
+    const { data: fallback } = await supabase
+      .from("connect_jobs")
+      .select(
+        "id, title, company_name, company_domain, description, category, tags, salary_min, salary_max, currency, location, job_type, seo_slug, created_at, language"
+      )
+      .eq("is_public", true)
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .limit(5);
+    jobList = (fallback || []) as JobCardData[];
+  }
 
   if (jobList.length === 0) return null;
 
@@ -42,7 +82,7 @@ export async function HomeJobsSpotlight() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-bold text-teal-800 shadow-2xs">
               <span className="h-2 w-2 rounded-full bg-teal-500 animate-pulse" />
-              <span>LIVE MARKETPLACE · {totalCount.toLocaleString()}+ VERIFIED ROLES</span>
+              <span>LIVE MARKETPLACE · VERIFIED REMOTE ROLES</span>
             </div>
             <h2 className="mt-3 font-display text-2xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
               Latest Remote Jobs & Opportunities
@@ -57,7 +97,7 @@ export async function HomeJobsSpotlight() {
               href="/jobs"
               className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-5 py-3 text-sm font-bold text-white shadow-md shadow-teal-600/20 transition-all hover:bg-teal-700 hover:shadow-lg active:scale-95"
             >
-              <span>Explore All {totalCount.toLocaleString()}+ Jobs</span>
+              <span>Explore All Jobs</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
