@@ -90,10 +90,10 @@ export const marketing = {
   },
 
   hero: {
-    badge: "Freelancer OS for complete businesses",
+    badge: "FOUNDER LAUNCH · 100% FREE ACCESS & $0 DEAL FEES",
     headline: ["Stop losing 10-20%", "to marketplace fees."],
     body:
-      "Clivora is a complete Freelancer OS for freelancers and clients worldwide: private Connect (emails unlock only after mutual accept), CRM, projects, timesheets, messages, and invoices. Platform fee on your deals stays $0 - clients pay you directly against your invoice. One account for the web app and Android. The purpose of Clivora is one workspace to hire, deliver, and get paid without marketplace cuts.",
+      "Clivora is a complete Freelancer OS for freelancers and clients worldwide: private Connect hiring, 6,650+ verified remote jobs, CRM, projects, timesheets, and milestone invoices. Platform fees stay $0 with 100% free access during Founder Launch. Clients pay you directly with zero cuts. One unified account for web and Android.",
     primaryCta: { label: "I'm a Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "I'm hiring", href: "/signup?role=client" },
     trusts: [
@@ -106,9 +106,9 @@ export const marketing = {
   },
 
   traction: {
-    line: "Built for the full freelance loop - hire, deliver, invoice - without marketplace cut on the deal.",
+    line: "Built for the full freelance loop: hire, deliver, and invoice with 0% platform cuts on your deals.",
     stats: [
-      { value: "1,205+", label: "Active Remote Jobs" },
+      { value: "6,650+", label: "Active Remote Jobs" },
       { value: "$0", label: "Deal platform fee" },
       { value: "100%", label: "Direct client payouts" },
       { value: "Direct", label: "Milestones & safety" },
@@ -216,10 +216,10 @@ export const marketing = {
       },
     ],
     stats: [
-      { value: "Free", label: "to start CRM" },
+      { value: "100%", label: "Free Full Access" },
       { value: "$0", label: "Connect deal fee" },
-      { value: "$9", label: "Pro / month" },
-      { value: "$19", label: "Pro Plus / month" },
+      { value: "6,650+", label: "Verified Remote Jobs" },
+      { value: "100%", label: "Earnings you keep" },
       { value: "Global", label: "freelancers & clients" },
       { value: "2", label: "platforms · web+app" },
     ],
@@ -434,14 +434,14 @@ export const marketing = {
         id: "founder-pro",
         name: "Founder Pro Plus",
         price: "$0",
-        listPrice: "$19/mo",
-        period: "for 1 Year Free",
+        listPrice: "$0 Free",
+        period: "100% Free Forever",
         badge: "Founder Launch Gift",
         description: "Full unlimited power for scaling freelancers, agencies, and clients.",
-        cta: { label: "Claim 1-Year Free Access", href: "/signup" },
+        cta: { label: "Claim Free Access", href: "/signup" },
         highlighted: true,
         features: [
-          "1 Year Free Founder Access ($228 value)",
+          "Full Founder Access Included ($0 Cost)",
           "Unlimited clients & projects",
           "Unlimited invoices & smart templates",
           "Unlimited Connect marketplace applications",
@@ -456,8 +456,8 @@ export const marketing = {
         id: "enterprise",
         name: "Team / Agency",
         price: "$0",
-        listPrice: "$49/mo",
-        period: "Included in Founder Launch",
+        listPrice: "$0 Free",
+        period: "100% Free Forever",
         description: "Multi-seat workspace for agency teams and high-volume clients.",
         cta: { label: "Open Team Workspace", href: "/signup" },
         highlighted: false,

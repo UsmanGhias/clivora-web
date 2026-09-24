@@ -99,7 +99,7 @@ const SEARCH_DIRECTORY: QuickLink[] = [
   },
   {
     label: "Pricing & Plans",
-    desc: "Free forever tier, Pro ($9/mo), and Pro Plus ($19/mo)",
+    desc: "100% Free Founder Launch tier with $0 platform fees",
     href: "/pricing",
     category: "Platform",
     icon: CreditCard,

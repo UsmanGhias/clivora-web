@@ -25,15 +25,15 @@ export const site = {
     legalEmail: "contact@clivora.io",
   },
   pricing: {
-    proMonthlyUsd: 9,
-    proMonthlyLabel: "$9",
-    proPlusMonthlyUsd: 19,
-    proPlusMonthlyLabel: "$19",
-    proListLabel: "$14",
-    proPlusListLabel: "$29",
-    billingNote: "Billed monthly via Google Play. Cancel anytime.",
+    proMonthlyUsd: 0,
+    proMonthlyLabel: "$0",
+    proPlusMonthlyUsd: 0,
+    proPlusMonthlyLabel: "$0",
+    proListLabel: "$0",
+    proPlusListLabel: "$0",
+    billingNote: "100% Free during Founder Launch. Zero platform fees.",
     earlyAccessNote:
-      "Start free, then upgrade to Pro ($9/mo) or Pro Plus ($19/mo) when you need unlimited tools and Connect.",
+      "Start 100% free with unlimited tools and Connect access.",
   },
   freeLimits: {
     clients: 3,

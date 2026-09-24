@@ -79,7 +79,7 @@ const FAQS = [
   },
   {
     q: "Does Clivora charge fees on client payments?",
-    a: "No. Both Clivora and Contra emphasize 0% commission on contracts, but Clivora provides a more comprehensive free tier ($0 forever for core workspace) with lower upgrade pricing ($9/mo Pro vs $29/mo Contra Pro).",
+    a: "No. Both Clivora and Contra emphasize 0% commission on contracts, but Clivora provides a completely free operating system ($0 platform fees and 100% free access during Founder Launch).",
   },
   {
     q: "Can I manage team members on Clivora?",

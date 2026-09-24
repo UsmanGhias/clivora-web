@@ -56,7 +56,7 @@ const SITEMAP_SECTIONS = [
       {
         label: "Pricing & Plans",
         href: "/pricing",
-        desc: "Zero-fee free tier, Pro ($9/mo), and Pro Plus ($19/mo)",
+        desc: "100% Free Founder Launch tier with $0 platform fees",
       },
       {
         label: "Pro Upgrade",
