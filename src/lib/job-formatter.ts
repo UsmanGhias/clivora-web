@@ -21,27 +21,27 @@ const HEADING_DEFINITIONS: Array<{
   priority: number;
 }> = [
   {
-    regex: /^(?:why\s+this\s+role\s+exists|the\s+role|role\s+overview|position\s+summary|role\s+summary|about\s+the\s+role|the\s+opportunity|role\s+description|position\s+overview|job\s+summary|what\s+to\s+expect)/i,
+    regex: /^(?:why\s+this\s+role\s+exists|the\s+role|role\s+overview|position\s+summary|role\s+summary|about\s+the\s+role|about\s+the\s+position|the\s+opportunity|role\s+description|position\s+overview|job\s+summary|what\s+to\s+expect)/i,
     title: "Role Overview",
     priority: 1,
   },
   {
-    regex: /^(?:about\s+(?:us|the\s+company|our\s+team|the\s+team)|who\s+we\s+are|company\s+overview|our\s+vision|our\s+mission|life\s+at)/i,
+    regex: /^(?:about\s+(?:us|the\s+company|our\s+team|the\s+team)|who\s+we\s+are|company\s+overview|our\s+vision|our\s+mission|our\s+culture|life\s+at|about\s+(?!you\b|the\s+role\b|the\s+job\b|the\s+position\b|the\s+opportunity\b)[a-z0-9&.-]+)/i,
     title: "About the Company",
     priority: 2,
   },
   {
-    regex: /^(?:what\s+you(?:'ll|\swill)\s+(?:do|own|work\s+on)|key\s+responsibilities|responsibilities|your\s+role|core\s+duties|what\s+you'll\s+be\s+responsible\s+for|duties|what\s+you\s+will\s+deliver)/i,
+    regex: /^(?:what\s+you(?:'ll|\swill)\s+(?:do|own|work\s+on)|key\s+responsibilities|responsibilities|your\s+role|core\s+duties|what\s+you'll\s+be\s+responsible\s+for|duties|what\s+you\s+will\s+deliver|your\s+day-to-day|day-to-day\s+responsibilities)/i,
     title: "Key Responsibilities",
     priority: 3,
   },
   {
-    regex: /^(?:what\s+we(?:'re|\s+are)\s+looking\s+for|who\s+(?:we're|are\s+we|you\s+are)\s+looking\s+for|requirements|qualifications|skills\s+(?:&|and)\s+experience|what\s+you\s+need|must\s+have|ideal\s+candidate|who\s+you\s+are|what\s+you\s+bring|what\s+you'll\s+bring|basic\s+qualifications|profile\s+required)/i,
+    regex: /^(?:what\s+we(?:'re|\s+are)\s+looking\s+for|who\s+(?:we're|are\s+we|you\s+are)\s+looking\s+for|requirements|qualifications|requirements\s+(&|and)\s+qualifications|skills\s+(?:&|and)\s+experience|what\s+you\s+need|must\s+have|ideal\s+candidate|who\s+you\s+are|about\s+you|what\s+you\s+bring|what\s+you'll\s+bring|basic\s+qualifications|profile\s+required|experience\s+required)/i,
     title: "Requirements & Qualifications",
     priority: 4,
   },
   {
-    regex: /^(?:nice\s+to\s+have|bonus\s+points|preferred\s+qualifications|good\s+to\s+have|bonus\s+skills|preferred\s+skills)/i,
+    regex: /^(?:nice\s+to\s+have|bonus\s+points|preferred\s+qualifications|good\s+to\s+have|bonus\s+skills|preferred\s+skills|bonus\s+if\s+you\s+have)/i,
     title: "Preferred Skills & Bonus Points",
     priority: 5,
   },
@@ -75,12 +75,13 @@ const INLINE_HEADING_KEYWORDS = [
   "Key Responsibilities",
   "Responsibilities",
   "Core duties",
+  "Requirements & Qualifications",
   "Requirements",
   "Qualifications",
-  "Requirements & Qualifications",
   "Who we're looking for",
   "Who are we looking for",
   "Who you are",
+  "About you",
   "What you bring",
   "What you'll bring",
   "What you need",
@@ -102,6 +103,7 @@ const INLINE_HEADING_KEYWORDS = [
   "Hiring process",
   "How to apply",
   "About us",
+  "About Us",
   "About the company",
   "Who we are",
   "Our vision",
@@ -113,14 +115,12 @@ function preprocessInlineHeadings(text: string): string {
   let result = text;
   for (const heading of INLINE_HEADING_KEYWORDS) {
     const escaped = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    // Match heading when preceded by line start, punctuation or closing paren, followed by optional question mark and colon/dash, then letter, bullet, or emoji
     const pattern = new RegExp(
-      `(^|[.!?\\):]\\s+|\\n+)(${escaped})(?:\\s*\\?)?(:|\\s*-\\s*)?(?=[\\s\\n]+(?:[A-Z0-9•\\-*]|\\p{Extended_Pictographic}))`,
+      `(^|[.!?\\):]\\s+|\\n+)(${escaped})(?:\\s*\\?)?(:|\\s*-\\s*)?(?=[\\s\\n]+(?:[A-Z0-9•\\-*]|\\p{Extended_Pictographic}|$))`,
       "giu"
     );
-    result = result.replace(pattern, (_, prefix) => {
-      const cleanPrefix = prefix.endsWith("\n") ? prefix : `${prefix}\n\n`;
-      return `${cleanPrefix}### ${heading}\n`;
+    result = result.replace(pattern, () => {
+      return `\n\n### ${heading}\n\n`;
     });
   }
   return result;
@@ -283,36 +283,36 @@ export function parseJobIntoSections(raw?: string | null): StructuredJobSection[
 
   mergedList.sort((a, b) => getPriority(a.title) - getPriority(b.title));
 
-  // If "Role Overview" is missing but we have content, ensure the first section is titled "Role Overview"
-  if (!mergedList.some((s) => s.title === "Role Overview") && mergedList.length > 0) {
-    if (mergedList[0].title === "About the Company" && mergedList.length > 1) {
-      // If the second section is responsibilities, keep About the Company
-    } else {
-      mergedList[0].title = "Role Overview";
-    }
-  }
-
   return mergedList;
 }
 
 function processContentLines(lines: string[], target: StructuredJobSection) {
-  // Pre-expand lines that contain concatenated bullet items or action gerunds
+  // Pre-expand lines that contain concatenated bullet items, sentences, or action verbs
   const expandedLines: string[] = [];
+  const isBulletSection =
+    target.title === "Key Responsibilities" ||
+    target.title === "Requirements & Qualifications" ||
+    target.title === "Preferred Skills & Bonus Points";
+
   for (const line of lines) {
     let text = line.trim();
     if (!text) continue;
 
-    if (
-      target.title === "Key Responsibilities" ||
-      target.title === "Requirements & Qualifications"
-    ) {
+    if (isBulletSection) {
       // Split inline intro transition e.g. "That means: Running..."
       text = text.replace(/(That means:\s*)([A-Z])/gi, "$1\n• $2");
       // Split concatenated action gerunds
       text = text.replace(
-        /([a-z0-9]\.?)(\s+)(Running|Turning|Strengthening|Preparing|Improving|Leading|Driving|Developing|Managing)\s+([a-z0-9])/g,
+        /([a-z0-9]\.?)(\s+)(Running|Turning|Strengthening|Preparing|Improving|Leading|Driving|Developing|Managing|Accelerating|Translating|Supporting)\s+([a-z0-9])/g,
         "$1\n• $3 $4"
       );
+      // If the line contains multiple sentences without bullets, split each sentence into a bullet
+      if (!text.startsWith("•") && !text.startsWith("-") && !text.startsWith("*") && text.includes(". ")) {
+        text = text.replace(/([.!?])\s+(?=[A-Z0-9])/g, "$1\n• ");
+        if (!text.startsWith("• ")) {
+          text = "• " + text;
+        }
+      }
     }
 
     for (const sub of text.split("\n")) {

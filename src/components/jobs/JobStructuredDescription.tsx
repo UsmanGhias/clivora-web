@@ -40,6 +40,29 @@ function getSectionIcon(title: string) {
   return <Briefcase className="h-5 w-5 text-teal-700" />;
 }
 
+function getBulletIcon(title: string) {
+  const lower = title.toLowerCase();
+  if (lower.includes("benefit") || lower.includes("perk") || lower.includes("offer")) {
+    return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />;
+  }
+  if (lower.includes("nice") || lower.includes("bonus") || lower.includes("preferred")) {
+    return <Sparkles className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />;
+  }
+  if (
+    lower.includes("responsibilit") ||
+    lower.includes("do") ||
+    lower.includes("own") ||
+    lower.includes("requirement") ||
+    lower.includes("qualification") ||
+    lower.includes("looking for") ||
+    lower.includes("who you are") ||
+    lower.includes("about you")
+  ) {
+    return <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-600 mt-0.5" />;
+  }
+  return <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600" />;
+}
+
 export function JobStructuredDescription({ rawDescription }: { rawDescription?: string | null }) {
   const sections: StructuredJobSection[] = parseJobIntoSections(rawDescription);
 
@@ -74,14 +97,14 @@ export function JobStructuredDescription({ rawDescription }: { rawDescription?: 
               ))}
 
               {section.bullets.length > 0 && (
-                <ul className="mt-3 space-y-2.5 pl-1">
+                <ul className="mt-3.5 space-y-2.5">
                   {section.bullets.map((b, bIdx) => (
                     <li
                       key={bIdx}
-                      className="flex items-start gap-2.5 text-sm leading-relaxed text-slate-700"
+                      className="flex items-start gap-3 text-sm leading-relaxed text-slate-700"
                     >
-                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600" />
-                      <span>{b}</span>
+                      {getBulletIcon(section.title)}
+                      <span className="flex-1">{b}</span>
                     </li>
                   ))}
                 </ul>

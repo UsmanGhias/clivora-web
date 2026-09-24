@@ -20,19 +20,13 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-export const revalidate = 3600;
+import {
+  VALID_CATEGORY_SLUGS,
+  formatCategoryTitle,
+  getCategoryById,
+} from "@/lib/job-categories";
 
-const CATEGORIES = [
-  "software-development",
-  "design",
-  "devops-sysadmin",
-  "data-science",
-  "marketing",
-  "product",
-  "customer-support",
-  "management",
-  "general",
-];
+export const revalidate = 3600;
 
 const EXCLUDED_TAGS = new Set([
   "hackernews",
@@ -44,14 +38,7 @@ const EXCLUDED_TAGS = new Set([
 ]);
 
 export function generateStaticParams() {
-  return CATEGORIES.map((category) => ({ category }));
-}
-
-function formatTitle(slug: string) {
-  return slug
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+  return VALID_CATEGORY_SLUGS.map((category) => ({ category }));
 }
 
 type Props = {
@@ -60,10 +47,10 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
-  if (!CATEGORIES.includes(category)) return {};
+  if (!VALID_CATEGORY_SLUGS.includes(category)) return {};
 
-  const title = `${formatTitle(category)} Remote Jobs - $0 Fee | CLIVORA`;
-  const description = `Find the best remote ${formatTitle(category)} jobs. Apply directly with $0 platform fees.`;
+  const title = `${formatCategoryTitle(category)} Remote Jobs - $0 Fee | CLIVORA`;
+  const description = `Find the best remote ${formatCategoryTitle(category)} jobs. Apply directly with $0 platform fees.`;
 
   return {
     title,
@@ -107,7 +94,7 @@ function getAvatarGradient(name: string): string {
 export default async function CategoryPage({ params }: Props) {
   const { category } = await params;
 
-  if (!CATEGORIES.includes(category)) {
+  if (!VALID_CATEGORY_SLUGS.includes(category)) {
     notFound();
   }
 
@@ -121,7 +108,8 @@ export default async function CategoryPage({ params }: Props) {
     .order("created_at", { ascending: false })
     .limit(50);
 
-  const titleName = formatTitle(category);
+  const titleName = formatCategoryTitle(category);
+  const catObj = getCategoryById(category);
 
   return (
     <main className="min-h-screen bg-slate-50/50 py-10">
@@ -138,10 +126,10 @@ export default async function CategoryPage({ params }: Props) {
 
         <div className="mb-10">
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
-            {titleName} Remote Jobs <span className="text-teal-600"> -  $0 Fee</span>
+            {titleName} Remote Jobs <span className="text-teal-600"> - $0 Fee</span>
           </h1>
           <p className="mt-3 text-base text-slate-600">
-            Browse remote opportunities in {titleName}. Apply directly, negotiate privately, and keep 100% of your earnings.
+            {catObj?.description || `Browse remote opportunities in ${titleName}. Apply directly, negotiate privately, and keep 100% of your earnings.`}
           </p>
         </div>
 

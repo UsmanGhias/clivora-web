@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Sparkles,
   MessageSquare,
+  MessageCircle,
   Lock,
   ArrowUpRight,
   Briefcase,
@@ -61,6 +62,16 @@ Best regards,`;
     } catch {
       // fallback
     }
+  };
+
+  const shareJobOnWhatsApp = () => {
+    const url = typeof window !== "undefined" ? window.location.href : `https://clivora.io/jobs/view/${jobId}`;
+    const text = `Remote role on CLIVORA: ${jobTitle} at ${companyName} (${salaryText}) - $0 Platform Fee: ${url}`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+  };
+
+  const sharePitchOnWhatsApp = () => {
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(cleanPitch)}`, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -125,6 +136,16 @@ Best regards,`;
               Email Hiring Contact Directly
             </a>
           )}
+
+          {/* Action 3: Quick Share via WhatsApp */}
+          <button
+            type="button"
+            onClick={shareJobOnWhatsApp}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-emerald-700"
+          >
+            <MessageCircle className="h-4 w-4 text-[#25D366]" />
+            Share Opportunity via WhatsApp
+          </button>
         </div>
 
         {/* 1-Click Tailored Outreach Pitch Assistant */}
@@ -149,23 +170,33 @@ Best regards,`;
               <div className="rounded-xl bg-white p-3 text-[11px] text-slate-700 leading-relaxed font-mono whitespace-pre-line border border-slate-200/80 shadow-2xs max-h-48 overflow-y-auto">
                 {cleanPitch}
               </div>
-              <button
-                type="button"
-                onClick={copyToClipboard}
-                className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
-              >
-                {copiedPitch ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 text-emerald-400" />
-                    Pitch Copied to Clipboard!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5 text-slate-300" />
-                    Copy Pitch Script
-                  </>
-                )}
-              </button>
+              <div className="mt-2.5 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={copyToClipboard}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+                >
+                  {copiedPitch ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-400" />
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5 text-slate-300" />
+                      Copy Pitch
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={sharePitchOnWhatsApp}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] py-2 text-xs font-bold text-white hover:bg-[#20ba59] transition-colors shadow-2xs"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  WhatsApp
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -196,7 +227,16 @@ Best regards,`;
           <div className="space-y-1">
             <h4 className="text-xs font-bold text-slate-900">Founder Platform Guarantee</h4>
             <p className="text-[11px] text-slate-600 leading-relaxed">
-              Founded by <strong>Usman Ghias</strong> at <strong>CODCrafters</strong> to free independent developers and agencies from predatory platform commissions.
+              Founded by{" "}
+              <a
+                href="https://usmanghias.co.uk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-teal-700 hover:text-teal-900 underline"
+              >
+                Usman Ghias
+              </a>{" "}
+              at <strong>CODCrafters</strong> to free independent developers and agencies from predatory platform commissions.
             </p>
           </div>
         </div>
@@ -207,7 +247,15 @@ Best regards,`;
         <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">About the Employer</h4>
         <p className="mt-2 text-sm font-bold text-slate-900">{companyName}</p>
         {companyDomain && (
-          <p className="mt-1 text-xs text-slate-500 font-mono">{companyDomain}</p>
+          <a
+            href={companyDomain.startsWith("http") ? companyDomain : `https://${companyDomain}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex items-center gap-1 text-xs text-teal-700 hover:underline font-mono"
+          >
+            <span>{companyDomain}</span>
+            <ExternalLink className="h-3 w-3" />
+          </a>
         )}
         <div className="mt-3 flex items-center gap-1.5 text-xs text-teal-700 font-medium">
           <ShieldCheck className="h-4 w-4 text-teal-600" />

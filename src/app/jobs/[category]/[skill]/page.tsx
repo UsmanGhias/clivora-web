@@ -20,17 +20,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-const CATEGORIES = [
-  "software-development",
-  "design",
-  "devops-sysadmin",
-  "data-science",
-  "marketing",
-  "product",
-  "customer-support",
-  "management",
-  "general",
-];
+import {
+  VALID_CATEGORY_SLUGS,
+  formatCategoryTitle,
+} from "@/lib/job-categories";
 
 const EXCLUDED_TAGS = new Set([
   "hackernews",
@@ -41,24 +34,17 @@ const EXCLUDED_TAGS = new Set([
   "external",
 ]);
 
-function formatTitle(slug: string) {
-  return slug
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
 type Props = {
   params: Promise<{ category: string; skill: string }>;
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category, skill } = await params;
-  if (!CATEGORIES.includes(category)) return {};
+  if (!VALID_CATEGORY_SLUGS.includes(category)) return {};
 
   const decodedSkill = decodeURIComponent(skill);
-  const title = `Remote ${formatTitle(decodedSkill)} Jobs in ${formatTitle(category)} - $0 Fee | CLIVORA`;
-  const description = `Find the best remote ${formatTitle(decodedSkill)} jobs. Apply directly with $0 platform fees.`;
+  const title = `Remote ${formatCategoryTitle(decodedSkill)} Jobs in ${formatCategoryTitle(category)} - $0 Fee | CLIVORA`;
+  const description = `Find the best remote ${formatCategoryTitle(decodedSkill)} jobs. Apply directly with $0 platform fees.`;
 
   return {
     title,
@@ -102,7 +88,7 @@ function getAvatarGradient(name: string): string {
 export default async function SkillPage({ params }: Props) {
   const { category, skill } = await params;
 
-  if (!CATEGORIES.includes(category)) {
+  if (!VALID_CATEGORY_SLUGS.includes(category)) {
     notFound();
   }
 
@@ -119,8 +105,8 @@ export default async function SkillPage({ params }: Props) {
     .order("created_at", { ascending: false })
     .limit(50);
 
-  const catName = formatTitle(category);
-  const skillName = formatTitle(decodedSkill);
+  const catName = formatCategoryTitle(category);
+  const skillName = formatCategoryTitle(decodedSkill);
 
   return (
     <main className="min-h-screen bg-slate-50/50 py-10">

@@ -33,20 +33,7 @@ export const metadata: Metadata = {
   },
 };
 
-const CATEGORIES = [
-  { id: "software-development", label: "Software & Engineering" },
-  { id: "sales", label: "Sales & Growth" },
-  { id: "product", label: "Product Management" },
-  { id: "design", label: "Design & Creative" },
-  { id: "devops-sysadmin", label: "DevOps & Cloud" },
-  { id: "data-science", label: "AI & Data Science" },
-  { id: "marketing", label: "Marketing & Content" },
-  { id: "finance-legal", label: "Finance & Legal" },
-  { id: "management", label: "Project & Operations" },
-  { id: "human-resources", label: "People & HR" },
-  { id: "customer-support", label: "Customer Success" },
-  { id: "general", label: "All Opportunities" },
-];
+import { JOB_CATEGORIES } from "@/lib/job-categories";
 
 const EXCLUDED_TAGS = new Set([
   "hackernews",
@@ -205,7 +192,7 @@ export default async function JobsIndexPage({
 
           {/* Category Chips */}
           <div className="flex flex-wrap items-center justify-center gap-2">
-            {CATEGORIES.map((cat) => (
+            {JOB_CATEGORIES.map((cat) => (
               <Link
                 key={cat.id}
                 href={cat.id === "general" ? "/jobs" : `/jobs/${cat.id}`}
