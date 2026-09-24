@@ -123,7 +123,7 @@ export function JobListingCard({
 
   return (
     <div
-      className={`group relative flex flex-col justify-between gap-5 rounded-2xl border bg-white p-5 sm:p-6 shadow-xs transition-all hover:-translate-y-0.5 hover:shadow-md ${
+      className={`group relative flex h-full flex-col justify-between gap-5 rounded-2xl border bg-white p-5 sm:p-6 shadow-xs transition-all hover:-translate-y-0.5 hover:shadow-md ${
         isFeatured
           ? "border-teal-500 ring-2 ring-teal-500/20 bg-gradient-to-br from-teal-50/20 via-white to-slate-50/30"
           : "border-slate-200 hover:border-teal-500/80"
