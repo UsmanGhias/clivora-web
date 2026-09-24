@@ -10,32 +10,113 @@ interface GeneratedInvoiceItem {
   category: string;
 }
 
-interface RateLimitRecord {
-  count: number;
-  resetAt: number;
+/**
+ * Whitelisted VIP & Admin emails with unlimited AI access
+ */
+const VIP_EMAILS = new Set([
+  "usmanghias1@gmail.com",
+  "iusmanghias@gmail.com",
+  "medianfireblogs@gmail.com",
+  "medianfireblogs@gmail",
+]);
+
+const USER_DAILY_LIMIT = 5;
+const GUEST_DAILY_LIMIT = 1;
+const COOLDOWN_SECONDS = 20;
+
+interface UserAiQuotaRecord {
+  timestamps: number[];
+  lastRequestTime: number;
 }
 
-const rateLimitMap = new Map<string, RateLimitRecord>();
+const quotaStore = new Map<string, UserAiQuotaRecord>();
 
-function checkRateLimit(ip: string, limit: number, windowMs: number): { allowed: boolean; retryAfter: number } {
+function getQuotaStatus(key: string, isVip: boolean, isAuth: boolean) {
   const now = Date.now();
-  const record = rateLimitMap.get(ip);
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
-    if (rateLimitMap.size > 1000) {
-      for (const [key, val] of rateLimitMap.entries()) {
-        if (now > val.resetAt) rateLimitMap.delete(key);
+  const windowMs = 24 * 60 * 60 * 1000;
+  const limit = isVip ? 999999 : isAuth ? USER_DAILY_LIMIT : GUEST_DAILY_LIMIT;
+
+  let record = quotaStore.get(key);
+  if (!record) {
+    record = { timestamps: [], lastRequestTime: 0 };
+    quotaStore.set(key, record);
+  }
+
+  // Clean entries older than 24 hours
+  record.timestamps = record.timestamps.filter((t) => now - t < windowMs);
+
+  const used = record.timestamps.length;
+  const remaining = Math.max(0, limit - used);
+  const earliest = record.timestamps[0] || now;
+  const resetInSeconds = Math.max(0, Math.ceil((earliest + windowMs - now) / 1000));
+  const resetsInHours = (resetInSeconds / 3600).toFixed(1);
+
+  const timeSinceLast = (now - record.lastRequestTime) / 1000;
+  const inCooldown = !isVip && timeSinceLast < COOLDOWN_SECONDS;
+  const cooldownRemaining = Math.max(0, Math.ceil(COOLDOWN_SECONDS - timeSinceLast));
+
+  return {
+    allowed: isVip || (remaining > 0 && !inCooldown),
+    isVip,
+    used,
+    total: limit,
+    remaining,
+    resetInSeconds,
+    resetsInHours,
+    inCooldown,
+    cooldownRemaining,
+    consume: () => {
+      record!.timestamps.push(now);
+      record!.lastRequestTime = now;
+    },
+  };
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const forwarded = req.headers.get("x-forwarded-for");
+    const clientIp = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") ?? "127.0.0.1");
+
+    let isAuthenticated = false;
+    let authUser: { id: string; email?: string } | null = null;
+    let isVip = false;
+
+    try {
+      const supabase = await createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        isAuthenticated = true;
+        authUser = { id: user.id, email: user.email };
+        const userEmail = (user.email || "").toLowerCase().trim();
+        if (VIP_EMAILS.has(userEmail)) {
+          isVip = true;
+        }
       }
+    } catch {
+      // unauthenticated
     }
-    return { allowed: true, retryAfter: 0 };
-  }
 
-  if (record.count >= limit) {
-    return { allowed: false, retryAfter: Math.ceil((record.resetAt - now) / 1000) };
-  }
+    const quotaKey = authUser ? `usr:${authUser.id}` : `ip:${clientIp}`;
+    const quota = getQuotaStatus(quotaKey, isVip, isAuthenticated);
 
-  record.count += 1;
-  return { allowed: true, retryAfter: 0 };
+    return NextResponse.json({
+      quota: {
+        isVip: quota.isVip,
+        used: quota.used,
+        total: quota.total,
+        remaining: quota.remaining,
+        resetsInHours: quota.resetsInHours,
+        cooldownRemaining: quota.cooldownRemaining,
+      },
+      isAuthenticated,
+      email: authUser?.email || null,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -45,6 +126,7 @@ export async function POST(req: NextRequest) {
 
     let isAuthenticated = false;
     let authUser: { id: string; email?: string } | null = null;
+    let isVip = false;
     let supabase: Awaited<ReturnType<typeof createClient>> | null = null;
 
     try {
@@ -55,23 +137,68 @@ export async function POST(req: NextRequest) {
       if (user) {
         isAuthenticated = true;
         authUser = { id: user.id, email: user.email };
+        const userEmail = (user.email || "").toLowerCase().trim();
+        if (VIP_EMAILS.has(userEmail)) {
+          isVip = true;
+        }
       }
     } catch {
       // Unauthenticated public request
     }
 
-    // Rate limiting: 60 requests / 15 min for auth, 10 for guest
-    const maxRequests = isAuthenticated ? 60 : 10;
-    const rateCheck = checkRateLimit(`ai:${clientIp}:${authUser?.id || "anon"}`, maxRequests, 15 * 60 * 1000);
-    if (!rateCheck.allowed) {
-      return NextResponse.json(
-        { error: "Rate limit exceeded. Please wait before running another AI request.", retryAfter: rateCheck.retryAfter },
-        { status: 429, headers: { "Retry-After": String(rateCheck.retryAfter) } },
-      );
-    }
-
     const body = ((await req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
     const action = typeof body.action === "string" ? body.action.trim() : "";
+
+    const quotaKey = authUser ? `usr:${authUser.id}` : `ip:${clientIp}`;
+    const quota = getQuotaStatus(quotaKey, isVip, isAuthenticated);
+
+    // AI generations consume quota and enforce limits
+    if (action === "proposal" || action === "invoice_items" || action === "health_briefing") {
+      if (quota.inCooldown) {
+        return NextResponse.json(
+          {
+            error: `Please wait ${quota.cooldownRemaining}s before running another AI request to protect API performance.`,
+            retryAfter: quota.cooldownRemaining,
+            quota: {
+              isVip: quota.isVip,
+              used: quota.used,
+              total: quota.total,
+              remaining: quota.remaining,
+              resetsInHours: quota.resetsInHours,
+            },
+          },
+          { status: 429, headers: { "Retry-After": String(quota.cooldownRemaining) } },
+        );
+      }
+
+      if (quota.remaining <= 0 && !quota.isVip) {
+        return NextResponse.json(
+          {
+            error: `Daily AI quota reached (${quota.total}/${quota.total}). Your free allowance resets in ${quota.resetsInHours}h. Contact Usman for enterprise access.`,
+            retryAfter: quota.resetInSeconds,
+            quota: {
+              isVip: quota.isVip,
+              used: quota.used,
+              total: quota.total,
+              remaining: 0,
+              resetsInHours: quota.resetsInHours,
+            },
+          },
+          { status: 429, headers: { "Retry-After": String(quota.resetInSeconds) } },
+        );
+      }
+
+      // Consume 1 request
+      quota.consume();
+    }
+
+    const responseQuota = {
+      isVip: quota.isVip,
+      used: quota.isVip ? quota.used : quota.used + 1,
+      total: quota.total,
+      remaining: quota.isVip ? 999999 : Math.max(0, quota.remaining - 1),
+      resetsInHours: quota.resetsInHours,
+    };
 
     // -------------------------------------------------------------------------
     // 1. Proposal Generation
@@ -117,6 +244,7 @@ Formatting requirements:
         return NextResponse.json({
           proposal: sanitizeDashes(aiText.trim()),
           model: "gemini-flash-lite-latest",
+          quota: responseQuota,
           success: true,
         });
       }
@@ -151,6 +279,7 @@ Reply directly on CLIVORA or approve this proposal to initiate milestone funding
       return NextResponse.json({
         proposal: fallbackProposal,
         model: "fallback-template",
+        quota: responseQuota,
         success: true,
       });
     }
@@ -203,6 +332,7 @@ Example:
             return NextResponse.json({
               items,
               total: items.reduce((acc, curr) => acc + curr.amount, 0),
+              quota: responseQuota,
               success: true,
             });
           }
@@ -233,6 +363,7 @@ Example:
       return NextResponse.json({
         items: fallbackItems,
         total: targetBudget,
+        quota: responseQuota,
         success: true,
       });
     }
@@ -334,6 +465,7 @@ Keep it sharp, tactical, and motivating. Zero em dashes (use hyphens or colons).
         return NextResponse.json({
           briefing: sanitizeDashes(aiText.trim()),
           metrics,
+          quota: responseQuota,
           success: true,
         });
       }
@@ -345,6 +477,7 @@ Keep it sharp, tactical, and motivating. Zero em dashes (use hyphens or colons).
       return NextResponse.json({
         briefing: fallbackBriefing,
         metrics,
+        quota: responseQuota,
         success: true,
       });
     }

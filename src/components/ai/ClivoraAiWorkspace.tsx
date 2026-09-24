@@ -29,6 +29,15 @@ interface GeneratedInvoiceItem {
   category: string;
 }
 
+interface QuotaInfo {
+  isVip: boolean;
+  used: number;
+  total: number;
+  remaining: number;
+  resetsInHours: string;
+  cooldownRemaining?: number;
+}
+
 interface HealthMetrics {
   monthlyRevenue: number;
   overdueCount: number;
@@ -51,6 +60,9 @@ export function ClivoraAiWorkspace({
   const [activeTab, setActiveTab] = useState<"proposals" | "invoices" | "health">(initialTab);
   const [isPending, startTransition] = useTransition();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Quota & Rate Limit State
+  const [quota, setQuota] = useState<QuotaInfo | null>(null);
 
   // Proposal State
   const [clientName, setClientName] = useState("");
@@ -84,6 +96,22 @@ export function ClivoraAiWorkspace({
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2500);
   };
+
+  // Fetch current quota status on mount
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/ai/assistant")
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted && data?.quota) {
+          setQuota(data.quota);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // WhatsApp Share helper
   const handleShareWhatsApp = (text: string, targetPhone?: string) => {
@@ -122,6 +150,9 @@ export function ClivoraAiWorkspace({
         });
 
         const data = await res.json();
+        if (data?.quota) {
+          setQuota(data.quota);
+        }
         if (!res.ok) {
           throw new Error(data.error || "Failed to generate proposal");
         }
@@ -194,6 +225,9 @@ export function ClivoraAiWorkspace({
         });
 
         const data = await res.json();
+        if (data?.quota) {
+          setQuota(data.quota);
+        }
         if (!res.ok) {
           throw new Error(data.error || "Failed to generate invoice items");
         }
@@ -256,6 +290,9 @@ export function ClivoraAiWorkspace({
         });
 
         const data = await res.json();
+        if (data?.quota) {
+          setQuota(data.quota);
+        }
         if (!res.ok) {
           throw new Error(data.error || "Failed to generate health advisory");
         }
@@ -268,6 +305,8 @@ export function ClivoraAiWorkspace({
     });
   };
 
+  const isQuotaExhausted = Boolean(quota && !quota.isVip && quota.remaining <= 0);
+
   return (
     <div className={cn("flex flex-col bg-surface text-navy", embeddedInModal ? "h-full" : "rounded-3xl border border-border p-6 shadow-sm")}>
       {/* Top Header / Bar */}
@@ -277,11 +316,29 @@ export function ClivoraAiWorkspace({
             <Sparkles className="h-6 w-6" />
           </span>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-display text-xl font-extrabold text-navy">CLIVORA AI Assistant</h2>
               <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                 Gemini Powered
               </span>
+              {quota && (
+                quota.isVip ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-500/20">
+                    👑 VIP / Admin (Unlimited AI)
+                  </span>
+                ) : (
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold border",
+                      quota.remaining > 0
+                        ? "bg-amber-500/10 text-amber-700 border-amber-500/20"
+                        : "bg-red-500/10 text-red-700 border-red-500/20"
+                    )}
+                  >
+                    ⚡ Free Daily Quota: {quota.remaining}/{quota.total} remaining
+                  </span>
+                )
+              )}
             </div>
             <p className="text-xs text-text-secondary">
               Draft commercial proposals, build invoice line items, and generate real-time business health advisory.
@@ -332,6 +389,34 @@ export function ClivoraAiWorkspace({
           </button>
         </div>
       </div>
+
+      {/* Quota Exhaustion Alert Banner */}
+      {isQuotaExhausted && (
+        <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-navy">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-amber-900">
+                  Daily Free Quota Limit Reached ({quota?.total}/{quota?.total})
+                </h4>
+                <p className="text-xs text-amber-800/90 mt-0.5">
+                  To protect API throughput and stay strictly within free limits, assistant actions are capped at {quota?.total} calls per day. Quota resets in {quota?.resetsInHours}h. Need high-volume or VIP access?
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://wa.link/8soaqu"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#20ba59] transition whitespace-nowrap"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Upgrade via WhatsApp
+            </a>
+          </div>
+        </div>
+      )}
 
       {/* Tab 1: Proposals */}
       {activeTab === "proposals" && (
@@ -456,7 +541,7 @@ export function ClivoraAiWorkspace({
 
             <button
               type="button"
-              disabled={isPending}
+              disabled={isPending || isQuotaExhausted}
               onClick={handleGenerateProposal}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-dark disabled:opacity-50"
             >
@@ -464,6 +549,11 @@ export function ClivoraAiWorkspace({
                 <>
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   Generating with Gemini...
+                </>
+              ) : isQuotaExhausted ? (
+                <>
+                  <AlertCircle className="h-4 w-4" />
+                  Daily Limit Reached ({quota?.total}/{quota?.total})
                 </>
               ) : (
                 <>
@@ -661,7 +751,7 @@ export function ClivoraAiWorkspace({
 
             <button
               type="button"
-              disabled={isPending}
+              disabled={isPending || isQuotaExhausted}
               onClick={handleGenerateInvoiceItems}
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-dark disabled:opacity-50"
             >
@@ -669,6 +759,11 @@ export function ClivoraAiWorkspace({
                 <>
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   Calculating Line Items...
+                </>
+              ) : isQuotaExhausted ? (
+                <>
+                  <AlertCircle className="h-4 w-4" />
+                  Daily Limit Reached ({quota?.total}/{quota?.total})
                 </>
               ) : (
                 <>
@@ -797,7 +892,7 @@ export function ClivoraAiWorkspace({
             </div>
             <button
               type="button"
-              disabled={isPending}
+              disabled={isPending || isQuotaExhausted}
               onClick={handleGenerateHealthBriefing}
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-bold text-white hover:bg-primary-dark shadow-md transition disabled:opacity-50"
             >
@@ -805,6 +900,11 @@ export function ClivoraAiWorkspace({
                 <>
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   Analyzing CRM...
+                </>
+              ) : isQuotaExhausted ? (
+                <>
+                  <AlertCircle className="h-4 w-4" />
+                  Daily Limit Reached ({quota?.total}/{quota?.total})
                 </>
               ) : (
                 <>
