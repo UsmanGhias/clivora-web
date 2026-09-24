@@ -93,7 +93,7 @@ export const marketing = {
     badge: "FOUNDER LAUNCH · 100% FREE ACCESS & $0 DEAL FEES",
     headline: ["Stop losing 10-20%", "to marketplace fees."],
     body:
-      "Clivora is a complete Freelancer OS for freelancers and clients worldwide: private Connect hiring, 6,650+ verified remote jobs, CRM, projects, timesheets, and milestone invoices. Platform fees stay $0 with 100% free access during Founder Launch. Clients pay you directly with zero cuts. One unified account for web and Android.",
+      "Clivora is a complete Freelancer OS for freelancers and clients worldwide: private Connect hiring, real-time verified remote jobs, CRM, projects, timesheets, and milestone invoices. Platform fees stay $0 with 100% free access during Founder Launch. Clients pay you directly with zero cuts. One unified account for web and Android.",
     primaryCta: { label: "I'm a Freelancer", href: "/signup?role=freelancer" },
     secondaryCta: { label: "I'm hiring", href: "/signup?role=client" },
     trusts: [
@@ -108,7 +108,7 @@ export const marketing = {
   traction: {
     line: "Built for the full freelance loop: hire, deliver, and invoice with 0% platform cuts on your deals.",
     stats: [
-      { value: "6,650+", label: "Active Remote Jobs" },
+      { value: "Thousands", label: "Active Remote Jobs" },
       { value: "$0", label: "Deal platform fee" },
       { value: "100%", label: "Direct client payouts" },
       { value: "Direct", label: "Milestones & safety" },
@@ -218,7 +218,7 @@ export const marketing = {
     stats: [
       { value: "100%", label: "Free Full Access" },
       { value: "$0", label: "Connect deal fee" },
-      { value: "6,650+", label: "Verified Remote Jobs" },
+      { value: "Live Feed", label: "Verified Remote Jobs" },
       { value: "100%", label: "Earnings you keep" },
       { value: "Global", label: "freelancers & clients" },
       { value: "2", label: "platforms · web+app" },

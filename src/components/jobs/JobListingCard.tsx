@@ -44,7 +44,20 @@ const EXCLUDED_TAGS = new Set([
   "remotive",
   "source",
   "external",
+  "others",
+  "general",
+  "it",
 ]);
+
+function isValidTag(tag: string): boolean {
+  const t = tag.toLowerCase().trim();
+  if (t.length < 2 || t.length > 25) return false;
+  if (EXCLUDED_TAGS.has(t)) return false;
+  if (t.startsWith("dr ") || t.startsWith("sg-") || t.startsWith("siege")) return false;
+  if (t.includes("cotation") || t.includes("rifseep") || t.includes("dsda") || t.includes("ccit")) return false;
+  if (/^\d+$/.test(t)) return false;
+  return true;
+}
 
 function formatSalary(min?: number | null, max?: number | null, currency: string = "USD") {
   if (!min && !max) return "Competitive Pay";
@@ -85,14 +98,14 @@ export function JobListingCard({
   isFeatured?: boolean;
 }) {
   const displayTags = (job.tags || [])
-    .filter((t) => !EXCLUDED_TAGS.has(t.toLowerCase()))
+    .filter(isValidTag)
     .slice(0, 5);
 
   const companyInitials = getInitials(job.company_name);
   const avatarGradient = getAvatarGradient(job.company_name);
   const langBadge = getLanguageBadge(job.language);
   const salaryText = formatSalary(job.salary_min, job.salary_max, job.currency);
-  const cleanTitle = cleanText(job.title);
+  const cleanTitle = cleanText(job.title).replace(/\s*-\s*\d{3,6}$/, "").trim();
   const cleanCompany = cleanText(job.company_name);
   const cleanLocation = cleanText(job.location || "Remote");
   const jobUrl = `https://clivora.io/jobs/view/${job.seo_slug}`;

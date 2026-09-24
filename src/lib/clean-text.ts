@@ -119,7 +119,11 @@ export function cleanText(str?: string | null): string {
   // 15. Convert inline emojis used as bullet points in scrapers
   text = text.replace(/(\s+)([\p{Extended_Pictographic}\u200d]+)(\s+[A-Z])/gu, "\n• $3");
 
-  // 16. Standardize spacing and newlines
+  // 16. Strip decorative horizontal rule dividers and repeated punctuation underscores/hyphens/equals
+  text = text.replace(/^[_\-=*~#]{2,}\s*/gm, "");
+  text = text.replace(/\n[_\-=*~#]{2,}\s*/g, "\n");
+
+  // 17. Standardize spacing and newlines
   text = text.replace(/[ \t]+/g, " ");
   text = text.replace(/\n[ \t]+/g, "\n");
   text = text.replace(/\n\s*\n\s*\n+/g, "\n\n");
