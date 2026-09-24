@@ -27,9 +27,9 @@ const roadmapItems = [
   },
   {
     icon: RefreshCw,
-    title: "Google Play Billing",
+    title: "Google Play Store App",
     description:
-      "Pro subscriptions at $9/month · Pro Plus at $19/month with secure Play Store payments.",
+      "Offline-first mobile workspace for Android with 100% free sync and zero fees.",
     phase: "Next",
     color: "text-teal-400",
     bg: "bg-teal-500/10",

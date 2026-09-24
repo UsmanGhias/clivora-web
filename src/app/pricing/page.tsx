@@ -64,8 +64,8 @@ export default function PricingPage() {
                 <tr>
                   <th className="py-3.5 px-4 font-bold">Platform Capability</th>
                   <th className="py-3.5 px-4 font-bold text-slate-600">Free ($0)</th>
-                  <th className="py-3.5 px-4 font-bold text-slate-700">Pro ($9/mo)</th>
-                  <th className="py-3.5 px-4 font-bold text-teal-800 bg-teal-50/60">Pro Plus ($19/mo)</th>
+                  <th className="py-3.5 px-4 font-bold text-slate-700">Pro ($0 Free)</th>
+                  <th className="py-3.5 px-4 font-bold text-teal-800 bg-teal-50/60">Founder Pro Plus ($0 Free)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/70 text-slate-600">

@@ -61,22 +61,32 @@ export function HomeHero() {
             </div>
 
             {/* Live Interactive Bridges */}
-            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+            <div className="mt-5 flex flex-wrap items-center gap-2">
               <Link
                 href="/jobs"
                 className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50/90 px-3.5 py-1.5 text-xs font-bold text-teal-900 transition hover:bg-teal-100 hover:border-teal-300 shadow-xs"
               >
                 <span className="h-2 w-2 rounded-full bg-teal-600 animate-ping" />
-                <span>{stats.formattedJobs} Verified Remote Jobs</span>
+                <span>{stats.formattedJobs} Remote Jobs ($0 Fee)</span>
                 <span className="text-teal-700 font-bold">→</span>
               </Link>
               <Link
-                href="/start-a-project"
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-navy transition hover:bg-slate-50 hover:border-slate-300 shadow-xs"
+                href="/jobs?lang=en"
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-xs"
               >
-                <Sparkles className="h-3.5 w-3.5 text-teal-600" />
-                <span>Instant AI Statement of Work (SOW)</span>
-                <span className="text-slate-400 font-bold">→</span>
+                <span>🇬🇧 English</span>
+              </Link>
+              <Link
+                href="/jobs?lang=de"
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-xs"
+              >
+                <span>🇩🇪 Deutsch</span>
+              </Link>
+              <Link
+                href="/jobs?lang=fr"
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-xs"
+              >
+                <span>🇫🇷 Français</span>
               </Link>
             </div>
 

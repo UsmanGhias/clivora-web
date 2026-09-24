@@ -74,8 +74,8 @@ const TRUST_PILLARS = [
 
 const FAQS = [
   {
-    q: "How does Clivora make money if there is a 0% fee on contracts?",
-    a: "Clivora is built as a complete Freelancer Business OS. We monetize like modern software companies: through optional Pro and Pro Plus workspace subscriptions ($9/mo and $19/mo) that offer enhanced features like larger file vaults, AI assistant capabilities, and multi-seat team tools. We never take a percentage cut of your project billings.",
+    q: "How does Clivora operate with a 0% fee on contracts?",
+    a: "Clivora is built as a complete Freelancer Business OS under a 100% free model during our Founder Launch. We never take a percentage cut of your project billings or client deals. Funds flow directly from clients to your own accounts, allowing you to retain 100% of your earnings.",
   },
   {
     q: "Is Clivora an escrow agent or bank?",

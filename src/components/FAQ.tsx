@@ -20,8 +20,8 @@ const faqs = [
     a: "3 clients, 5 projects, 10 invoices per month, 3 smart templates, and 100 MB File Vault. Tasks, expenses, notes, reports, and PDF invoices remain available.",
   },
   {
-    q: "How much will Pro cost?",
-    a: "Pro is $9/month via Google Play Billing. It unlocks unlimited usage, contracts, workflows, and 5 GB File Vault storage.",
+    q: "How much does CLIVORA cost?",
+    a: "CLIVORA is 100% free with $0 platform fees during Founder Launch. You get complete access to workspace tools, invoicing, contracts, and the Connect marketplace without subscriptions.",
   },
   {
     q: "Can I export branded PDF invoices?",
