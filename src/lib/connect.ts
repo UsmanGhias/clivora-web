@@ -61,7 +61,10 @@ export async function listPublicConnectNeeds(search?: string) {
       .limit(500),
   ]);
 
-  const rawNeeds = (needsRes.data ?? []) as ConnectNeed[];
+  const rawNeeds: ConnectNeed[] = ((needsRes.data ?? []) as ConnectNeed[]).map((n) => ({
+    ...n,
+    is_direct_client: true,
+  }));
 
   const mappedJobs: ConnectNeed[] = (jobsRes.data ?? []).map((j) => {
     const budget =
@@ -86,10 +89,16 @@ export async function listPublicConnectNeeds(search?: string) {
       job_id: j.id,
       seo_slug: j.seo_slug,
       location: j.location,
+      is_direct_client: !!j.posted_by,
     };
   });
 
-  const combined = [...rawNeeds, ...mappedJobs];
+  const combined = [...rawNeeds, ...mappedJobs].sort((a, b) => {
+    const aDirect = a.is_direct_client ? 1 : 0;
+    const bDirect = b.is_direct_client ? 1 : 0;
+    if (aDirect !== bDirect) return bDirect - aDirect;
+    return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+  });
 
   if (search?.trim()) {
     const s = search.trim().toLowerCase();

@@ -88,7 +88,7 @@ export async function HomeJobsSpotlight() {
               Latest Remote Jobs & Opportunities
             </h2>
             <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-2xl">
-              Apply directly with $0 platform fees. Keep 100% of your earnings with direct client contact and instant WhatsApp sharing.
+              Apply directly with $0 platform fees. Keep 100% of your earnings with direct client contact and instant link sharing.
             </p>
           </div>
 

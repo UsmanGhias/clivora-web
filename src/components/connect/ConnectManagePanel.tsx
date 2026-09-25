@@ -509,8 +509,61 @@ export function ConnectManagePanel() {
       setError(parseConnectCreditError(err).message);
       return;
     }
+
+    // Direct Job Syndication: Also publish into public connect_jobs with top client priority
+    try {
+      const cleanTitle = need.title.trim();
+      const slugBase = cleanTitle
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/[\s_]+/g, "-")
+        .slice(0, 50);
+      const seoSlug = `${slugBase}-${user.id.slice(0, 6)}-${Date.now()}`;
+
+      // Extract salary figures from budget band
+      let salaryMin: number | null = null;
+      let salaryMax: number | null = null;
+      const numMatches = need.budget_band.match(/\$?(\d[\d,]*)/g);
+      if (numMatches && numMatches.length > 0) {
+        salaryMin = parseInt(numMatches[0].replace(/[$,]/g, ""), 10) || null;
+        if (numMatches.length > 1) {
+          salaryMax = parseInt(numMatches[1].replace(/[$,]/g, ""), 10) || null;
+        }
+      }
+
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("name, company, email")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const companyName = prof?.company || prof?.name || (isClientUser ? "Verified Client" : "Clivora Member");
+
+      await supabase.from("connect_jobs").insert({
+        title: cleanTitle,
+        company_name: companyName,
+        company_email: prof?.email || user.email || null,
+        description: need.summary.trim(),
+        category: "software-development",
+        tags: skills.length > 0 ? skills : ["remote"],
+        salary_min: salaryMin,
+        salary_max: salaryMax,
+        currency: "USD",
+        location: "Remote",
+        job_type: "contract",
+        source: "manual",
+        source_id: `clivora-post-${user.id.slice(0, 8)}-${Date.now()}`,
+        posted_by: user.id,
+        seo_slug: seoSlug,
+        status: "published",
+        is_public: true,
+      });
+    } catch (e) {
+      console.warn("Public job syndication notice:", e);
+    }
+
     setMessage(
-      `${accountType === "client" ? "Job" : "Need"} posted (−${CONNECT_CREDIT_COSTS.publish_need} credits).`,
+      `${accountType === "client" ? "Job" : "Need"} successfully published! It is live on the Remote Jobs board and Connect Marketplace.`,
     );
     setNeed({ title: "", summary: "", skills: "", budget_band: BUDGET_OPTIONS[1] });
     await reloadNeeds(user.id);

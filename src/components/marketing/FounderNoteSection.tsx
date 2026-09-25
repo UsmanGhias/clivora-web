@@ -22,35 +22,56 @@ export function FounderNoteSection() {
               </p>
               <h2
                 id="founder-note-heading"
-                className="mt-3 font-display text-3xl font-extrabold leading-[1.18] tracking-tight sm:text-4xl"
+                className="mt-3 font-display text-3xl font-extrabold leading-[1.18] tracking-tight sm:text-4xl text-white"
               >
                 Marketplaces tax both sides. I built an OS where you hire, deliver, and invoice without
                 losing a cut of the deal.
               </h2>
+              <p className="mt-3 text-sm text-white/70 leading-relaxed">
+                Legacy freelance platforms extract 10-20% from every completed deliverable and penalize off-platform communications. Clivora runs as your independent business infrastructure.
+              </p>
 
-              <ul className="mt-6 space-y-3 text-sm text-white/80">
-                <li className="flex items-center gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-400/20 text-teal-300 text-xs font-bold">
-                    ✓
-                  </span>
-                  <span>$0 platform commission on all negotiated deals</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-400/20 text-teal-300 text-xs font-bold">
-                    ✓
-                  </span>
-                  <span>Clients pay directly against your milestone invoices</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-400/20 text-teal-300 text-xs font-bold">
-                    ✓
-                  </span>
-                  <span>Unified workspace synced across web and Android</span>
-                </li>
-              </ul>
+              {/* Architectural Guarantee Grid */}
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 backdrop-blur-2xs">
+                  <div className="flex items-center gap-1.5 text-teal-300 font-bold text-xs uppercase tracking-wider">
+                    <span>✓ $0 Deal Fees</span>
+                  </div>
+                  <p className="mt-1 text-xs text-white/70 leading-relaxed">
+                    Zero platform deductions on all negotiated contracts. Keep 100% of your earnings.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 backdrop-blur-2xs">
+                  <div className="flex items-center gap-1.5 text-teal-300 font-bold text-xs uppercase tracking-wider">
+                    <span>✓ Direct Ownership</span>
+                  </div>
+                  <p className="mt-1 text-xs text-white/70 leading-relaxed">
+                    Private Connect protects early outreach; full contact activates on mutual accept.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 backdrop-blur-2xs">
+                  <div className="flex items-center gap-1.5 text-teal-300 font-bold text-xs uppercase tracking-wider">
+                    <span>✓ Milestone Escrow</span>
+                  </div>
+                  <p className="mt-1 text-xs text-white/70 leading-relaxed">
+                    Structured milestone invoices paid directly to you with zero arbitrary clawbacks.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3.5 backdrop-blur-2xs">
+                  <div className="flex items-center gap-1.5 text-teal-300 font-bold text-xs uppercase tracking-wider">
+                    <span>✓ Web + Android Sync</span>
+                  </div>
+                  <p className="mt-1 text-xs text-white/70 leading-relaxed">
+                    One unified business account across browser and native mobile app without data loss.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="flex flex-wrap gap-3 pt-3 border-t border-white/10">
               <Link
                 href="/signup?role=freelancer"
                 className="inline-flex rounded-xl bg-teal-400 px-5 py-3 text-sm font-bold text-navy shadow-lg shadow-teal-900/20 transition hover:bg-teal-300"
@@ -92,7 +113,7 @@ export function FounderNoteSection() {
               </p>
               <p className="text-[15px] leading-relaxed text-white/80 sm:text-base">
                 CLIVORA is the opposite bet: a{" "}
-                <strong className="font-semibold text-white">complete Freelancer OS</strong> with private Connect (emails unlock only after mutual accept), CRM, projects, timesheets, messages, and invoices.{" "}
+                <strong className="font-semibold text-white">complete Freelancer OS</strong> with private Connect (emails reveal only after mutual accept), CRM, projects, timesheets, messages, and invoices.{" "}
                 <strong className="font-semibold text-white">$0 platform fee</strong> on the rate you negotiate. Clients pay freelancers directly against your invoice. One account for web and the Android app so your business doesn&apos;t reset when you leave the desk.
               </p>
               <p className="text-sm leading-relaxed text-white/60">

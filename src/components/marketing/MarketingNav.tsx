@@ -180,13 +180,14 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-0.5 xl:gap-1 lg:flex">
+          <nav className="hidden items-center gap-1 xl:gap-2 lg:flex">
             {marketing.nav.links.map((link) => {
               const hasChildren = "children" in link && !!link.children?.length;
               const isExternal = "external" in link && link.external;
               const badge = "badge" in link ? (link.badge as string) : null;
+              const isJobsLink = link.label === "Jobs";
               const itemClass = cn(
-                "inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-xs xl:text-sm font-medium transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs xl:text-sm font-semibold transition-colors",
                 light
                   ? "text-slate-600 hover:bg-slate-100 hover:text-navy"
                   : "text-white/75 hover:bg-white/10 hover:text-white",
@@ -205,28 +206,37 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                       target="_blank"
                       rel="noopener noreferrer"
                       className={itemClass}
+                      onClick={() => setOpenMenu(null)}
                     >
                       <span>{link.label}</span>
                       {badge && (
-                        <span className="rounded-full bg-teal-100 px-1.5 py-0.2 text-[9px] font-bold text-teal-800">
+                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800">
                           {badge}
                         </span>
                       )}
                     </a>
                   ) : (
-                    <Link href={link.href} className={itemClass}>
+                    <Link
+                      href={link.href}
+                      className={itemClass}
+                      onClick={() => setOpenMenu(null)}
+                    >
                       <span>{link.label}</span>
-                      {badge && (
-                        <span className="rounded-full bg-teal-100 px-1.5 py-0.2 text-[9px] font-bold text-teal-800">
+                      {isJobsLink ? (
+                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-extrabold text-teal-800 border border-teal-200">
+                          {stats.formattedJobs}
+                        </span>
+                      ) : badge ? (
+                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800">
                           {badge}
                         </span>
-                      )}
+                      ) : null}
                       {hasChildren ? <ChevronDown className="h-3.5 w-3.5 opacity-60" /> : null}
                     </Link>
                   )}
                   {hasChildren && openMenu === link.label ? (
                     <div className="absolute left-0 top-full pt-2">
-                      <div className="min-w-[210px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10">
+                      <div className="min-w-[220px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10">
                         {link.children!.map((child) => {
                           const childExternal = "external" in child && child.external;
                           return childExternal ? (
@@ -235,6 +245,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                               href={child.href}
                               target="_blank"
                               rel="noopener noreferrer"
+                              onClick={() => setOpenMenu(null)}
                               className="block rounded-lg px-3 py-2 text-xs xl:text-sm text-slate-600 transition hover:bg-teal-50 hover:text-navy"
                             >
                               {child.label}
@@ -243,6 +254,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                             <Link
                               key={child.href + child.label}
                               href={child.href}
+                              onClick={() => setOpenMenu(null)}
                               className="flex items-center justify-between rounded-lg px-3 py-2 text-xs xl:text-sm text-slate-600 transition hover:bg-teal-50 hover:text-navy"
                             >
                               <span>{child.label}</span>
@@ -262,12 +274,12 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
             })}
           </nav>
 
-          <div className="hidden items-center gap-2 xl:gap-3 lg:flex">
+          <div className="hidden items-center gap-2 xl:gap-2.5 lg:flex shrink-0">
             <SiteSearchBar variant="icon" light={light} />
             <button
               type="button"
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs xl:text-sm font-medium",
+                "inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs xl:text-sm font-medium",
                 light ? "text-slate-500 hover:bg-slate-100" : "text-white/70 hover:bg-white/10",
               )}
               aria-label="Language"
@@ -277,32 +289,33 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
             </button>
 
             {loggedIn ? (
-              <>
+              <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
                 <span
                   className={cn(
-                    "hidden text-xs xl:text-sm font-medium xl:inline",
-                    light ? "text-slate-500" : "text-white/70",
+                    "hidden text-xs xl:text-sm font-semibold xl:inline truncate max-w-[110px]",
+                    light ? "text-slate-600" : "text-white/80",
                   )}
+                  title={displayName}
                 >
                   Hi, {displayName}
                 </span>
                 <Link
                   href="/app"
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs xl:text-sm font-bold shadow-xs transition",
+                    "inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs xl:text-sm font-bold shadow-xs transition shrink-0",
                     light
                       ? "bg-navy text-white hover:bg-navy/90 shadow-navy/10"
                       : "bg-white text-navy hover:bg-white/90 shadow-white/10",
                   )}
                 >
-                  <LayoutDashboard className="h-4 w-4" />
+                  <LayoutDashboard className="h-3.5 w-3.5" />
                   <span>Dashboard</span>
                 </Link>
                 <button
                   type="button"
                   onClick={() => void signOut()}
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-lg p-2 text-sm font-medium transition",
+                    "inline-flex items-center justify-center rounded-lg p-2 text-sm font-medium transition shrink-0",
                     light ? "text-slate-500 hover:bg-slate-100 hover:text-navy" : "text-white/70 hover:bg-white/10 hover:text-white",
                   )}
                   aria-label="Sign out"
@@ -310,13 +323,13 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                 >
                   <LogOut className="h-4 w-4" />
                 </button>
-              </>
+              </div>
             ) : (
               <>
                 <Link
                   href={marketing.nav.login.href}
                   className={cn(
-                    "text-xs xl:text-sm font-semibold",
+                    "text-xs xl:text-sm font-semibold px-2 py-1.5",
                     light ? "text-navy hover:text-primary" : "text-white/80 hover:text-white",
                   )}
                 >
@@ -325,7 +338,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                 <Link
                   href={marketing.nav.cta.href}
                   className={cn(
-                    "rounded-xl px-4 py-2 text-xs xl:text-sm font-bold transition shadow-xs",
+                    "rounded-xl px-4 py-2 text-xs xl:text-sm font-bold transition shadow-xs shrink-0",
                     light
                       ? "bg-navy text-white hover:bg-navy/90 shadow-navy/10"
                       : "bg-white text-navy hover:bg-white/90 shadow-white/10",

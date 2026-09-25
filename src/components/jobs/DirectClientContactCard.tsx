@@ -12,6 +12,7 @@ import {
   Sparkles,
   MessageSquare,
   MessageCircle,
+  Share2,
   Lock,
   ArrowUpRight,
   Briefcase,
@@ -39,6 +40,7 @@ export function DirectClientContactCard({
   salaryText = "Competitive Pay",
 }: DirectClientContactCardProps) {
   const [copiedPitch, setCopiedPitch] = useState(false);
+  const [copiedJobUrl, setCopiedJobUrl] = useState(false);
   const [showPitchModal, setShowPitchModal] = useState(false);
 
   const cleanPitch = `Hi ${companyName} Hiring Team,
@@ -64,10 +66,27 @@ Best regards,`;
     }
   };
 
-  const shareJobOnWhatsApp = () => {
+  const shareJob = async () => {
     const url = typeof window !== "undefined" ? window.location.href : `https://clivora.io/jobs/view/${jobId}`;
-    const text = `Remote role on CLIVORA: ${jobTitle} at ${companyName} (${salaryText}) - $0 Platform Fee: ${url}`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${jobTitle} at ${companyName}`,
+          text: `Remote role on CLIVORA: ${jobTitle} at ${companyName} (${salaryText}) - $0 Platform Fee: ${url}`,
+          url,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedJobUrl(true);
+      setTimeout(() => setCopiedJobUrl(false), 2000);
+    } catch {
+      // fallback
+    }
   };
 
   const sharePitchOnWhatsApp = () => {
@@ -137,14 +156,23 @@ Best regards,`;
             </a>
           )}
 
-          {/* Action 3: Quick Share via WhatsApp */}
+          {/* Action 3: Quick Share & Copy Link */}
           <button
             type="button"
-            onClick={shareJobOnWhatsApp}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-emerald-700"
+            onClick={shareJob}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-navy hover:border-slate-300"
           >
-            <MessageCircle className="h-4 w-4 text-[#25D366]" />
-            Share Opportunity via WhatsApp
+            {copiedJobUrl ? (
+              <>
+                <Check className="h-4 w-4 text-emerald-600" />
+                <span className="text-emerald-700 font-bold">Link Copied to Clipboard!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="h-4 w-4 text-slate-500" />
+                <span>Share Opportunity Link</span>
+              </>
+            )}
           </button>
         </div>
 
