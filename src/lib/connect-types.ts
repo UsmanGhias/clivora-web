@@ -38,6 +38,7 @@ export type ConnectNeed = {
   job_id?: string | null;
   seo_slug?: string | null;
   location?: string | null;
+  is_direct_client?: boolean | null;
 };
 
 export type ConnectRequestRow = {

@@ -95,11 +95,11 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Resolve from connect_jobs if applying to a curated / crawled job
+    // 2. Resolve from connect_jobs if applying to a curated / crawled job or direct client job
     if ((!targetEmail || !targetEmail.includes("@")) && body.jobId) {
       const { data: jobRow } = await adminDb
         .from("connect_jobs")
-        .select("title, company_name, company_email, company_domain, description, source_url")
+        .select("title, company_name, company_email, company_domain, description, source_url, posted_by")
         .eq("id", body.jobId)
         .maybeSingle();
 
@@ -108,17 +108,32 @@ export async function POST(request: Request) {
         if (!targetName && jobRow.company_name) targetName = jobRow.company_name;
         externalSourceUrl = jobRow.source_url || null;
 
-        if (jobRow.company_email && jobRow.company_email.includes("@")) {
-          targetEmail = jobRow.company_email.trim().toLowerCase();
-        } else if (jobRow.description) {
-          const extracted = extractEmailFromText(jobRow.description);
-          if (extracted) {
-            targetEmail = extracted;
-            // Also backfill connect_jobs for future proposals
-            void adminDb
-              .from("connect_jobs")
-              .update({ company_email: extracted })
-              .eq("id", body.jobId);
+        // Check if posted directly by a registered Clivora client
+        if (jobRow.posted_by) {
+          const { data: directClientProfile } = await adminDb
+            .from("profiles")
+            .select("email, name")
+            .eq("id", jobRow.posted_by)
+            .maybeSingle();
+          if (directClientProfile?.email) {
+            targetEmail = directClientProfile.email.trim().toLowerCase();
+            if (!targetName) targetName = directClientProfile.name || "Client";
+          }
+        }
+
+        if (!targetEmail || !targetEmail.includes("@")) {
+          if (jobRow.company_email && jobRow.company_email.includes("@")) {
+            targetEmail = jobRow.company_email.trim().toLowerCase();
+          } else if (jobRow.description) {
+            const extracted = extractEmailFromText(jobRow.description);
+            if (extracted) {
+              targetEmail = extracted;
+              // Also backfill connect_jobs for future proposals
+              void adminDb
+                .from("connect_jobs")
+                .update({ company_email: extracted })
+                .eq("id", body.jobId);
+            }
           }
         }
       }

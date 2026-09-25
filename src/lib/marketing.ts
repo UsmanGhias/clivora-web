@@ -16,12 +16,17 @@ export const marketing = {
   nav: {
     links: [
       {
+        label: "Jobs",
+        href: "/jobs",
+        badge: "Remote",
+      },
+      {
         label: "Freelancers",
         href: "/for-freelancers",
         children: [
           { label: "Freelancer OS Overview", href: "/for-freelancers" },
           { label: "Remote Jobs Board", href: "/jobs" },
-          { label: "Connect Direct Hiring", href: "/connect" },
+          { label: "Connect Direct Hiring", href: "/connect?tab=jobs" },
           { label: "Free Tools & Calculators", href: "/tools" },
         ],
       },
@@ -30,18 +35,9 @@ export const marketing = {
         href: "/for-clients",
         children: [
           { label: "Client Portal Overview", href: "/for-clients" },
-          { label: "Hire Verified Talent", href: "/connect" },
+          { label: "Hire Verified Talent", href: "/connect?tab=talent" },
+          { label: "Post a Remote Job (Free)", href: "/app/connect/manage" },
           { label: "Instant AI SOW Generator", href: "/start-a-project" },
-        ],
-      },
-      {
-        label: "Tools",
-        href: "/tools",
-        children: [
-          { label: "All Free Tools", href: "/tools" },
-          { label: "Freelance Rate Calculator", href: "/tools/freelance-rate-calculator" },
-          { label: "Upwork Fee Calculator", href: "/tools/upwork-fee-calculator" },
-          { label: "Instant PDF Invoice Maker", href: "/tools/invoice-generator" },
         ],
       },
       {
@@ -56,33 +52,20 @@ export const marketing = {
         ],
       },
       {
-        label: "Platform",
-        href: "/features",
-        children: [
-          { label: "Features Overview", href: "/features" },
-          { label: "Trust & Safety", href: "/trust" },
-          { label: "Security Architecture", href: "/security" },
-          { label: "Ecosystem Integrations", href: "/integrations" },
-          { label: "Plans & Pricing", href: "/pricing" },
-        ],
-      },
-      {
         label: "Resources",
         href: "/docs",
         children: [
           { label: "Documentation", href: "/docs" },
-          { label: "Architecture Studio", href: "https://arch.clivora.io", external: true },
-          { label: "Code Studio", href: "https://play.clivora.io", external: true },
-          { label: "Developer DevTools", href: "https://tools.clivora.io", external: true },
+          { label: "Features Overview", href: "/features" },
+          { label: "Free Tools & Calculators", href: "/tools" },
+          { label: "Trust & Safety", href: "/trust" },
+          { label: "Security Architecture", href: "/security" },
+          { label: "Plans & Pricing ($0 Fee)", href: "/pricing" },
           { label: "Community Blog", href: "https://community.clivora.io/blog", external: true },
-          { label: "Community Forum", href: "https://community.clivora.io/forum", external: true },
-          { label: "About CODCrafters", href: "/about" },
-          { label: "Support", href: "/support" },
-          { label: "Contact", href: "/contact" },
+          { label: "Services & Agency", href: "https://codcrafters.org", external: true },
+          { label: "Support & Contact", href: "/contact" },
         ],
       },
-      { label: "Community", href: "https://community.clivora.io", external: true },
-      { label: "Services", href: "https://codcrafters.org", external: true },
     ],
     cta: { label: "Open free workspace", href: "/signup" },
     login: { label: "Login", href: "/login" },
@@ -228,7 +211,7 @@ export const marketing = {
   socialProof: {
     badge: "WHY PEOPLE CHOOSE CLIVORA",
     headline: ["Private hiring.", "Direct invoicing."],
-    body: "CLIVORA is a practical operating system built for real freelance businesses: Connect with private contact unlocking, invoices paid directly to you, and offline-first cloud synchronization.",
+    body: "CLIVORA is a practical operating system built for real freelance businesses: Connect with private contact release on mutual accept, invoices paid directly to you, and offline-first cloud synchronization.",
     features: [
       {
         title: "Talent you can verify",
@@ -263,7 +246,7 @@ export const marketing = {
     ],
     floatingStats: [
       { value: "$0", label: "Platform fee", hint: "On negotiated Connect deals" },
-      { value: "Mutual", label: "Accept to unlock email", hint: "No cold contact spam" },
+      { value: "Mutual", label: "Accept to reveal email", hint: "No cold contact spam" },
       { value: "Direct", label: "Client → freelancer pay", hint: "Via your invoice terms" },
       { value: "1 login", label: "Web & Android", hint: "Same business everywhere" },
     ],
@@ -348,7 +331,7 @@ export const marketing = {
       steps: [
         { title: "Browse Connect", description: "Jobs or talent." },
         { title: "Send proposal", description: "Cover letter + bid." },
-        { title: "Mutual accept", description: "Emails unlock." },
+        { title: "Mutual accept", description: "Emails reveal." },
         { title: "Share project", description: "Budget / hourly rate." },
         { title: "Track time", description: "Timer uses that rate." },
         { title: "Invoice", description: "Client pays you directly." },

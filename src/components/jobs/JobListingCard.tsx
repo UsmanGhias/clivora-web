@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { cleanText } from "@/lib/clean-text";
 import { getLanguageBadge } from "@/lib/job-languages";
@@ -13,7 +14,9 @@ import {
   ShieldCheck,
   Globe,
   CheckCircle2,
-  MessageCircle,
+  Share2,
+  Check,
+  Star,
   ExternalLink,
 } from "lucide-react";
 
@@ -35,6 +38,7 @@ export interface JobCardData {
   description?: string;
   source?: string;
   source_url?: string;
+  posted_by?: string | null;
 }
 
 const EXCLUDED_TAGS = new Set([
@@ -97,6 +101,7 @@ export function JobListingCard({
   job: JobCardData;
   isFeatured?: boolean;
 }) {
+  const [copied, setCopied] = useState(false);
   const displayTags = (job.tags || [])
     .filter(isValidTag)
     .slice(0, 5);
@@ -109,22 +114,39 @@ export function JobListingCard({
   const cleanCompany = cleanText(job.company_name);
   const cleanLocation = cleanText(job.location || "Remote");
   const jobUrl = `https://clivora.io/jobs/view/${job.seo_slug}`;
+  const isDirectClientJob = job.source === "manual" || !!job.posted_by;
 
-  const handleWhatsAppShare = (e: React.MouseEvent) => {
+  const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const text = `Remote Opportunity on CLIVORA: ${cleanTitle} at ${cleanCompany} (${salaryText}) - $0 Platform Fee: ${jobUrl}`;
-    window.open(
-      `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    const targetUrl = typeof window !== "undefined" ? `${window.location.origin}/jobs/view/${job.seo_slug}` : jobUrl;
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${cleanTitle} at ${cleanCompany}`,
+          text: `Check out this remote opportunity on CLIVORA ($0 Platform Fee): ${cleanTitle} at ${cleanCompany}`,
+          url: targetUrl,
+        });
+        return;
+      } catch {
+        // Fallback to clipboard if user dismissed or cancelled share dialog
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(targetUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+    }
   };
 
   return (
     <div
       className={`group relative flex h-full flex-col justify-between gap-5 rounded-2xl border bg-white p-5 sm:p-6 shadow-xs transition-all hover:-translate-y-0.5 hover:shadow-md ${
-        isFeatured
+        isFeatured || isDirectClientJob
           ? "border-teal-500 ring-2 ring-teal-500/20 bg-gradient-to-br from-teal-50/20 via-white to-slate-50/30"
           : "border-slate-200 hover:border-teal-500/80"
       }`}
@@ -163,7 +185,14 @@ export function JobListingCard({
               </span>
             )}
 
-            {isFeatured && (
+            {isDirectClientJob && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-teal-700 to-emerald-700 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xs">
+                <Star className="h-3 w-3 fill-amber-300 text-amber-300" />
+                Direct Client Job
+              </span>
+            )}
+
+            {isFeatured && !isDirectClientJob && (
               <span className="rounded-md bg-teal-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xs">
                 Featured
               </span>
@@ -238,11 +267,21 @@ export function JobListingCard({
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3.5">
         <button
           type="button"
-          onClick={handleWhatsAppShare}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-emerald-700"
+          onClick={handleShare}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-navy hover:border-slate-300 active:scale-95"
+          title="Share or copy job link"
         >
-          <MessageCircle className="h-3.5 w-3.5 text-[#25D366]" />
-          <span>Share via WhatsApp</span>
+          {copied ? (
+            <>
+              <Check className="h-3.5 w-3.5 text-emerald-600" />
+              <span className="text-emerald-700 font-bold">Link Copied!</span>
+            </>
+          ) : (
+            <>
+              <Share2 className="h-3.5 w-3.5 text-slate-500" />
+              <span>Share</span>
+            </>
+          )}
         </button>
 
         <Link

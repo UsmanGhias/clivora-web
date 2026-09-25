@@ -272,11 +272,15 @@ export function ConnectBoard({
       if (!q) return true;
       return hay.includes(q);
     });
-    if (sort === "newest") {
-      list = [...list].sort((a, b) =>
-        String(b.created_at || "").localeCompare(String(a.created_at || "")),
-      );
-    }
+    list = [...list].sort((a, b) => {
+      const aDirect = a.is_direct_client ? 1 : 0;
+      const bDirect = b.is_direct_client ? 1 : 0;
+      if (aDirect !== bDirect) return bDirect - aDirect;
+      if (sort === "newest") {
+        return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+      }
+      return 0;
+    });
     return list;
   }, [needs, query, skillFilter, categoryFilter, sort]);
 
@@ -1084,32 +1088,43 @@ export function ConnectBoard({
               <h2 className="font-display text-xl font-extrabold text-navy">Open jobs</h2>
               <p className="text-sm text-text-secondary">Client briefs looking for freelancers</p>
             </div>
-            {signedIn && isProPlus && (
-              <Link href="/app/connect/manage" className="text-sm font-semibold text-primary">
-                {isClient ? "Post a job →" : "Post a need →"}
+            {isClient ? (
+              <Link
+                href={signedIn ? "/app/connect/manage" : `/signup?next=${encodeURIComponent("/app/connect/manage")}`}
+                className="text-sm font-semibold text-primary hover:underline"
+              >
+                Post a job (Free) →
               </Link>
-            )}
+            ) : signedIn && isProPlus ? (
+              <Link href="/app/connect/manage" className="text-sm font-semibold text-primary hover:underline">
+                Post a need →
+              </Link>
+            ) : null}
           </div>
           {filteredNeeds.length === 0 ? (
             <Empty
               text={
                 isClient
-                  ? "No open jobs yet. Post a job to reach Pro Plus freelancers."
+                  ? "No open jobs yet. Post a job to reach verified freelancers."
                   : "No open jobs match. You can also post a need for peer help."
               }
               ctaHref={
                 signedIn
-                  ? isProPlus
+                  ? isClient
                     ? "/app/connect/manage"
-                    : "/pro?plan=pro_plus"
-                  : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
+                    : isProPlus
+                      ? "/app/connect/manage"
+                      : "/pro?plan=pro_plus"
+                  : isClient
+                    ? `/signup?next=${encodeURIComponent("/app/connect/manage")}`
+                    : `/signup?next=${encodeURIComponent("/pro?plan=pro_plus")}`
               }
               ctaLabel={
-                signedIn && isProPlus
-                  ? isClient
-                    ? "Post a job"
-                    : "Post a need"
-                  : `Get Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
+                isClient
+                  ? "Post a job (100% Free)"
+                  : signedIn && isProPlus
+                    ? "Post a need"
+                    : `Get Pro Plus · ${site.pricing.proPlusMonthlyLabel}/mo`
               }
             />
           ) : (
@@ -1141,9 +1156,16 @@ export function ConnectBoard({
                         )}
                         <h3 className="font-bold text-navy text-base">{n.title || "Job"}</h3>
                       </div>
-                      <span className="rounded-lg bg-teal-50 border border-teal-200 px-2 py-0.5 text-[10px] font-bold uppercase text-teal-800 shrink-0">
-                        {n.job_id ? "$0 Fee" : "Open"}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {n.is_direct_client && (
+                          <span className="rounded-lg bg-amber-500/10 border border-amber-500/25 px-2 py-0.5 text-[10px] font-extrabold uppercase text-amber-600">
+                            🌟 Direct Client
+                          </span>
+                        )}
+                        <span className="rounded-lg bg-teal-50 border border-teal-200 px-2 py-0.5 text-[10px] font-bold uppercase text-teal-800">
+                          {n.job_id ? "$0 Fee" : "Open"}
+                        </span>
+                      </div>
                     </div>
                     <p
                       className={cn(
