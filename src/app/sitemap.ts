@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 import { site, legalLinks } from "@/lib/site";
 import { DOC_CATALOG } from "@/lib/docs";
+import { getAllPosts, BLOG_AUTHOR } from "@/lib/blog";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
 // Rebuild hourly so newly crawled jobs reach search engines without a redeploy.
@@ -244,6 +245,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .select("seo_slug, created_at")
         .eq("is_public", true)
         .eq("status", "published")
+        // Only jobs posted on CLIVORA itself; third-party listings are noindexed.
+        .is("source_url", null)
+        .or("source.is.null,source.eq.client,source.eq.clivora")
         .order("created_at", { ascending: false })
         .order("id", { ascending: true })
         .range(from, Math.min(from + PAGE, MAX_SITEMAP_JOBS) - 1);
@@ -264,10 +268,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("[sitemap] Failed to load jobs for sitemap:", e);
   }
 
+  const posts = getAllPosts();
+  const blog: SitemapEntry[] = [
+    { path: "/blog", priority: 0.9, changeFrequency: "weekly" },
+    { path: BLOG_AUTHOR.path, priority: 0.6, changeFrequency: "monthly" },
+    ...posts.map((p) => ({
+      path: `/blog/${p.slug}`,
+      priority: 0.85,
+      changeFrequency: "monthly" as const,
+      lastModified: p.updated ?? p.date,
+    })),
+  ];
+
+  // skillUrls are intentionally excluded: those pages are noindex.
+  void skillUrls;
   const allRoutes: SitemapEntry[] = [
     ...core,
+    ...blog,
     ...categoryUrls,
-    ...skillUrls,
     ...jobUrls,
     ...docs,
     ...legal,
