@@ -50,12 +50,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const cleanJobTitle = cleanText(job.title);
   const cleanCompany = cleanText(job.company_name);
-  const title = `${cleanJobTitle} at ${cleanCompany} | CLIVORA ($0 Fee)`;
-  const description = `Apply directly for ${cleanJobTitle} at ${cleanCompany}. Direct client communication with 100% earnings and $0 platform fees on CLIVORA.`;
+  // Third-party listings indexed from other job boards are not original content and the
+  // employer is not on CLIVORA, so they are kept out of search and never claim $0-fee terms.
+  const isExternal = Boolean(
+    job.source_url || (job.source && job.source !== "client" && job.source !== "clivora"),
+  );
+  const title = isExternal
+    ? `${cleanJobTitle} at ${cleanCompany} | Remote listing`
+    : `${cleanJobTitle} at ${cleanCompany} | CLIVORA ($0 Fee)`;
+  const description = isExternal
+    ? `${cleanJobTitle} at ${cleanCompany}. Remote role listed from an external job board; apply through the employer's own application page.`
+    : `Apply directly for ${cleanJobTitle} at ${cleanCompany}. Direct client communication with 100% earnings and $0 platform fees on CLIVORA.`;
 
   return {
     title,
     description,
+    ...(isExternal ? { robots: { index: false, follow: true } } : {}),
     alternates: { canonical: `${site.url}/jobs/view/${slug}` },
     openGraph: {
       title,
@@ -133,7 +143,7 @@ export default async function JobViewPage({ params }: Props) {
     datePosted: job.created_at,
     validThrough: new Date(new Date(job.created_at).getTime() + 60 * 24 * 60 * 60 * 1000).toISOString(),
     employmentType: job.job_type ? (job.job_type === "full_time" ? "FULL_TIME" : job.job_type === "contract" ? "CONTRACTOR" : "PART_TIME") : "FULL_TIME",
-    directApply: true,
+    directApply: !(job.source_url || (job.source && job.source !== "client" && job.source !== "clivora")),
     identifier: {
       "@type": "PropertyValue",
       name: cleanCompany || "CLIVORA",

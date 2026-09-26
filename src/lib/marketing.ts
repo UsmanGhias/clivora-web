@@ -55,6 +55,7 @@ export const marketing = {
         label: "Resources",
         href: "/docs",
         children: [
+          { label: "Guides & Articles", href: "/blog" },
           { label: "Documentation", href: "/docs" },
           { label: "Features Overview", href: "/features" },
           { label: "Free Tools & Calculators", href: "/tools" },
@@ -636,6 +637,7 @@ export const marketing = {
       ],
       Company: [
         { label: "About CODCrafters", href: "/about" },
+        { label: "Guides & Articles", href: "/blog" },
         { label: "Contact", href: "/contact" },
         { label: "Support", href: "/support" },
         { label: "Architecture Studio", href: "https://arch.clivora.io" },
