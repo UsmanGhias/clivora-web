@@ -439,18 +439,6 @@ export function ConnectApplyPanel() {
               {jobInfo.salary && (
                 <p className="mt-2 text-xs font-bold text-teal-700 font-mono">{jobInfo.salary}</p>
               )}
-              {jobInfo.source_url && (
-                <div className="mt-2.5 pt-2 border-t border-teal-200/60">
-                  <a
-                    href={jobInfo.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 hover:text-teal-800 underline"
-                  >
-                    View Original Employer Post &rarr;
-                  </a>
-                </div>
-              )}
             </div>
           )}
 
