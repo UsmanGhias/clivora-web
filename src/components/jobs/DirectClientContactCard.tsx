@@ -4,8 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   Send,
-  ExternalLink,
-  Mail,
   Copy,
   Check,
   ShieldCheck,
@@ -103,60 +101,25 @@ Best regards,`;
             <h3 className="text-base font-bold">Apply & Contact</h3>
           </div>
           <span className="inline-flex items-center gap-1 rounded-full bg-teal-100/80 px-2.5 py-0.5 text-[11px] font-bold text-teal-800">
-            {sourceUrl ? "Curated Opening" : "Clivora Client"}
+            Clivora Connect ($0 Fee)
           </span>
         </div>
 
         <p className="mt-2.5 text-xs text-slate-600 leading-relaxed">
-          {sourceUrl
-            ? `Apply directly with ${companyName} on their official portal, or submit your proposal directly on Clivora with $0 platform take rates.`
-            : "Submit your proposal directly to the client. Zero platform commissions, direct milestone tracking, and 100% retained earnings."}
+          Submit your proposal directly through Clivora Connect. Zero platform commissions, direct milestone tracking, and 100% retained earnings.
         </p>
 
         {/* Action Buttons */}
         <div className="mt-5 space-y-2.5">
-          {/* Action 1: Official Portal (if external) or Submit on Clivora (if internal) */}
-          {sourceUrl ? (
-            <>
-              <a
-                href={sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-teal-700 hover:shadow active:scale-98"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Apply on Official Company Portal
-              </a>
-              <Link
-                href={`/app/connect/apply?job_id=${jobId}&title=${encodeURIComponent(jobTitle)}`}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-xs font-bold text-slate-700 shadow-2xs transition-all hover:border-teal-500 hover:bg-slate-50 hover:text-teal-700"
-              >
-                <Send className="h-3.5 w-3.5 text-teal-600" />
-                Submit via Clivora Connect ($0 Fee)
-              </Link>
-            </>
-          ) : (
-            <Link
-              href={`/app/connect/apply?job_id=${jobId}&title=${encodeURIComponent(jobTitle)}`}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-teal-700 hover:shadow active:scale-98"
-            >
-              <Send className="h-4 w-4" />
-              Submit Proposal ($0 Fee)
-            </Link>
-          )}
+          <Link
+            href={`/app/connect/apply?job_id=${jobId}&title=${encodeURIComponent(jobTitle)}`}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-teal-700 hover:shadow active:scale-98"
+          >
+            <Send className="h-4 w-4" />
+            Apply on Clivora ($0 Platform Fee)
+          </Link>
 
-          {/* Action 2: Direct Email (if available) */}
-          {companyEmail && (
-            <a
-              href={`mailto:${companyEmail}?subject=Application for ${encodeURIComponent(jobTitle)} via CLIVORA`}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50/80 px-5 py-3 text-xs font-bold text-teal-800 transition-all hover:bg-teal-100"
-            >
-              <Mail className="h-3.5 w-3.5 text-teal-600" />
-              Email Hiring Contact Directly
-            </a>
-          )}
-
-          {/* Action 3: Quick Share & Copy Link */}
+          {/* Quick Share & Copy Link */}
           <button
             type="button"
             onClick={shareJob}
@@ -275,15 +238,9 @@ Best regards,`;
         <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">About the Employer</h4>
         <p className="mt-2 text-sm font-bold text-slate-900">{companyName}</p>
         {companyDomain && (
-          <a
-            href={companyDomain.startsWith("http") ? companyDomain : `https://${companyDomain}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1 inline-flex items-center gap-1 text-xs text-teal-700 hover:underline font-mono"
-          >
-            <span>{companyDomain}</span>
-            <ExternalLink className="h-3 w-3" />
-          </a>
+          <span className="mt-1 inline-block text-xs text-slate-500 font-mono">
+            {companyDomain}
+          </span>
         )}
         <div className="mt-3 flex items-center gap-1.5 text-xs text-teal-700 font-medium">
           <ShieldCheck className="h-4 w-4 text-teal-600" />
@@ -291,23 +248,21 @@ Best regards,`;
         </div>
       </div>
 
-      {/* Claim Employer Listing Loop (for curated jobs) */}
-      {sourceUrl && (
-        <div className="rounded-2xl border border-dashed border-teal-300 bg-teal-50/40 p-4">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-teal-800">
-            Hiring for {companyName}?
-          </p>
-          <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-            Claim this listing to review inbound proposals directly, message candidates with zero intermediary fees, and manage contracts inside Clivora.
-          </p>
-          <Link
-            href={`/signup?role=client&claim_company=${encodeURIComponent(companyName)}&job_id=${encodeURIComponent(jobId)}`}
-            className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-800 hover:text-teal-950 underline underline-offset-2"
-          >
-            <span>Claim this employer profile →</span>
-          </Link>
-        </div>
-      )}
+      {/* Claim Employer Listing Loop */}
+      <div className="rounded-2xl border border-dashed border-teal-300 bg-teal-50/40 p-4">
+        <p className="text-[11px] font-bold uppercase tracking-wider text-teal-800">
+          Hiring for {companyName}?
+        </p>
+        <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+          Register your employer profile to review inbound candidate proposals, message talent directly with $0 platform fees, and manage milestones on Clivora.
+        </p>
+        <Link
+          href={`/signup?role=client&claim_company=${encodeURIComponent(companyName)}&job_id=${encodeURIComponent(jobId)}`}
+          className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-800 hover:text-teal-950 underline underline-offset-2"
+        >
+          <span>Claim this employer profile &rarr;</span>
+        </Link>
+      </div>
     </div>
   );
 }

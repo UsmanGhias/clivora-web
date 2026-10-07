@@ -143,7 +143,7 @@ export default async function JobViewPage({ params }: Props) {
     datePosted: job.created_at,
     validThrough: new Date(new Date(job.created_at).getTime() + 60 * 24 * 60 * 60 * 1000).toISOString(),
     employmentType: job.job_type ? (job.job_type === "full_time" ? "FULL_TIME" : job.job_type === "contract" ? "CONTRACTOR" : "PART_TIME") : "FULL_TIME",
-    directApply: !(job.source_url || (job.source && job.source !== "client" && job.source !== "clivora")),
+    directApply: true,
     identifier: {
       "@type": "PropertyValue",
       name: cleanCompany || "CLIVORA",
@@ -333,28 +333,13 @@ export default async function JobViewPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Provenance Notice */}
-            {isExternal ? (
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 flex items-start gap-3">
-                <Globe className="h-4 w-4 text-slate-500 shrink-0 mt-0.5" />
-                <p className="leading-relaxed">
-                  <strong>Curated Remote Listing:</strong> This opportunity was indexed from{" "}
-                  {sourceDomain ? (
-                    <span className="font-semibold text-slate-900">{sourceDomain}</span>
-                  ) : (
-                    "an official employer career portal"
-                  )}
-                  . You can submit your proposal directly to the employer or manage the engagement through your free Clivora workspace with $0 platform deal fees.
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-2xl border border-teal-200 bg-teal-50/50 p-4 text-xs text-teal-900 flex items-start gap-3">
-                <ShieldCheck className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" />
-                <p className="leading-relaxed">
-                  <strong>CLIVORA Client Project:</strong> This contract is posted by a verified client on the Clivora network. Apply directly inside Clivora, track deliverables with milestones, and keep 100% of your earnings.
-                </p>
-              </div>
-            )}
+            {/* Clivora Direct Engagement Notice */}
+            <div className="rounded-2xl border border-teal-200 bg-teal-50/60 p-4 text-xs text-teal-900 flex items-start gap-3">
+              <ShieldCheck className="h-4 w-4 text-teal-600 shrink-0 mt-0.5" />
+              <p className="leading-relaxed">
+                <strong>Clivora Direct Engagement:</strong> All applications and proposals are submitted directly through Clivora Connect. Clients review bids and communicate with $0 platform fees, allowing you to keep 100% of your earnings.
+              </p>
+            </div>
 
             {/* Description Sections */}
             <div className="space-y-6">
@@ -371,7 +356,6 @@ export default async function JobViewPage({ params }: Props) {
                 companyName={cleanCompany}
                 companyDomain={job.company_domain}
                 companyEmail={job.company_email}
-                sourceUrl={job.source_url}
                 location={cleanLocation}
                 salaryText={formatSalary(job.salary_min, job.salary_max, job.currency)}
               />
