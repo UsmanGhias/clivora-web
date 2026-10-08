@@ -18,6 +18,14 @@ export function CookieConsentBanner() {
 
       if (saved || cookieExists) {
         setDismissed(true);
+        if (saved === "essential" && typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+          (window as any).gtag("consent", "update", {
+            analytics_storage: "denied",
+            ad_storage: "denied",
+            ad_user_data: "denied",
+            ad_personalization: "denied",
+          });
+        }
       }
     } catch {
       // Ignore storage errors
@@ -29,6 +37,15 @@ export function CookieConsentBanner() {
       localStorage.setItem(COOKIE_CONSENT_KEY, choice);
       const maxAge = 60 * 60 * 24 * 365; // 1 year
       document.cookie = `${COOKIE_CONSENT_KEY}=${choice}; path=/; max-age=${maxAge}; SameSite=Lax`;
+
+      if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+        (window as any).gtag("consent", "update", {
+          analytics_storage: choice === "all" ? "granted" : "denied",
+          ad_storage: choice === "all" ? "granted" : "denied",
+          ad_user_data: choice === "all" ? "granted" : "denied",
+          ad_personalization: choice === "all" ? "granted" : "denied",
+        });
+      }
     } catch {
       // Ignore storage write errors
     }
