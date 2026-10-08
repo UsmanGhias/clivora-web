@@ -5,6 +5,7 @@ import { ConnectSection } from "@/components/marketing/ConnectSection";
 import { FAQSection } from "@/components/marketing/FAQSection";
 import { CTASection } from "@/components/marketing/CTASection";
 import { PortalPageHero } from "@/components/marketing/PortalPageHero";
+import { ClientHiringWorkflowSection } from "@/components/marketing/ClientHiringWorkflowSection";
 import { ClientDashMock } from "@/components/marketing/mockups/ClientDashMock";
 import { marketing } from "@/lib/marketing";
 
@@ -35,6 +36,7 @@ export default function ForClientsPage() {
           "Pay freelancers directly against CLIVORA invoices",
         ]}
       />
+      <ClientHiringWorkflowSection />
       <SocialProofSection />
       <ConnectSection />
       <FAQSection />
