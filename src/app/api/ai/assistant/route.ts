@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     const quota = getQuotaStatus(quotaKey, isVip, isAuthenticated);
 
     // AI generations consume quota and enforce limits
-    if (action === "proposal" || action === "invoice_items" || action === "health_briefing") {
+    if (action === "proposal" || action === "invoice_items" || action === "health_briefing" || action === "job_scope") {
       if (quota.inCooldown) {
         return NextResponse.json(
           {
@@ -513,6 +513,111 @@ Keep it sharp, tactical, and motivating. Zero em dashes (use hyphens or colons).
       }
 
       return NextResponse.json({ note: data, success: true });
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. Client Job Scope Breakdown (Option B)
+    // -------------------------------------------------------------------------
+    if (action === "job_scope") {
+      const rawIdea = typeof body.rawIdea === "string" ? body.rawIdea.trim() : "";
+      const category = typeof body.category === "string" ? body.category.trim() : "Custom Software";
+      const targetBudget = typeof body.targetBudget === "string" ? body.targetBudget.trim() : "$1,000-$2,500";
+
+      if (!rawIdea) {
+        return NextResponse.json({ error: "Please provide a project description or requirement." }, { status: 400 });
+      }
+
+      const prompt = `Analyze this client requirement and generate a structured job posting for CLIVORA Connect (0% platform fee freelance marketplace).
+
+Client Requirement: "${rawIdea}"
+Target Category: "${category}"
+Approximate Budget: "${targetBudget}"
+
+Standard Budget Options in CLIVORA:
+- Under $500
+- $500-$1,000
+- $1,000-$2,500
+- $2,500-$5,000
+- $5,000+
+- Hourly / TBD
+
+Requirements:
+1. Title: Concise, professional role/project title (under 50 chars). E.g. "Full-Stack Next.js E-Commerce Platform"
+2. Summary: Clear, professional scope of work (2-4 paragraphs) covering:
+   - Project Objectives & Technical Overview
+   - Core Features & Acceptance Criteria
+   - Phased Delivery Milestones (Milestone 1, Milestone 2, Milestone 3)
+   - Zero Platform Commission Notice ("CLIVORA charges 0% fees; both parties keep 100% of negotiated agreement value.")
+3. Skills: 4 to 6 comma-separated technical skills matching standard stacks (e.g. "React, Next.js, TypeScript, PostgreSQL, Tailwind CSS").
+4. BudgetBand: Exactly one of the standard budget options above that best fits the scope.
+5. Zero em dashes (use hyphens or clean colons instead). Zero corporate buzzwords.
+
+Output ONLY a valid JSON object with keys:
+"title", "summary", "skills", "budget_band".
+No markdown blocks, no commentary. Pure JSON only.`;
+
+      const aiText = await callGemini({
+        prompt,
+        systemInstruction: "You are a senior technical architect and recruiter structuring job scopes for clients. Always return valid raw JSON.",
+        maxOutputTokens: 900,
+        temperature: 0.3,
+      });
+
+      if (aiText) {
+        try {
+          const cleanJson = aiText.replace(/^```json\s*|^```\s*|```$/gim, "").trim();
+          const parsed = JSON.parse(cleanJson);
+          if (parsed && typeof parsed === "object") {
+            const title = sanitizeDashes(String(parsed.title || "Custom Software Development").slice(0, 80));
+            const summary = sanitizeDashes(String(parsed.summary || rawIdea));
+            const skills = sanitizeDashes(String(parsed.skills || "React, TypeScript, Next.js"));
+            const budgetBand = String(parsed.budget_band || targetBudget || "$1,000-$2,500");
+
+            return NextResponse.json({
+              jobScope: {
+                title,
+                summary,
+                skills,
+                budget_band: budgetBand,
+              },
+              model: "gemini-flash-lite-latest",
+              quota: responseQuota,
+              success: true,
+            });
+          }
+        } catch {
+          // JSON parsing fallback
+        }
+      }
+
+      // Offline / network fallback
+      const fallbackTitle = sanitizeDashes(rawIdea.length > 45 ? `${rawIdea.slice(0, 42)}...` : rawIdea);
+      const fallbackSummary = sanitizeDashes(`## Project Overview
+${rawIdea}
+
+## Scope of Work & Deliverables
+- Technical design and implementation matching agreed requirements
+- Integration testing, quality assurance, and responsive design verification
+- Codebase documentation and deployment handoff
+
+## Phased Milestones
+- Milestone 1: Requirements sign-off and environment setup
+- Milestone 2: Core feature development and demo
+- Milestone 3: Final verification and production release
+
+Note: CLIVORA charges 0% platform commissions. 100% of project payouts go directly to your hired engineer.`);
+
+      return NextResponse.json({
+        jobScope: {
+          title: fallbackTitle,
+          summary: fallbackSummary,
+          skills: "React, TypeScript, Next.js, PostgreSQL",
+          budget_band: targetBudget || "$1,000-$2,500",
+        },
+        model: "fallback-template",
+        quota: responseQuota,
+        success: true,
+      });
     }
 
     return NextResponse.json({ error: "Invalid action specified" }, { status: 400 });
