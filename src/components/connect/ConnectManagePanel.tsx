@@ -10,6 +10,8 @@ import {
   Sparkles,
   Trash2,
   X,
+  Loader2,
+  Wand2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CONNECT_CREDIT_COSTS, parseConnectCreditError } from "@/lib/connect-credits";
@@ -240,6 +242,49 @@ export function ConnectManagePanel() {
     budget_band: BUDGET_OPTIONS[1],
   });
   const [needs, setNeeds] = useState<NeedRow[]>([]);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiSuccess, setAiSuccess] = useState(false);
+
+  async function handleGenerateScope(promptOverride?: string) {
+    const rawText = promptOverride || aiPrompt;
+    if (!rawText.trim()) return;
+    setAiGenerating(true);
+    setAiError(null);
+    setAiSuccess(false);
+    try {
+      const res = await fetch("/api/ai/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "job_scope",
+          rawIdea: rawText.trim(),
+          targetBudget: need.budget_band || "$1,000-$2,500",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to generate scope with AI.");
+      }
+      if (data.jobScope) {
+        setNeed((prev) => ({
+          ...prev,
+          title: data.jobScope.title || prev.title,
+          summary: data.jobScope.summary || prev.summary,
+          skills: data.jobScope.skills || prev.skills,
+          budget_band: data.jobScope.budget_band || prev.budget_band,
+        }));
+        setAiSuccess(true);
+        setTimeout(() => setAiSuccess(false), 4000);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error generating scope with AI.";
+      setAiError(msg);
+    } finally {
+      setAiGenerating(false);
+    }
+  }
 
   async function reloadNeeds(userId: string) {
     const supabase = createClient();
@@ -1017,6 +1062,91 @@ export function ConnectManagePanel() {
               </p>
             ) : (
               <>
+            {/* AI Scope Assistant Card */}
+            <div className="rounded-xl border border-teal-200/80 bg-gradient-to-br from-teal-50/60 via-emerald-50/30 to-white p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-600 text-white shadow-sm">
+                    <Wand2 className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">AI Job Scope Assistant</h3>
+                    <p className="text-xs text-slate-500">Draft full deliverables, milestones & skills in 1 click (Powered by Gemini · 0% Fee)</p>
+                  </div>
+                </div>
+                {aiSuccess && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full animate-fade-in">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Scope Applied!
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2 mt-3">
+                <input
+                  type="text"
+                  placeholder="e.g. Build a mobile app for laundry delivery with Stripe and order tracking..."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !aiGenerating && aiPrompt.trim()) {
+                      e.preventDefault();
+                      void handleGenerateScope();
+                    }
+                  }}
+                  className="flex-1 rounded-xl border border-teal-200/90 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20"
+                />
+                <button
+                  type="button"
+                  disabled={aiGenerating || !aiPrompt.trim()}
+                  onClick={() => void handleGenerateScope()}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-teal-800 disabled:opacity-50 transition-colors"
+                >
+                  {aiGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Drafting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      <span>Generate Scope</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Template quick chips */}
+              <div className="mt-3 flex flex-wrap items-center gap-1.5 pt-2 border-t border-teal-100">
+                <span className="text-xs font-medium text-slate-500 mr-1">Quick Ideas:</span>
+                {[
+                  "SaaS MVP with Next.js & Stripe",
+                  "Flutter Mobile App (iOS & Android)",
+                  "AI Agent / Gemini API Integration",
+                  "FastAPI Backend & PostgreSQL",
+                  "Shopify Custom Theme & Checkout",
+                ].map((template) => (
+                  <button
+                    key={template}
+                    type="button"
+                    disabled={aiGenerating}
+                    onClick={() => {
+                      setAiPrompt(template);
+                      void handleGenerateScope(template);
+                    }}
+                    className="rounded-lg border border-teal-200/60 bg-white/90 px-2 py-1 text-xs font-medium text-slate-700 hover:border-teal-400 hover:bg-teal-50/80 transition-colors disabled:opacity-50"
+                  >
+                    + {template}
+                  </button>
+                ))}
+              </div>
+
+              {aiError && (
+                <p className="mt-2 text-xs font-medium text-red-600 bg-red-50 p-2 rounded-lg border border-red-100">
+                  {aiError}
+                </p>
+              )}
+            </div>
+
             <label className="block text-sm font-semibold text-navy">
               Title
               <input
