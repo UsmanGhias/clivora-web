@@ -2,19 +2,19 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
-const PRIMARY_KEY = (process.env.GEMINI_API_KEY || "REDACTED_GEMINI_KEY").trim();
-const KEY_CLIVORA_APP = (process.env.GEMINI_API_KEY_APP || "REDACTED_GEMINI_KEY").trim();
-const KEY_CLIVORA_AI = (process.env.GEMINI_API_KEY_AI || "REDACTED_GEMINI_KEY").trim();
+const PRIMARY_KEY = (process.env.GEMINI_API_KEY || "").trim();
+const KEY_CLIVORA_APP = (process.env.GEMINI_API_KEY_APP || "").trim();
+const KEY_CLIVORA_AI = (process.env.GEMINI_API_KEY_AI || "").trim();
 const FALLBACK_KEY = (
   process.env.GEMINI_API_KEY_FALLBACK ||
   process.env.GEMINI_FALLBACK_API_KEY ||
-  "REDACTED_GEMINI_KEY"
+  ""
 ).trim();
 const TERTIARY_KEY = (
   process.env.GEMINI_API_KEY_BACKUP_3 ||
   process.env.GEMINI_API_KEY_TERTIARY ||
   process.env.GEMINI_TERTIARY_API_KEY ||
-  "REDACTED_GEMINI_KEY"
+  ""
 ).trim();
 
 export const ALL_GEMINI_KEYS = [

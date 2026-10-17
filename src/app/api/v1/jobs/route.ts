@@ -12,14 +12,14 @@ const SUPABASE_KEY =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
   "";
 
-// Master API keys allowed to interact with the Job Bot API
-const VALID_API_KEYS = new Set([
-  "clv_live_bot_8a39b4f2e1c750d96a23",
-  process.env.JOB_BOT_API_KEY,
-  process.env.CLIVORA_API_KEY,
-].filter(Boolean));
-
 function verifyApiKey(req: NextRequest): boolean {
+  const allowed = [
+    process.env.JOB_BOT_API_KEY,
+    process.env.CLIVORA_API_KEY,
+  ].filter((k): k is string => Boolean(k && k.trim()));
+
+  if (allowed.length === 0) return false;
+
   const headerKey = req.headers.get("x-api-key");
   const authHeader = req.headers.get("authorization");
   let bearerToken = "";
@@ -29,7 +29,7 @@ function verifyApiKey(req: NextRequest): boolean {
 
   const token = headerKey || bearerToken;
   if (!token) return false;
-  return VALID_API_KEYS.has(token);
+  return allowed.includes(token);
 }
 
 /**

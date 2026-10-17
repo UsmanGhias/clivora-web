@@ -7,7 +7,7 @@ import { adminStats, loadEvents } from "@/lib/admin-store";
 import {
   buildStats,
   fetchEventsFromSupabase,
-  fetchProfileCount,
+  fetchProfileBreakdown,
   fetchProfilesFromSupabase,
 } from "@/lib/supabase-admin";
 
@@ -40,23 +40,28 @@ export async function GET() {
       throw error;
     }
 
-    const [cloudEvents, profileCount, profiles] = await Promise.all([
+    const [cloudEvents, profileBreakdown, profiles] = await Promise.all([
       fetchEventsFromSupabase(500),
-      fetchProfileCount(),
+      fetchProfileBreakdown(),
       fetchProfilesFromSupabase(100),
     ]);
 
     if (cloudEvents.length > 0) {
-      return adminJson(buildStats(cloudEvents, profileCount, profiles));
+      const stats = buildStats(cloudEvents, profileBreakdown.total, profiles);
+      return adminJson({
+        ...stats,
+        clientProfiles: profileBreakdown.clients || stats.clientProfiles,
+        freelancerProfiles: profileBreakdown.freelancers || stats.freelancerProfiles,
+      });
     }
 
     const localStats = adminStats();
     return adminJson({
       ...localStats,
-      totalProfiles: profileCount || profiles.length,
-      proProfiles: profiles.filter((profile) => profile.plan === "pro").length,
-      clientProfiles: profiles.filter((profile) => profile.accountType === "client").length,
-      freelancerProfiles: profiles.filter((profile) => profile.accountType !== "client").length,
+      totalProfiles: profileBreakdown.total || profiles.length,
+      proProfiles: profiles.filter((profile) => profile.plan === "pro" || profile.plan === "pro_plus").length,
+      clientProfiles: profileBreakdown.clients || profiles.filter((profile) => profile.accountType === "client").length,
+      freelancerProfiles: profileBreakdown.freelancers || profiles.filter((profile) => profile.accountType !== "client").length,
       profiles,
       source: profiles.length > 0 ? "supabase" : "local",
       events: loadEvents()

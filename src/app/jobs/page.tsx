@@ -49,11 +49,13 @@ export default async function JobsIndexPage({
   const jobType = (sp?.type || "all").toLowerCase();
   const page = Math.max(parseInt(sp?.page || "1", 10) || 1, 1);
   const perPage = 20;
+  const JOB_CARD_SELECT =
+    "id, title, company_name, company_domain, category, language, tags, salary_min, salary_max, currency, location, job_type, seo_slug, created_at, description, source, source_url, posted_by";
 
   const supabase = await createClient();
   let query = supabase
     .from("connect_jobs")
-    .select("*", { count: "exact" })
+    .select(JOB_CARD_SELECT, { count: "exact" })
     .eq("is_public", true)
     .eq("status", "published")
     .order("created_at", { ascending: false });
@@ -87,7 +89,7 @@ export default async function JobsIndexPage({
     try {
       let clientQuery = supabase
         .from("connect_jobs")
-        .select("*")
+        .select(JOB_CARD_SELECT)
         .eq("is_public", true)
         .eq("status", "published")
         .or("source.eq.manual,posted_by.not.is.null")

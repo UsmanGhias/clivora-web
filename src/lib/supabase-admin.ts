@@ -102,7 +102,7 @@ export async function fetchProfileCount(): Promise<number> {
 
   const url = `${supabaseUrl}/rest/v1/profiles?select=id`;
   const res = await fetch(url, {
-    headers: adminServiceHeaders(serviceRoleKey, "count=exact"),
+    headers: { ...adminServiceHeaders(serviceRoleKey, "count=exact"), Range: "0-0" },
     cache: "no-store",
   });
   if (!res.ok) return 0;
@@ -110,6 +110,40 @@ export async function fetchProfileCount(): Promise<number> {
   if (!range) return 0;
   const match = range.match(/\/(\d+)$/);
   return match ? Number(match[1]) : 0;
+}
+
+export async function fetchProfileBreakdown(): Promise<{
+  total: number;
+  clients: number;
+  freelancers: number;
+}> {
+  const { url: supabaseUrl, serviceRoleKey } = requireAdminServiceConfig();
+
+  const getCount = async (filter: string) => {
+    const url = `${supabaseUrl}/rest/v1/profiles?select=id${filter ? `&${filter}` : ""}`;
+    const res = await fetch(url, {
+      headers: { ...adminServiceHeaders(serviceRoleKey, "count=exact"), Range: "0-0" },
+      cache: "no-store",
+    });
+    const range = res.headers.get("content-range");
+    const m = range?.match(/\/(\d+)$/);
+    return m ? Number(m[1]) : 0;
+  };
+
+  try {
+    const [total, clients] = await Promise.all([
+      getCount(""),
+      getCount("account_type=eq.client"),
+    ]);
+
+    return {
+      total,
+      clients,
+      freelancers: Math.max(0, total - clients),
+    };
+  } catch {
+    return { total: 0, clients: 0, freelancers: 0 };
+  }
 }
 
 export function buildStats(
