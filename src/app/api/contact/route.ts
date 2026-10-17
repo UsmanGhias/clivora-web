@@ -50,7 +50,11 @@ export async function POST(request: Request) {
     });
 
     if (insertErr) {
-      console.error("[Contact API] Supabase insert warning:", insertErr.message);
+      console.error("[Contact API] Supabase insert error:", insertErr.message);
+      return NextResponse.json(
+        { error: "Failed to save message. Please try again or email us directly at contact@clivora.io." },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

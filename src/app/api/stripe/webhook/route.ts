@@ -11,19 +11,26 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 async function updateProfilePlan(email: string, plan: string) {
   if (!SUPABASE_SERVICE_ROLE_KEY) return;
-  await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}`,
+  const cleanEmail = email.trim();
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?email=ilike.${encodeURIComponent(cleanEmail)}`,
     {
       method: "PATCH",
       headers: {
         apikey: SUPABASE_SERVICE_ROLE_KEY,
         Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
         "Content-Type": "application/json",
-        Prefer: "return=minimal",
+        Prefer: "return=representation",
       },
-      body: JSON.stringify({ subscription_plan: plan }),
+      body: JSON.stringify({
+        subscription_plan: plan,
+        updated_at: new Date().toISOString(),
+      }),
     },
   );
+  if (!res.ok) {
+    console.error(`[Stripe Webhook] Failed to update profile plan for ${cleanEmail}: ${res.statusText}`);
+  }
 }
 
 export async function POST(req: NextRequest) {

@@ -59,10 +59,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "missing_proposal_id" }, { status: 400 });
     }
 
-    // Generate unique review token
-    const reviewToken = crypto.randomUUID();
-    const reviewUrl = `https://clivora.io/connect/review?token=${reviewToken}`;
-
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -71,6 +67,25 @@ export async function POST(request: Request) {
       supabaseUrl && serviceRoleKey
         ? createServiceClient(supabaseUrl, serviceRoleKey)
         : supabase;
+
+    // Verify caller ownership of proposal before issuing review tokens
+    const { data: existingProposal, error: proposalErr } = await adminDb
+      .from("connect_proposals")
+      .select("id, freelancer_id")
+      .eq("id", proposalId)
+      .maybeSingle();
+
+    if (proposalErr || !existingProposal) {
+      return NextResponse.json({ error: "proposal_not_found" }, { status: 404 });
+    }
+
+    if (existingProposal.freelancer_id !== user.id) {
+      return NextResponse.json({ error: "forbidden_proposal_access" }, { status: 403 });
+    }
+
+    // Generate unique review token
+    const reviewToken = crypto.randomUUID();
+    const reviewUrl = `https://clivora.io/connect/review?token=${reviewToken}`;
 
     let targetEmail: string | null = body.companyEmail?.trim().toLowerCase() || null;
     let targetName: string = body.companyName?.trim() || "";
@@ -139,12 +154,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. QA Testing Hook: If testRecipientEmail is provided, route email to it for verification
-    if (body.testRecipientEmail && body.testRecipientEmail.includes("@")) {
-      targetEmail = body.testRecipientEmail.trim().toLowerCase();
-    }
-
-    // Update proposal with review token and client metadata
+    // Update proposal with review token and client metadata (scoped to user)
     await adminDb
       .from("connect_proposals")
       .update({
@@ -153,7 +163,8 @@ export async function POST(request: Request) {
         client_email: targetEmail,
         client_name: targetName || null,
       })
-      .eq("id", proposalId);
+      .eq("id", proposalId)
+      .eq("freelancer_id", user.id);
 
     // Get freelancer's display name
     const { data: freelancerProfile } = await adminDb

@@ -29,12 +29,23 @@ interface UserAiQuotaRecord {
   lastRequestTime: number;
 }
 
+const MAX_QUOTA_STORE_ENTRIES = 5000;
 const quotaStore = new Map<string, UserAiQuotaRecord>();
 
 function getQuotaStatus(key: string, isVip: boolean, isAuth: boolean) {
   const now = Date.now();
   const windowMs = 24 * 60 * 60 * 1000;
   const limit = isVip ? 999999 : isAuth ? USER_DAILY_LIMIT : GUEST_DAILY_LIMIT;
+
+  // Evict stale records if cache exceeds max size
+  if (quotaStore.size > MAX_QUOTA_STORE_ENTRIES) {
+    for (const [k, v] of quotaStore.entries()) {
+      if (v.timestamps.length === 0 || now - v.lastRequestTime > windowMs) {
+        quotaStore.delete(k);
+      }
+      if (quotaStore.size <= MAX_QUOTA_STORE_ENTRIES * 0.8) break;
+    }
+  }
 
   let record = quotaStore.get(key);
   if (!record) {

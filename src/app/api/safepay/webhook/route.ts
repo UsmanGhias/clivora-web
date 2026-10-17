@@ -131,15 +131,33 @@ export async function POST(req: NextRequest) {
         .from("profiles")
         .update({ subscription_plan: plan, updated_at: nowIso })
         .eq("id", profile.id);
-      await admin.from("subscriptions").delete().eq("user_id", profile.id).like("product_id", "safepay_%");
-      await admin.from("subscriptions").insert({
-        user_id: profile.id,
-        product_id: `safepay_${plan}`,
-        purchase_token: tracker || `safepay_${profile.id}_${Date.now()}`,
-        status: "active",
-        expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
-        verified_at: nowIso,
-      });
+      const purchaseToken = tracker || `safepay_${profile.id}_${Date.now()}`;
+      const { data: existingSub } = await admin
+        .from("subscriptions")
+        .select("id")
+        .eq("purchase_token", purchaseToken)
+        .maybeSingle();
+
+      if (!existingSub) {
+        await admin.from("subscriptions").delete().eq("user_id", profile.id).like("product_id", "safepay_%");
+        await admin.from("subscriptions").insert({
+          user_id: profile.id,
+          product_id: `safepay_${plan}`,
+          purchase_token: purchaseToken,
+          status: "active",
+          expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+          verified_at: nowIso,
+        });
+      } else {
+        await admin
+          .from("subscriptions")
+          .update({
+            status: "active",
+            expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+            verified_at: nowIso,
+          })
+          .eq("id", existingSub.id);
+      }
     }
   }
 

@@ -2,19 +2,19 @@ import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
 
-const PRIMARY_KEY = (process.env.GEMINI_API_KEY || "AQ.Ab8RN6I8UIEWWeU7EhUEEZKLplCFXaCwpaVBpmkb8pODZTz6Uw").trim();
-const KEY_CLIVORA_APP = (process.env.GEMINI_API_KEY_APP || "AQ.Ab8RN6I6JfkH-ReX-1Aj5U4lGnOByOwFWrwZwuUb091UgLPHAA").trim();
-const KEY_CLIVORA_AI = (process.env.GEMINI_API_KEY_AI || "AQ.Ab8RN6KLcJGioIsB_pig2OVcQ8YjGeQYXwlklmG0e2RaPasNVA").trim();
+const PRIMARY_KEY = (process.env.GEMINI_API_KEY || "").trim();
+const KEY_CLIVORA_APP = (process.env.GEMINI_API_KEY_APP || "").trim();
+const KEY_CLIVORA_AI = (process.env.GEMINI_API_KEY_AI || "").trim();
 const FALLBACK_KEY = (
   process.env.GEMINI_API_KEY_FALLBACK ||
   process.env.GEMINI_FALLBACK_API_KEY ||
-  "AQ.Ab8RN6KaOvEU6Wk9AsQsyJJnog_zGuMJxV1Bh0m-XS2ncIVLlw"
+  ""
 ).trim();
 const TERTIARY_KEY = (
   process.env.GEMINI_API_KEY_BACKUP_3 ||
   process.env.GEMINI_API_KEY_TERTIARY ||
   process.env.GEMINI_TERTIARY_API_KEY ||
-  "AQ.Ab8RN6KF7SUhFAh9z_Eua6o6hN7vI7cRVPHnF5TKzsqwW6puzQ"
+  ""
 ).trim();
 
 export const ALL_GEMINI_KEYS = [

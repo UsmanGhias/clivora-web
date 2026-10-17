@@ -48,10 +48,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       );
     }
-    // Fallback
+    // Fallback: Fail closed on auth service or database errors
     return (
-      <div className="min-h-screen bg-white text-slate-900 antialiased">
-        {children}
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white">
+        <div className="max-w-md rounded-2xl border border-white/10 bg-slate-900 p-8 text-center">
+          <h1 className="text-xl font-bold">Admin authentication unavailable</h1>
+          <p className="mt-3 text-sm text-slate-300">
+            Could not verify admin permissions due to a temporary service issue. Please try again.
+          </p>
+          <div className="mt-6 flex flex-col gap-2">
+            <Link
+              href="/admin"
+              className="rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-500"
+            >
+              Retry login
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
