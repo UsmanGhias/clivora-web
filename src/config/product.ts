@@ -13,9 +13,9 @@ export const productManifest = {
 
   versions: {
     web: "4.2.3",
-    android: "5.3.21",
+    android: "5.3.22",
     driftSchema: 18,
-    lastVerifiedDate: "September 26, 2026",
+    lastVerifiedDate: "October 17, 2026",
   },
 
   capabilities: {
