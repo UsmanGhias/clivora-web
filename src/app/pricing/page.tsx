@@ -5,8 +5,11 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { PricingSection } from "@/components/marketing/PricingSection";
 import { FAQSection } from "@/components/marketing/FAQSection";
 import { CTASection } from "@/components/marketing/CTASection";
+import { EnterpriseTrustSection } from "@/components/marketing/EnterpriseTrustSection";
+import { CommissionSavingsCalculator } from "@/components/marketing/CommissionSavingsCalculator";
 import { marketing } from "@/lib/marketing";
 import { site } from "@/lib/site";
+
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -107,7 +110,7 @@ export default function PricingPage() {
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-slate-900">Ask AI Workspace Assistant</td>
-                  <td className="py-3.5 px-4 text-slate-400">—</td>
+                  <td className="py-3.5 px-4 text-slate-400">Not included</td>
                   <td className="py-3.5 px-4 font-semibold text-slate-700">Included (Gemini)</td>
                   <td className="py-3.5 px-4 font-bold text-teal-700 bg-teal-50/30">Priority (Gemini)</td>
                 </tr>
@@ -119,8 +122,8 @@ export default function PricingPage() {
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-medium text-slate-900">Two-Factor Authentication (MFA)</td>
-                  <td className="py-3.5 px-4 text-slate-400">—</td>
-                  <td className="py-3.5 px-4 text-slate-400">—</td>
+                  <td className="py-3.5 px-4 text-slate-400">Not included</td>
+                  <td className="py-3.5 px-4 text-slate-400">Not included</td>
                   <td className="py-3.5 px-4 font-bold text-teal-700 bg-teal-50/30">Included (TOTP)</td>
                 </tr>
                 <tr>
@@ -135,8 +138,11 @@ export default function PricingPage() {
         </div>
       </section>
 
+      <CommissionSavingsCalculator />
+      <EnterpriseTrustSection />
       <FAQSection />
       <CTASection />
     </MarketingShell>
   );
 }
+

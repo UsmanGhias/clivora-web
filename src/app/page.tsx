@@ -48,8 +48,23 @@ const PlayStorePromoSection = dynamic(
     ),
   { loading: () => null },
 );
+const CommissionSavingsCalculator = dynamic(
+  () =>
+    import("@/components/marketing/CommissionSavingsCalculator").then(
+      (m) => m.CommissionSavingsCalculator,
+    ),
+  { loading: () => null },
+);
+const EnterpriseTrustSection = dynamic(
+  () =>
+    import("@/components/marketing/EnterpriseTrustSection").then(
+      (m) => m.EnterpriseTrustSection,
+    ),
+  { loading: () => null },
+);
 
 export const revalidate = 60;
+
 
 export const metadata: Metadata = {
   title: `${site.name} | Complete Freelancer OS - $0 deal fees`,
@@ -107,10 +122,13 @@ export default function Home() {
       </section>
       <TractionStrip />
       <HomeJobsSpotlight />
+      <CommissionSavingsCalculator />
       <DualAudienceSection />
       <ConnectSection />
       <FounderNoteSection />
+      <EnterpriseTrustSection />
       <SocialProofSection />
+
       <DualPortalSection />
       <FreelancerOSSection />
       <WorkspaceSection />
