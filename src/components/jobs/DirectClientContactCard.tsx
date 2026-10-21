@@ -42,6 +42,7 @@ export function DirectClientContactCard({
 }: DirectClientContactCardProps) {
   const [copiedPitch, setCopiedPitch] = useState(false);
   const [copiedJobUrl, setCopiedJobUrl] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
   const [showPitchModal, setShowPitchModal] = useState(false);
 
   const cleanPitch = `Hi ${companyName} Hiring Team,
@@ -146,12 +147,27 @@ Best regards,`;
                 <button
                   type="button"
                   onClick={async () => {
-                    await navigator.clipboard.writeText(companyEmail);
-                    alert("Company email copied to clipboard!");
+                    try {
+                      await navigator.clipboard.writeText(companyEmail);
+                      setCopiedEmail(true);
+                      setTimeout(() => setCopiedEmail(false), 2000);
+                    } catch {
+                      // clipboard fallback
+                    }
                   }}
-                  className="text-xs font-bold text-teal-700 hover:underline shrink-0"
+                  className="inline-flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-teal-700 border border-slate-200/90 shadow-2xs hover:bg-teal-50 hover:border-teal-300 transition-all active:scale-95 shrink-0"
                 >
-                  Copy
+                  {copiedEmail ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="text-emerald-700 font-bold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5 text-slate-400" />
+                      <span>Copy</span>
+                    </>
+                  )}
                 </button>
               </div>
             )}

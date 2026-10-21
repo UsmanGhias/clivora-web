@@ -20,6 +20,8 @@ import {
   Send,
   Lock,
   Mail,
+  Check,
+  Copy,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cleanText } from "@/lib/clean-text";
@@ -34,6 +36,8 @@ interface JobDetailDrawerProps {
 
 export function JobDetailDrawer({ job, isOpen, onClose }: JobDetailDrawerProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -102,8 +106,13 @@ export function JobDetailDrawer({ job, isOpen, onClose }: JobDetailDrawerProps) 
       }
     }
     if (url) {
-      await navigator.clipboard.writeText(url);
-      alert("Job link copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopiedShare(true);
+        setTimeout(() => setCopiedShare(false), 2000);
+      } catch {
+        // clipboard fallback
+      }
     }
   };
 
@@ -148,10 +157,14 @@ export function JobDetailDrawer({ job, isOpen, onClose }: JobDetailDrawerProps) 
                 <button
                   type="button"
                   onClick={handleShare}
-                  title="Share listing"
+                  title={copiedShare ? "Link copied to clipboard!" : "Share listing"}
                   className="rounded-lg p-2 text-slate-500 hover:bg-slate-200/60 hover:text-slate-900 transition-colors"
                 >
-                  <Share2 className="h-4 w-4" />
+                  {copiedShare ? (
+                    <Check className="h-4 w-4 text-emerald-600" />
+                  ) : (
+                    <Share2 className="h-4 w-4" />
+                  )}
                 </button>
                 <button
                   type="button"
@@ -275,11 +288,35 @@ export function JobDetailDrawer({ job, isOpen, onClose }: JobDetailDrawerProps) 
                     </div>
                     {job.company_email && (
                       <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
-                        <div className="flex items-center gap-2 text-slate-700">
-                          <Mail className="h-4 w-4 text-teal-600" />
-                          <span className="font-mono">{job.company_email}</span>
+                        <div className="flex items-center gap-2 text-slate-700 overflow-hidden">
+                          <Mail className="h-4 w-4 text-teal-600 shrink-0" />
+                          <span className="font-mono truncate">{job.company_email}</span>
                         </div>
-                        <span className="text-[11px] font-bold text-teal-700">Direct Contact</span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(job.company_email!);
+                              setCopiedEmail(true);
+                              setTimeout(() => setCopiedEmail(false), 2000);
+                            } catch {
+                              // clipboard fallback
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-[11px] font-semibold text-teal-700 border border-slate-200/90 shadow-2xs hover:bg-teal-50 hover:border-teal-300 transition-all active:scale-95 shrink-0"
+                        >
+                          {copiedEmail ? (
+                            <>
+                              <Check className="h-3 w-3 text-emerald-600" />
+                              <span className="text-emerald-700 font-bold">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3 text-slate-400" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
                       </div>
                     )}
                     <p className="text-xs text-slate-600 leading-relaxed">
