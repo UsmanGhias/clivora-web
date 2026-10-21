@@ -97,9 +97,13 @@ function getAvatarGradient(name: string): string {
 export function JobListingCard({
   job,
   isFeatured = false,
+  onSelect,
+  onSkillClick,
 }: {
   job: JobCardData;
   isFeatured?: boolean;
+  onSelect?: (job: JobCardData) => void;
+  onSkillClick?: (skill: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const displayTags = (job.tags || [])
@@ -251,12 +255,22 @@ export function JobListingCard({
           {displayTags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-0.5">
               {displayTags.map((tag) => (
-                <span
+                <button
                   key={tag}
-                  className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                  type="button"
+                  onClick={(e) => {
+                    if (onSkillClick) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSkillClick(tag);
+                    }
+                  }}
+                  className={`rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 transition-colors ${
+                    onSkillClick ? "hover:bg-teal-100 hover:text-teal-800 cursor-pointer" : ""
+                  }`}
                 >
                   {cleanText(tag)}
-                </span>
+                </button>
               ))}
             </div>
           )}
@@ -268,7 +282,7 @@ export function JobListingCard({
         <button
           type="button"
           onClick={handleShare}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-navy hover:border-slate-300 active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 active:scale-95"
           title="Share or copy job link"
         >
           {copied ? (
@@ -284,13 +298,25 @@ export function JobListingCard({
           )}
         </button>
 
-        <Link
-          href={`/jobs/view/${job.seo_slug}`}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-teal-600 px-4 py-1.5 text-xs font-bold text-white shadow-2xs transition-all hover:bg-teal-700 active:scale-95"
-        >
-          <span>View & Apply</span>
-          <ChevronRight className="h-3.5 w-3.5" />
-        </Link>
+        <div className="flex items-center gap-2">
+          {onSelect && (
+            <button
+              type="button"
+              onClick={() => onSelect(job)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50/60 px-3.5 py-1.5 text-xs font-bold text-teal-800 shadow-2xs transition-all hover:bg-teal-100 active:scale-95"
+            >
+              <span>Quick Preview</span>
+            </button>
+          )}
+
+          <Link
+            href={`/jobs/view/${job.seo_slug}`}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-teal-700 px-4 py-1.5 text-xs font-bold text-white shadow-2xs transition-all hover:bg-teal-800 active:scale-95"
+          >
+            <span>View & Apply</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
     </div>
   );
