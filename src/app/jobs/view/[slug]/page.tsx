@@ -111,15 +111,20 @@ export default async function JobViewPage({ params }: Props) {
   const { slug } = await params;
 
   const supabase = await createClient();
-  const { data: job } = await supabase
-    .from("connect_jobs")
-    .select("*")
-    .eq("seo_slug", slug)
-    .single();
+  const [{ data: job }, { data: { user } }] = await Promise.all([
+    supabase
+      .from("connect_jobs")
+      .select("*")
+      .eq("seo_slug", slug)
+      .single(),
+    supabase.auth.getUser(),
+  ]);
 
   if (!job || !job.is_public || job.status !== "published") {
     notFound();
   }
+
+  const isAuthenticated = Boolean(user);
 
   const cleanJobTitle = cleanText(job.title);
   const cleanCompany = cleanText(job.company_name);
@@ -356,8 +361,10 @@ export default async function JobViewPage({ params }: Props) {
                 companyName={cleanCompany}
                 companyDomain={job.company_domain}
                 companyEmail={job.company_email}
+                sourceUrl={job.source_url}
                 location={cleanLocation}
                 salaryText={formatSalary(job.salary_min, job.salary_max, job.currency)}
+                isAuthenticated={isAuthenticated}
               />
 
               {/* Sidebar Google AdSense Unit */}

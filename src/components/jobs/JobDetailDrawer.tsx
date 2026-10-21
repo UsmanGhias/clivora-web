@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -18,7 +18,10 @@ import {
   CheckCircle2,
   ArrowRight,
   Send,
+  Lock,
+  Mail,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { cleanText } from "@/lib/clean-text";
 import { getLanguageBadge } from "@/lib/job-languages";
 import type { JobCardData } from "./JobListingCard";
@@ -30,6 +33,22 @@ interface JobDetailDrawerProps {
 }
 
 export function JobDetailDrawer({ job, isOpen, onClose }: JobDetailDrawerProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const checkAuth = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (active) setIsAuthenticated(Boolean(user));
+      } catch {
+        if (active) setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+    return () => { active = false; };
+  }, [isOpen]);
   // Lock body scroll when open and handle ESC key
   useEffect(() => {
     if (!isOpen) return;
@@ -241,6 +260,71 @@ export function JobDetailDrawer({ job, isOpen, onClose }: JobDetailDrawerProps) 
                 </div>
               </div>
 
+              {/* Direct Company Contact & Apply Gate */}
+              <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+                {isAuthenticated ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-teal-800">
+                        Direct Company Application
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Authenticated Access
+                      </span>
+                    </div>
+                    {job.company_email && (
+                      <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs">
+                        <div className="flex items-center gap-2 text-slate-700">
+                          <Mail className="h-4 w-4 text-teal-600" />
+                          <span className="font-mono">{job.company_email}</span>
+                        </div>
+                        <span className="text-[11px] font-bold text-teal-700">Direct Contact</span>
+                      </div>
+                    )}
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      You are logged in. Submit your proposal directly through Clivora Connect with $0 platform fees, or apply directly on the employer website if available.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    {/* Blurred preview underlay */}
+                    <div className="filter blur-xs select-none pointer-events-none opacity-30 space-y-2">
+                      <div className="h-4 w-40 bg-slate-400 rounded"></div>
+                      <div className="h-10 w-full bg-slate-200 rounded-xl"></div>
+                      <div className="h-4 w-60 bg-slate-300 rounded"></div>
+                    </div>
+
+                    {/* High-conversion prompt */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center bg-white/80 backdrop-blur-xs">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-50 border border-teal-200 text-teal-700 mb-1.5 shadow-2xs">
+                        <Lock className="h-4 w-4" />
+                      </div>
+                      <h4 className="text-xs font-extrabold text-slate-900">
+                        Unlock Direct Company Contact & Apply
+                      </h4>
+                      <p className="mt-1 text-[11px] text-slate-600 max-w-sm">
+                        Create a free account or log in to reveal direct employer contact and submit your proposal.
+                      </p>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <Link
+                          href={`/signup?next=${encodeURIComponent(`/jobs/view/${job.seo_slug}`)}`}
+                          className="rounded-xl bg-teal-700 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-teal-800 transition-all active:scale-95"
+                        >
+                          Sign up free
+                        </Link>
+                        <Link
+                          href={`/login?next=${encodeURIComponent(`/jobs/view/${job.seo_slug}`)}`}
+                          className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors active:scale-95"
+                        >
+                          Log in
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Job Description */}
               <div className="space-y-3 pt-2">
                 <div className="text-sm font-extrabold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
@@ -262,27 +346,45 @@ export function JobDetailDrawer({ job, isOpen, onClose }: JobDetailDrawerProps) 
                 <ArrowRight className="h-3 w-3" />
               </Link>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                {job.source_url && (
-                  <a
-                    href={job.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                  >
-                    Direct ATS
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                )}
+              {isAuthenticated ? (
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  {job.source_url && (
+                    <a
+                      href={job.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-xl border border-teal-300 bg-teal-50/70 px-4 py-2.5 text-xs font-bold text-teal-900 hover:bg-teal-100 transition-colors"
+                    >
+                      <span>Direct ATS Apply</span>
+                      <ExternalLink className="h-3.5 w-3.5 text-teal-700" />
+                    </a>
+                  )}
 
-                <Link
-                  href={`/app/connect?job_slug=${job.seo_slug}&job_title=${encodeURIComponent(cleanTitle)}`}
-                  className="inline-flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-teal-800 transition-all hover:shadow-md"
-                >
-                  <Send className="h-3.5 w-3.5" />
-                  Apply ($0 Fee)
-                </Link>
-              </div>
+                  <Link
+                    href={`/app/connect/apply?job_id=${job.id}&title=${encodeURIComponent(cleanTitle)}`}
+                    className="inline-flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-teal-800 transition-all hover:shadow-md"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    <span>Apply ($0 Fee)</span>
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <Link
+                    href={`/signup?next=${encodeURIComponent(`/jobs/view/${job.seo_slug}`)}`}
+                    className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-extrabold text-white shadow-xs hover:bg-teal-800 transition-all active:scale-95"
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                    <span>Sign up to Apply</span>
+                  </Link>
+                  <Link
+                    href={`/login?next=${encodeURIComponent(`/jobs/view/${job.seo_slug}`)}`}
+                    className="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors active:scale-95"
+                  >
+                    <span>Log in</span>
+                  </Link>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
