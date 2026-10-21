@@ -14,6 +14,7 @@ import {
   Lock,
   ArrowUpRight,
   Briefcase,
+  Mail,
 } from "lucide-react";
 
 interface DirectClientContactCardProps {
@@ -25,6 +26,7 @@ interface DirectClientContactCardProps {
   sourceUrl?: string | null;
   location?: string;
   salaryText?: string;
+  isAuthenticated?: boolean;
 }
 
 export function DirectClientContactCard({
@@ -36,6 +38,7 @@ export function DirectClientContactCard({
   sourceUrl,
   location = "Remote",
   salaryText = "Competitive Pay",
+  isAuthenticated = false,
 }: DirectClientContactCardProps) {
   const [copiedPitch, setCopiedPitch] = useState(false);
   const [copiedJobUrl, setCopiedJobUrl] = useState(false);
@@ -109,88 +112,160 @@ Best regards,`;
           Submit your proposal directly through Clivora Connect. Zero platform commissions, direct milestone tracking, and 100% retained earnings.
         </p>
 
-        {/* Action Buttons */}
-        <div className="mt-5 space-y-2.5">
-          <Link
-            href={`/app/connect/apply?job_id=${jobId}&title=${encodeURIComponent(jobTitle)}`}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-teal-700 hover:shadow active:scale-98"
-          >
-            <Send className="h-4 w-4" />
-            Apply on Clivora ($0 Platform Fee)
-          </Link>
+        {/* Action Buttons & Auth Gate */}
+        {isAuthenticated ? (
+          <div className="mt-5 space-y-2.5">
+            <Link
+              href={`/app/connect/apply?job_id=${jobId}&title=${encodeURIComponent(jobTitle)}`}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-teal-600 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-teal-700 hover:shadow active:scale-98"
+            >
+              <Send className="h-4 w-4" />
+              Apply on Clivora ($0 Platform Fee)
+            </Link>
 
-          {/* Quick Share & Copy Link */}
-          <button
-            type="button"
-            onClick={shareJob}
-            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-navy hover:border-slate-300"
-          >
-            {copiedJobUrl ? (
-              <>
-                <Check className="h-4 w-4 text-emerald-600" />
-                <span className="text-emerald-700 font-bold">Link Copied to Clipboard!</span>
-              </>
-            ) : (
-              <>
-                <Share2 className="h-4 w-4 text-slate-500" />
-                <span>Share Opportunity Link</span>
-              </>
+            {/* Direct ATS External Link if available */}
+            {sourceUrl && (
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-teal-300 bg-teal-50/70 px-5 py-3 text-xs font-bold text-teal-900 shadow-2xs transition-all hover:bg-teal-100 hover:shadow active:scale-98"
+              >
+                <span>Apply on Company ATS Website</span>
+                <ArrowUpRight className="h-4 w-4 text-teal-700" />
+              </a>
             )}
-          </button>
-        </div>
 
-        {/* 1-Click Tailored Outreach Pitch Assistant */}
-        <div className="mt-5 border-t border-slate-200/80 pt-4">
-          <button
-            type="button"
-            onClick={() => setShowPitchModal(!showPitchModal)}
-            className="flex w-full items-center justify-between text-xs font-semibold text-teal-700 hover:text-teal-800"
-          >
-            <span className="flex items-center gap-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-teal-600" />
-              {showPitchModal ? "Hide Client Outreach Pitch" : "Generate 1-Click Client Outreach Pitch"}
-            </span>
-            <span className="text-[11px] text-slate-400">{showPitchModal ? "▲" : "▼"}</span>
-          </button>
-
-          {showPitchModal && (
-            <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-3.5">
-              <p className="text-[11px] font-semibold text-slate-600 mb-2">
-                Copy and send this tailored pitch directly to {companyName}:
-              </p>
-              <div className="rounded-xl bg-white p-3 text-[11px] text-slate-700 leading-relaxed font-mono whitespace-pre-line border border-slate-200/80 shadow-2xs max-h-48 overflow-y-auto">
-                {cleanPitch}
+            {/* Direct Company Email if available */}
+            {companyEmail && (
+              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs">
+                <div className="flex items-center gap-2 text-slate-700 overflow-hidden">
+                  <Mail className="h-4 w-4 text-teal-600 shrink-0" />
+                  <span className="font-mono truncate">{companyEmail}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(companyEmail);
+                    alert("Company email copied to clipboard!");
+                  }}
+                  className="text-xs font-bold text-teal-700 hover:underline shrink-0"
+                >
+                  Copy
+                </button>
               </div>
-              <div className="mt-2.5 grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={copyToClipboard}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+            )}
+
+            {/* Quick Share & Copy Link */}
+            <button
+              type="button"
+              onClick={shareJob}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300"
+            >
+              {copiedJobUrl ? (
+                <>
+                  <Check className="h-4 w-4 text-emerald-600" />
+                  <span className="text-emerald-700 font-bold">Link Copied to Clipboard!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="h-4 w-4 text-slate-500" />
+                  <span>Share Opportunity Link</span>
+                </>
+              )}
+            </button>
+          </div>
+        ) : (
+          <div className="mt-5 relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 p-5 shadow-2xs">
+            {/* Blurred background preview */}
+            <div className="filter blur-xs select-none pointer-events-none opacity-25 space-y-2.5">
+              <div className="h-10 w-full bg-slate-400 rounded-xl"></div>
+              <div className="h-9 w-full bg-slate-300 rounded-xl"></div>
+            </div>
+
+            {/* High-conversion prompt */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-white/80 backdrop-blur-xs">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-50 border border-teal-200 text-teal-700 mb-2 shadow-2xs">
+                <Lock className="h-4 w-4" />
+              </div>
+              <h4 className="text-xs font-extrabold text-slate-900">
+                Unlock Direct Company Contact & Apply
+              </h4>
+              <p className="mt-1 text-[11px] text-slate-600 max-w-xs">
+                Sign in or create a free account to reveal direct company contact, external ATS links, and apply with $0 fees.
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <Link
+                  href={`/signup?next=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : `/jobs/view/${jobId}`)}`}
+                  className="rounded-xl bg-teal-700 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:bg-teal-800 transition-all active:scale-95"
                 >
-                  {copiedPitch ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-400" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5 text-slate-300" />
-                      Copy Pitch
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={sharePitchOnWhatsApp}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] py-2 text-xs font-bold text-white hover:bg-[#20ba59] transition-colors shadow-2xs"
+                  Sign up free
+                </Link>
+                <Link
+                  href={`/login?next=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : `/jobs/view/${jobId}`)}`}
+                  className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors active:scale-95"
                 >
-                  <MessageCircle className="h-3.5 w-3.5" />
-                  WhatsApp
-                </button>
+                  Log in
+                </Link>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* 1-Click Tailored Outreach Pitch Assistant (Only for logged in members) */}
+        {isAuthenticated && (
+          <div className="mt-5 border-t border-slate-200/80 pt-4">
+            <button
+              type="button"
+              onClick={() => setShowPitchModal(!showPitchModal)}
+              className="flex w-full items-center justify-between text-xs font-semibold text-teal-700 hover:text-teal-800"
+            >
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-teal-600" />
+                {showPitchModal ? "Hide Client Outreach Pitch" : "Generate 1-Click Client Outreach Pitch"}
+              </span>
+              <span className="text-[11px] text-slate-400">{showPitchModal ? "▲" : "▼"}</span>
+            </button>
+
+            {showPitchModal && (
+              <div className="mt-3 rounded-2xl border border-slate-200 bg-slate-50/90 p-3.5">
+                <p className="text-[11px] font-semibold text-slate-600 mb-2">
+                  Copy and send this tailored pitch directly to {companyName}:
+                </p>
+                <div className="rounded-xl bg-white p-3 text-[11px] text-slate-700 leading-relaxed font-mono whitespace-pre-line border border-slate-200/80 shadow-2xs max-h-48 overflow-y-auto">
+                  {cleanPitch}
+                </div>
+                <div className="mt-2.5 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={copyToClipboard}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+                  >
+                    {copiedPitch ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5 text-slate-300" />
+                        Copy Pitch
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={sharePitchOnWhatsApp}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] py-2 text-xs font-bold text-white hover:bg-[#20ba59] transition-colors shadow-2xs"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    WhatsApp
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Value Props Checklist */}
         <div className="mt-5 space-y-2 border-t border-slate-200/80 pt-4 text-xs text-slate-600">

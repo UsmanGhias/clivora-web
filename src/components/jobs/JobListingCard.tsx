@@ -25,6 +25,7 @@ export interface JobCardData {
   title: string;
   company_name: string;
   company_domain?: string | null;
+  company_email?: string | null;
   category?: string;
   language?: string | null;
   tags?: string[];
