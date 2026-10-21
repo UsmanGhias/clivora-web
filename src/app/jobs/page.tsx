@@ -5,7 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { site } from "@/lib/site";
 import { cleanText } from "@/lib/clean-text";
 import { JobFilterBar } from "@/components/jobs/JobFilterBar";
-import { JobListingCard, type JobCardData } from "@/components/jobs/JobListingCard";
+import { JobFilterPills } from "@/components/jobs/JobFilterPills";
+import { JobsFeedView } from "@/components/jobs/JobsFeedView";
+import { type JobCardData } from "@/components/jobs/JobListingCard";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import {
   Briefcase,
@@ -34,6 +36,9 @@ interface SearchParamsProps {
   tech?: string;
   type?: string;
   page?: string;
+  remote?: string;
+  fresh?: string;
+  high_pay?: string;
 }
 
 export default async function JobsIndexPage({
@@ -74,6 +79,23 @@ export default async function JobsIndexPage({
 
   if (tech !== "all") {
     query = query.contains("tags", [tech]);
+  }
+
+  const isRemote = sp?.remote === "true";
+  const isFresh = sp?.fresh === "true";
+  const isHighPay = sp?.high_pay === "true";
+
+  if (isRemote) {
+    query = query.or("location.ilike.%remote%,location.ilike.%worldwide%,location.ilike.%anywhere%");
+  }
+
+  if (isFresh) {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    query = query.gte("created_at", sevenDaysAgo);
+  }
+
+  if (isHighPay) {
+    query = query.or("salary_min.gte.100000,salary_max.gte.100000");
   }
 
   if (q) {
@@ -129,6 +151,9 @@ export default async function JobsIndexPage({
     if (category !== "all") p.set("category", category);
     if (tech !== "all") p.set("tech", tech);
     if (jobType !== "all") p.set("type", jobType);
+    if (isRemote) p.set("remote", "true");
+    if (isFresh) p.set("fresh", "true");
+    if (isHighPay) p.set("high_pay", "true");
     p.set("page", String(targetPage));
     return `/jobs?${p.toString()}`;
   };
@@ -228,65 +253,18 @@ export default async function JobsIndexPage({
         </div>
 
         {/* Search, Language Division & Rich Filters with Suspense */}
-        <div className="mt-10">
+        <div className="mt-10 space-y-4" id="job-search-filters">
           <Suspense fallback={<div className="h-32 rounded-2xl bg-slate-100 animate-pulse" />}>
             <JobFilterBar />
           </Suspense>
+          <Suspense fallback={null}>
+            <JobFilterPills />
+          </Suspense>
         </div>
 
-        {/* Results Header */}
-        <div className="mt-8 flex items-center justify-between border-b border-slate-200/80 pb-3">
-          <p className="text-sm font-bold text-slate-700">
-            Showing {totalJobs.toLocaleString()} {totalJobs === 1 ? "Opportunity" : "Opportunities"}
-          </p>
-          <span className="text-xs text-slate-500">
-            Page {page} of {Math.max(1, Math.ceil(totalJobs / perPage))}
-          </span>
-        </div>
-
-        {/* Job Listings Grid */}
-        <div className="mt-6 space-y-4">
-          {jobList.length > 0 ? (
-            jobList.map((job, idx) => {
-              const isFirstCard = page === 1 && idx === 0;
-              return (
-                <React.Fragment key={job.id}>
-                  {isFirstCard && (
-                    <div className="mb-1 flex items-center justify-between">
-                      <span className="text-xs font-bold uppercase tracking-wider text-teal-700">
-                        Top Spotlight Opportunity (All Information Visible)
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">100% Retained Earnings</span>
-                    </div>
-                  )}
-                  <JobListingCard job={job} isFeatured={isFirstCard} />
-
-                  {/* Interleave In-Feed Native Ad every 5 jobs */}
-                  {(idx + 1) % 5 === 0 && idx !== jobList.length - 1 && (
-                    <JobAdSenseSlot
-                      slotId="in-feed-job-index-slot"
-                      format="in-feed"
-                      className="my-3 shadow-2xs"
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-              <Building2 className="mx-auto h-10 w-10 text-slate-400" />
-              <h3 className="mt-3 text-base font-semibold text-slate-900">No jobs match your filter</h3>
-              <p className="mt-1 text-sm text-slate-500">
-                Try selecting a different language, clearing tags, or expanding your search terms.
-              </p>
-              <Link
-                href="/jobs"
-                className="mt-4 inline-flex items-center gap-1 rounded-xl bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700"
-              >
-                Reset All Filters
-              </Link>
-            </div>
-          )}
+        {/* Job Listings Feed with Quick Preview Drawer */}
+        <div className="mt-8 space-y-6">
+          <JobsFeedView jobs={jobList} totalJobs={totalJobs} />
         </div>
 
         {/* Pagination */}
