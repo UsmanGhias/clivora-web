@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     // Verify caller ownership of proposal before issuing review tokens
     const { data: existingProposal, error: proposalErr } = await adminDb
       .from("connect_proposals")
-      .select("id, freelancer_id")
+      .select("id, from_user_id")
       .eq("id", proposalId)
       .maybeSingle();
 
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "proposal_not_found" }, { status: 404 });
     }
 
-    if (existingProposal.freelancer_id !== user.id) {
+    if (existingProposal.from_user_id !== user.id) {
       return NextResponse.json({ error: "forbidden_proposal_access" }, { status: 403 });
     }
 
