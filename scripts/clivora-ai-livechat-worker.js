@@ -19,8 +19,8 @@ const ODOO_UID = 2;
 const RAW_KEYS = (process.env.GEMINI_API_KEYS || "").split(",").map(k => k.trim()).filter(Boolean);
 const DEFAULT_KEYS = [
   process.env.GEMINI_API_KEY || "AQ.Ab8RN6I8UIEWWeU7EhUEEZKLplCFXaCwpaVBpmkb8pODZTz6Uw",
-  process.env.GEMINI_FALLBACK_API_KEY || "AQ.Ab8RN6KaOvEU6Wk9AsQsyJJnog_zGuMJxV1Bh0m-XS2ncIVLlw",
-  process.env.GEMINI_TERTIARY_API_KEY || "AQ.Ab8RN6KF7SUhFAh9z_Eua6o6hN7vI7cRVPHnF5TKzsqwW6puzQ",
+  process.env.GEMINI_FALLBACK_API_KEY || "AQ.Ab8RN6IPvWwi5DTNFfz4CgEiaDUz_AZBE-cL08kuXWbU7RzyLw",
+  process.env.GEMINI_TERTIARY_API_KEY || "AQ.Ab8RN6IERQmOOQb3_x7mB64yq1bV2nkIFMKvbclP26VU0evilw",
 ];
 const GEMINI_KEYS = Array.from(new Set([...RAW_KEYS, ...DEFAULT_KEYS])).filter(Boolean);
 
