@@ -190,6 +190,13 @@ export function JobListingCard({
               </span>
             )}
 
+            {job.source === "github-oss" && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-slate-900 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-400 shadow-xs border border-slate-700">
+                <Globe className="h-3 w-3 text-emerald-400" />
+                Verified Open Source
+              </span>
+            )}
+
             {isDirectClientJob && (
               <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-teal-700 to-emerald-700 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xs">
                 <Star className="h-3 w-3 fill-amber-300 text-amber-300" />

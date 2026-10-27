@@ -251,7 +251,18 @@ export default async function JobViewPage({ params }: Props) {
 
                 <div className="space-y-2.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    {isExternal ? (
+                    {job.source === "github-oss" ? (
+                      <>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-emerald-400 border border-slate-700 shadow-2xs">
+                          <Globe className="h-3.5 w-3.5 text-emerald-400" />
+                          Verified Open Source Employer
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800 border border-teal-200">
+                          <Sparkles className="h-3 w-3 text-teal-600" />
+                          $0 Platform Fee
+                        </span>
+                      </>
+                    ) : isExternal ? (
                       <>
                         <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 border border-slate-200">
                           <Globe className="h-3.5 w-3.5 text-slate-500" />
@@ -336,6 +347,15 @@ export default async function JobViewPage({ params }: Props) {
                 <strong>Clivora Direct Engagement:</strong> All applications and proposals are submitted directly through Clivora Connect. Clients review bids and communicate with $0 platform fees, allowing you to keep 100% of your earnings.
               </p>
             </div>
+
+            {job.source === "github-oss" && (
+              <div className="rounded-2xl border border-slate-700 bg-slate-900 text-slate-100 p-4 text-xs flex items-start gap-3 shadow-xs">
+                <Globe className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  <strong className="text-white">Peer-Reviewed Open Source Employer:</strong> This organization is curated from community-maintained engineering hiring repositories on GitHub. Candidates apply directly via the company careers portal with zero recruiter middlemen and $0 platform fees.
+                </p>
+              </div>
+            )}
 
             {/* Description Sections */}
             <div className="space-y-6">
