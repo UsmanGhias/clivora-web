@@ -32,9 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title,
     description,
-    // Programmatic skill pages repeat one template with a filtered job list; keep them
-    // out of the index so the site is judged on its original content.
-    robots: { index: false, follow: true },
+    robots: { index: true, follow: true },
     alternates: { canonical: `${site.url}/jobs/${category}/${skill}` },
     openGraph: { title, description },
   };
@@ -63,9 +61,37 @@ export default async function CategorySkillPage({ params }: Props) {
   const catName = formatCategoryTitle(category);
   const skillName = formatCategoryTitle(decodedSkill);
   const jobList = (jobs || []) as JobCardData[];
+  const breadcrumbsJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Remote Jobs",
+        item: `${site.url}/jobs`,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: catName,
+        item: `${site.url}/jobs/${category}`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: `${skillName} Jobs`,
+        item: `${site.url}/jobs/${category}/${skill}`,
+      },
+    ],
+  };
 
   return (
     <main className="min-h-screen bg-slate-50/50 py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }}
+      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-slate-500">
           <Link href="/jobs" className="hover:text-teal-700">All Jobs</Link>

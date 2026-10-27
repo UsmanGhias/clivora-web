@@ -50,22 +50,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const cleanJobTitle = cleanText(job.title);
   const cleanCompany = cleanText(job.company_name);
-  // Third-party listings indexed from other job boards are not original content and the
-  // employer is not on CLIVORA, so they are kept out of search and never claim $0-fee terms.
-  const isExternal = Boolean(
-    job.source_url || (job.source && job.source !== "client" && job.source !== "clivora"),
-  );
-  const title = isExternal
-    ? `${cleanJobTitle} at ${cleanCompany} | Remote listing`
-    : `${cleanJobTitle} at ${cleanCompany} | CLIVORA ($0 Fee)`;
-  const description = isExternal
-    ? `${cleanJobTitle} at ${cleanCompany}. Remote role listed from an external job board; apply through the employer's own application page.`
-    : `Apply directly for ${cleanJobTitle} at ${cleanCompany}. Direct client communication with 100% earnings and $0 platform fees on CLIVORA.`;
+  const title = `${cleanJobTitle} at ${cleanCompany} - Remote Job ($0 Fee) | CLIVORA`;
+  const description = `Apply for ${cleanJobTitle} at ${cleanCompany}. Direct client communication with 100% earnings and $0 platform fees on CLIVORA.`;
 
   return {
     title,
     description,
-    ...(isExternal ? { robots: { index: false, follow: true } } : {}),
+    robots: { index: true, follow: true },
     alternates: { canonical: `${site.url}/jobs/view/${slug}` },
     openGraph: {
       title,
@@ -366,6 +357,24 @@ export default async function JobViewPage({ params }: Props) {
                 salaryText={formatSalary(job.salary_min, job.salary_max, job.currency)}
                 isAuthenticated={isAuthenticated}
               />
+
+              {/* Employer Claim Box */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs text-xs text-slate-600 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-slate-900">
+                  <Building2 className="h-4 w-4 text-teal-600" />
+                  <span>Hiring for this role?</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-slate-500">
+                  Claim this posting to manage incoming applications directly and post future roles with $0 fees.
+                </p>
+                <Link
+                  href={`/app/connect/manage?claim=${job.id}&company=${encodeURIComponent(cleanCompany)}`}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-teal-600 bg-teal-50/50 py-2 text-xs font-bold text-teal-800 transition-colors hover:bg-teal-100"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-teal-600" />
+                  Claim this Listing Free
+                </Link>
+              </div>
 
               {/* Sidebar Google AdSense Unit */}
               <JobAdSenseSlot

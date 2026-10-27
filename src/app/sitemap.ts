@@ -236,7 +236,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       auth: { persistSession: false, autoRefreshToken: false },
     });
     // PostgREST caps each response at 1000 rows, so page through up to MAX_SITEMAP_JOBS.
-    const MAX_SITEMAP_JOBS = 2000;
+    const MAX_SITEMAP_JOBS = 10000;
     const PAGE = 1000;
     const jobs: { seo_slug: string; created_at: string }[] = [];
     for (let from = 0; from < MAX_SITEMAP_JOBS; from += PAGE) {
@@ -245,9 +245,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .select("seo_slug, created_at")
         .eq("is_public", true)
         .eq("status", "published")
-        // Only jobs posted on CLIVORA itself; third-party listings are noindexed.
-        .is("source_url", null)
-        .or("source.is.null,source.eq.client,source.eq.clivora")
         .order("created_at", { ascending: false })
         .order("id", { ascending: true })
         .range(from, Math.min(from + PAGE, MAX_SITEMAP_JOBS) - 1);
@@ -280,12 +277,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ];
 
-  // skillUrls are intentionally excluded: those pages are noindex.
-  void skillUrls;
+  // Include all category and skill landing pages for comprehensive search reach
   const allRoutes: SitemapEntry[] = [
     ...core,
     ...blog,
     ...categoryUrls,
+    ...skillUrls,
     ...jobUrls,
     ...docs,
     ...legal,
