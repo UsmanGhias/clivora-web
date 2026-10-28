@@ -13,6 +13,13 @@ export function MarketingJsonLd() {
     founder: {
       "@type": "Person",
       name: "Usman Ghias",
+      url: "https://usmanghias.co.uk",
+      jobTitle: "Founder & Lead Architect",
+      sameAs: [
+        "https://usmanghias.co.uk",
+        "https://github.com/UsmanGhias",
+        "https://linkedin.com/in/usmanghias",
+      ],
     },
     sameAs: [
       site.social.facebook,
@@ -22,6 +29,7 @@ export function MarketingJsonLd() {
       site.social.youtube,
       site.social.tiktok,
       "https://community.clivora.io",
+      "https://github.com/UsmanGhias/clivora",
     ],
     brand: {
       "@type": "Brand",
@@ -36,6 +44,14 @@ export function MarketingJsonLd() {
     url: site.url,
     description: site.shortDescription,
     publisher: { "@type": "Organization", name: site.company.name },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: `${site.url}/jobs?q={search_term_string}`,
+      },
+      "query-input": "required name=search_term_string",
+    },
   };
 
   const software = {
