@@ -5,7 +5,7 @@
 
 const ODOO_HR_URL = process.env.ODOO_HR_URL || "https://clivorajobs.odoo.com";
 const ODOO_HR_DB = process.env.ODOO_HR_DB || "clivorajobs";
-const ODOO_HR_KEY = process.env.ODOO_HR_API_KEY || "cc6a65810d91330c90441d184f03caf6aca5e27c";
+const ODOO_HR_KEY = process.env.ODOO_HR_API_KEY || "";
 const ODOO_HR_UID = Number(process.env.ODOO_HR_UID || 2);
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://jtzjwgovqczlccyeujhq.supabase.co";

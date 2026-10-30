@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const ODOO_URL = process.env.ODOO_URL || "https://clivora.odoo.com";
 const ODOO_DB = process.env.ODOO_DB || "clivora";
-const ODOO_KEY = process.env.ODOO_API_KEY || "d4e37f9afc54226aebb9d4677a1df8e03cded9df";
+const ODOO_KEY = process.env.ODOO_API_KEY || "";
 const ODOO_UID = Number(process.env.ODOO_UID || 2);
 
 async function odooRpc(model: string, method: string, args: unknown[], kwargs: Record<string, unknown> = {}) {

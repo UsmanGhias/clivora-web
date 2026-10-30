@@ -7,12 +7,12 @@
 
 const ODOO_MAIN_URL = process.env.ODOO_MAIN_URL || "https://clivora.odoo.com";
 const ODOO_MAIN_DB = process.env.ODOO_MAIN_DB || "clivora";
-const ODOO_MAIN_KEY = process.env.ODOO_MAIN_API_KEY || "d4e37f9afc54226aebb9d4677a1df8e03cded9df";
+const ODOO_MAIN_KEY = process.env.ODOO_MAIN_API_KEY || "";
 const ODOO_MAIN_UID = 2;
 
 const ODOO_SOCIAL_URL = process.env.ODOO_SOCIAL_URL || "https://clivoraos.odoo.com";
 const ODOO_SOCIAL_DB = process.env.ODOO_SOCIAL_DB || "clivoraos";
-const ODOO_SOCIAL_KEY = process.env.ODOO_SOCIAL_API_KEY || "6c8da77fe2a4cab9448b4ef429c53c96121626d7";
+const ODOO_SOCIAL_KEY = process.env.ODOO_SOCIAL_API_KEY || "";
 const ODOO_SOCIAL_UID = 2;
 
 async function rpc(url, db, key, uid, model, method, args, kwargs = {}) {
