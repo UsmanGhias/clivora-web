@@ -29,12 +29,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { category } = await params;
   if (!VALID_CATEGORY_SLUGS.includes(category)) return {};
 
-  const title = `${formatCategoryTitle(category)} Remote Jobs - $0 Fee | CLIVORA`;
+  const title = `${formatCategoryTitle(category)} Remote Jobs - $0 Fee`;
   const description = `Find the best remote ${formatCategoryTitle(category)} jobs. Apply directly with $0 platform fees.`;
+
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("connect_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("is_public", true)
+    .eq("status", "published")
+    .eq("category", category);
+  const hasJobs = (count ?? 0) > 0;
 
   return {
     title,
     description,
+    robots: hasJobs ? { index: true, follow: true } : { index: false, follow: true },
     alternates: { canonical: `${site.url}/jobs/${category}` },
     openGraph: { title, description },
   };

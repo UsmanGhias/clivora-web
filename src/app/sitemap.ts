@@ -158,8 +158,6 @@ const POPULAR_SKILLS: Record<string, string[]> = {
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const now = new Date();
-
   const core: SitemapEntry[] = [
     { path: "", priority: 1.0, changeFrequency: "daily" },
     { path: "/jobs", priority: 0.95, changeFrequency: "hourly" },
@@ -229,6 +227,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Fetch all published jobs from Supabase
   let jobUrls: SitemapEntry[] = [];
+  const liveCategories = new Set<string>();
+  const liveSkills = new Set<string>();
+  let jobsLoaded = false;
   try {
     // Cookie-free anon client: the cookie-bound server client throws during static generation,
     // which left every /jobs/view URL out of the sitemap. RLS allows anon reads of published jobs.
@@ -238,11 +239,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // PostgREST caps each response at 1000 rows, so page through up to MAX_SITEMAP_JOBS.
     const MAX_SITEMAP_JOBS = 10000;
     const PAGE = 1000;
-    const jobs: { seo_slug: string; created_at: string }[] = [];
+    const jobs: { seo_slug: string; created_at: string; category: string | null; tags: string[] | null }[] = [];
     for (let from = 0; from < MAX_SITEMAP_JOBS; from += PAGE) {
       const { data, error } = await supabase
         .from("connect_jobs")
-        .select("seo_slug, created_at")
+        .select("seo_slug, created_at, category, tags")
         .eq("is_public", true)
         .eq("status", "published")
         .order("created_at", { ascending: false })
@@ -252,6 +253,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       jobs.push(...(data ?? []));
       if (!data || data.length < PAGE) break;
     }
+
+    for (const job of jobs) {
+      if (!job.category) continue;
+      liveCategories.add(job.category);
+      for (const tag of job.tags ?? []) liveSkills.add(`${job.category}/${tag}`);
+    }
+    jobsLoaded = true;
 
     if (jobs.length > 0) {
       jobUrls = jobs.map((job) => ({
@@ -281,8 +289,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const allRoutes: SitemapEntry[] = [
     ...core,
     ...blog,
-    ...categoryUrls,
-    ...skillUrls,
+    // Empty landing pages are noindexed, so list only the ones with live jobs.
+    ...(jobsLoaded ? categoryUrls.filter((e) => liveCategories.has(e.path.split("/")[2])) : categoryUrls),
+    ...(jobsLoaded
+      ? skillUrls.filter((e) => liveSkills.has(e.path.split("/").slice(2).join("/")))
+      : skillUrls),
     ...jobUrls,
     ...docs,
     ...legal,
@@ -290,7 +301,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return allRoutes.map(({ path, priority, changeFrequency, lastModified }) => ({
     url: `${site.url}${path}`,
-    lastModified: lastModified || now,
+    // Only real dates: a lastmod of "now" on every build teaches Google to ignore it.
+    ...(lastModified ? { lastModified } : {}),
     changeFrequency,
     priority,
   }));

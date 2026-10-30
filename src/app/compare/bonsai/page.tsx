@@ -14,7 +14,7 @@ import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Clivora vs Hello Bonsai: 2026 In-Depth Tool Comparison | CLIVORA",
+  title: "Clivora vs Hello Bonsai: 2026 In-Depth Tool Comparison",
   description:
     "Compare Clivora and Hello Bonsai. Discover why independent consultants and engineers choose Clivora's free core tier and integrated Connect hiring marketplace over Bonsai's $25 to $79/month paywalls.",
   alternates: { canonical: `${site.url}/compare/bonsai` },

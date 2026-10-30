@@ -7,7 +7,7 @@ import { UpworkFeeCalculatorClient } from "./UpworkFeeCalculatorClient";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Upwork Fee Calculator: Calculate True Platform Cuts (2026) | CLIVORA",
+  title: "Upwork Fee Calculator: Calculate True Platform Cuts (2026)",
   description:
     "Calculate your exact fee deductions on Upwork including the 10% flat freelancer service fee, connects proposal tokens, and withdrawal charges vs $0 on Clivora.",
   alternates: { canonical: `${site.url}/tools/upwork-fee-calculator` },

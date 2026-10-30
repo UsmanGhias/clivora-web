@@ -17,7 +17,7 @@ import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: `Ecosystem Integrations: Odoo, Google Play, Stripe | ${site.name}`,
+  title: "Ecosystem Integrations: Odoo, Google Play, Stripe",
   description:
     "Explore Clivora integrations. Connect your freelance business to Odoo ERP accounting, Google Play mobile billing, Stripe payments, and cloud file storage.",
   alternates: { canonical: `${site.url}/integrations` },

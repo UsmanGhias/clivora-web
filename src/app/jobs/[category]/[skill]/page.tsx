@@ -26,13 +26,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const catTitle = formatCategoryTitle(category);
   const skillTitle = formatCategoryTitle(decodedSkill);
 
-  const title = `Remote ${skillTitle} Jobs in ${catTitle} - $0 Fee | CLIVORA`;
+  const title = `Remote ${skillTitle} Jobs in ${catTitle} - $0 Fee`;
   const description = `Find top remote ${skillTitle} jobs in ${catTitle}. Direct client communication with zero platform fees on CLIVORA.`;
+
+  // Thin-content guard: a skill page with no live jobs is an empty template, keep it out of the index.
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("connect_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("is_public", true)
+    .eq("status", "published")
+    .eq("category", category)
+    .contains("tags", [decodedSkill]);
+  const hasJobs = (count ?? 0) > 0;
 
   return {
     title,
     description,
-    robots: { index: true, follow: true },
+    robots: hasJobs ? { index: true, follow: true } : { index: false, follow: true },
     alternates: { canonical: `${site.url}/jobs/${category}/${skill}` },
     openGraph: { title, description },
   };
