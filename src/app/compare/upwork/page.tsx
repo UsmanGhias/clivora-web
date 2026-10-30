@@ -15,7 +15,7 @@ import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Clivora vs Upwork: 2026 In-Depth Freelance Platform Comparison | CLIVORA",
+  title: "Clivora vs Upwork: 2026 In-Depth Freelance Platform Comparison",
   description:
     "Compare Clivora and Upwork side-by-side. See why professional freelancers and hiring clients are moving away from Upwork's 10% commission, paid connects, and payout holds to Clivora's $0 fee operating system.",
   alternates: { canonical: `${site.url}/compare/upwork` },

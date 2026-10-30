@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Remote Jobs Marketplace - $0 Platform Fee | CLIVORA",
+  title: "Remote Jobs Marketplace - $0 Platform Fee",
   description:
     "Explore curated remote career opportunities and freelance contracts. Direct client relationships, milestone verification, and $0 platform commissions.",
   alternates: { canonical: `${site.url}/jobs` },

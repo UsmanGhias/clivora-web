@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const cleanJobTitle = cleanText(job.title);
   const cleanCompany = cleanText(job.company_name);
-  const title = `${cleanJobTitle} at ${cleanCompany} - Remote Job ($0 Fee) | CLIVORA`;
+  const title = `${cleanJobTitle} at ${cleanCompany} - Remote Job ($0 Fee)`;
   const description = `Apply for ${cleanJobTitle} at ${cleanCompany}. Direct client communication with 100% earnings and $0 platform fees on CLIVORA.`;
 
   return {
@@ -139,7 +139,8 @@ export default async function JobViewPage({ params }: Props) {
     datePosted: job.created_at,
     validThrough: new Date(new Date(job.created_at).getTime() + 60 * 24 * 60 * 60 * 1000).toISOString(),
     employmentType: job.job_type ? (job.job_type === "full_time" ? "FULL_TIME" : job.job_type === "contract" ? "CONTRACTOR" : "PART_TIME") : "FULL_TIME",
-    directApply: true,
+    // External (aggregated) listings are applied for on the source site, not here.
+    directApply: !(job.source_url || (job.source && job.source !== "client" && job.source !== "clivora")),
     identifier: {
       "@type": "PropertyValue",
       name: cleanCompany || "CLIVORA",
@@ -149,16 +150,14 @@ export default async function JobViewPage({ params }: Props) {
       "@type": "Organization",
       name: cleanCompany,
       sameAs: job.company_domain ? `https://${cleanText(job.company_domain)}` : undefined,
-      logo: `${site.url}/icons/icon-512.png`,
     },
-    jobLocation: {
-      "@type": "Place",
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: cleanLocation,
-        addressCountry: "US",
+    // Only describe a physical location when the listing names one; never assume a country.
+    ...(!/remote|worldwide|anywhere/i.test(cleanLocation) && {
+      jobLocation: {
+        "@type": "Place",
+        address: { "@type": "PostalAddress", addressLocality: cleanLocation },
       },
-    },
+    }),
     applicantLocationRequirements: {
       "@type": "Country",
       name: "Worldwide",

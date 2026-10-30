@@ -14,7 +14,7 @@ import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Clivora vs Contra: 2026 Freelance Tool Comparison | CLIVORA",
+  title: "Clivora vs Contra: 2026 Freelance Tool Comparison",
   description:
     "Compare Clivora and Contra side-by-side. Discover why developers, agencies, and technical consultants choose Clivora for its native Android app, client CRM, time-tracking, and integrated invoicing.",
   alternates: { canonical: `${site.url}/compare/contra` },

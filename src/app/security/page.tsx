@@ -16,7 +16,7 @@ import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: `Platform Security & Data Protection Architecture | ${site.name}`,
+  title: "Platform Security & Data Protection Architecture",
   description:
     "Learn about Clivora's security architecture. Enterprise PostgreSQL Row-Level Security (RLS), AES-256 encrypted file vault, zero storage of payment credentials, and GDPR compliance.",
   alternates: { canonical: `${site.url}/security` },

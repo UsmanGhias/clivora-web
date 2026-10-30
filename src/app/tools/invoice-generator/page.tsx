@@ -7,7 +7,7 @@ import { InvoiceGeneratorClient } from "./InvoiceGeneratorClient";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Free Online Invoice Generator for Freelancers (PDF) | CLIVORA",
+  title: "Free Online Invoice Generator for Freelancers (PDF)",
   description:
     "Create and download professional PDF invoices online for free. Add line items, calculate taxes and totals, customize currencies, and bill clients directly with zero platform fees.",
   alternates: { canonical: `${site.url}/tools/invoice-generator` },

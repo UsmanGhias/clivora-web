@@ -16,7 +16,7 @@ import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Free Freelance Business Tools & Calculators | CLIVORA",
+  title: "Free Freelance Business Tools & Calculators",
   description:
     "Free interactive calculators and business tools for freelancers and clients. Calculate your true hourly rate, analyze marketplace fee leakage, generate PDF invoices, and run technical playgrounds.",
   alternates: { canonical: `${site.url}/tools` },

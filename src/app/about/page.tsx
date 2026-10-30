@@ -5,7 +5,7 @@ import { site } from "@/lib/site";
 import { Award, Briefcase, Code2, Rocket, Shield, Users } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: `About CODCrafters & Usman Ghias - ${site.name}`,
+  title: "About CODCrafters & Usman Ghias",
   description:
     "Learn about CODCrafters and founder Usman Ghias, the systems engineering team building Clivora Freelancer OS.",
   alternates: { canonical: `${site.url}/about` },

@@ -19,7 +19,7 @@ import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: `Trust, Safety & Payment Standards | ${site.name}`,
+  title: "Trust, Safety & Payment Standards",
   description:
     "Discover how Clivora safeguards freelancers and clients: $0 platform deal fees, direct milestone payment settlement, transparent job provenance, and verified reviews.",
   alternates: { canonical: `${site.url}/trust` },

@@ -7,7 +7,7 @@ import { RateCalculatorClient } from "./RateCalculatorClient";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Freelance Hourly & Day Rate Calculator (100% Free) | CLIVORA",
+  title: "Freelance Hourly & Day Rate Calculator (100% Free)",
   description:
     "Calculate your exact target freelance hourly and day rate based on desired net income, national taxes, business overhead, and billable utilization.",
   alternates: { canonical: `${site.url}/tools/freelance-rate-calculator` },

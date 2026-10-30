@@ -14,7 +14,7 @@ import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Clivora vs Fiverr: 2026 Freelancer & Agency Comparison | CLIVORA",
+  title: "Clivora vs Fiverr: 2026 Freelancer & Agency Comparison",
   description:
     "Compare Clivora and Fiverr. Learn why high-value consultants, engineers, and digital studios choose Clivora's $0 fee operating system over Fiverr's 20% commission cut and 14-day payout delays.",
   alternates: { canonical: `${site.url}/compare/fiverr` },
