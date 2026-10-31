@@ -164,7 +164,7 @@ export async function POST(request: Request) {
         client_name: targetName || null,
       })
       .eq("id", proposalId)
-      .eq("freelancer_id", user.id);
+      .eq("from_user_id", user.id);
 
     // Get freelancer's display name
     const { data: freelancerProfile } = await adminDb
