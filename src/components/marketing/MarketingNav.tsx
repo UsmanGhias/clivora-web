@@ -8,6 +8,7 @@ import { marketing } from "@/lib/marketing";
 import { cn } from "@/lib/utils";
 import { useLivePlatformStats } from "@/lib/useLivePlatformStats";
 import { SiteSearchBar } from "./SiteSearchBar";
+import { PromoBanner1111 } from "./PromoBanner1111";
 
 type SessionUser = {
   email: string | null;
@@ -150,6 +151,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
 
   return (
     <>
+      <PromoBanner1111 />
       <header
         className={cn(
           "sticky top-0 z-50 transition-all duration-300",
