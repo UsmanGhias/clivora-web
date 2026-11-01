@@ -18,10 +18,33 @@ import { CommissionSavingsCalculator } from "@/components/marketing/CommissionSa
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "11.11 Global Tech Festival: 1-Year Founder Pro Plus ($0) & 0% Fees",
+  title: "11.11 Global Tech Festival: 1-Year Founder Pro Plus ($0) & 0% Fees | Clivora",
   description:
     "Join the Clivora 11.11 Global Tech Festival. Claim a full 1-Year Founder Pro Plus pass at $0 cost ($228 annual value), lifetime 0% marketplace fees, unlimited CRM client relationships, and 50 GB encrypted file vault.",
   alternates: { canonical: `${site.url}/promo/11-11` },
+  openGraph: {
+    title: "11.11 Global Tech Festival: 1-Year Founder Pro Plus ($0) & 0% Fees",
+    description:
+      "Claim a full 1-Year Founder Pro Plus pass at $0 cost ($228 annual value) with lifetime 0% marketplace fees and 7,150+ remote tech jobs.",
+    url: `${site.url}/promo/11-11`,
+    siteName: site.name,
+    images: [
+      {
+        url: `${site.url}/marketing/clivora_1111_founder_pass.jpg`,
+        width: 1024,
+        height: 576,
+        alt: "Clivora 11.11 Founder Pass 0% Fee VIP Card",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "11.11 Global Tech Festival: 1-Year Founder Pro Plus ($0) & 0% Fees",
+    description:
+      "Claim a full 1-Year Founder Pro Plus pass at $0 cost ($228 annual value) with lifetime 0% marketplace fees and 7,150+ remote tech jobs.",
+    images: [`${site.url}/marketing/clivora_1111_founder_pass.jpg`],
+  },
   keywords: [
     "11.11 freelance sale",
     "11.11 tech festival",
@@ -53,7 +76,7 @@ const FESTIVAL_BENEFITS = [
   },
   {
     icon: Globe2,
-    title: "6,900+ Live Remote Tech Jobs",
+    title: "7,150+ Live Remote Tech Jobs",
     description:
       "Aggregated directly from open source repositories, Y Combinator startups, Hacker News, and engineering career boards with zero bidding tokens required.",
   },
@@ -324,6 +347,44 @@ export default function Promo1111Page() {
           </div>
         </div>
       </section>
+
+      {/* Schema.org Event & Offer Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "SaleEvent",
+            name: "Clivora 11.11 Global Tech Festival",
+            description:
+              "1-Year complimentary Founder Pro Plus pass ($228 annual value at $0 cost) with 0% marketplace commission for software developers and hiring teams.",
+            startDate: "2026-11-01T00:00:00Z",
+            endDate: "2026-11-30T23:59:59Z",
+            eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+            eventStatus: "https://schema.org/EventScheduled",
+            location: {
+              "@type": "VirtualLocation",
+              url: `${site.url}/promo/11-11`,
+            },
+            image: [`${site.url}/marketing/clivora_1111_founder_pass.jpg`],
+            offers: {
+              "@type": "Offer",
+              name: "1-Year Founder Pro Plus Pass",
+              price: "0",
+              priceCurrency: "USD",
+              url: `${site.url}/promo/11-11`,
+              availability: "https://schema.org/InStock",
+              validFrom: "2026-11-01T00:00:00Z",
+              validThrough: "2026-11-30T23:59:59Z",
+            },
+            organizer: {
+              "@type": "Organization",
+              name: "Clivora",
+              url: site.url,
+            },
+          }),
+        }}
+      />
     </MarketingShell>
   );
 }
