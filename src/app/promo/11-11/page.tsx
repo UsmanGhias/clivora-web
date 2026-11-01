@@ -146,26 +146,26 @@ export default function Promo1111Page() {
         </div>
       </section>
 
-      {/* Visual Fee Comparison Asset Spotlight */}
+      {/* Visual 11.11 Founder Pass Keynote Asset Spotlight */}
       <section className="py-16 sm:py-20 bg-white border-b border-slate-200">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <span className="text-xs font-bold uppercase tracking-wider text-teal-700">Platform Economics</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-teal-700">11.11 Festival Keynote Asset</span>
             <h2 className="mt-2 text-3xl font-extrabold text-navy">
-              Where does your contract money go?
+              Claim Your 11.11 Founder Pass (0% Fee)
             </h2>
             <p className="mt-2 text-slate-600 text-sm sm:text-base">
-              On legacy freelance platforms, fees compound across freelancers and hiring teams. Clivora replaces extraction with a direct developer operating system.
+              Activate 365 days of complimentary Founder Pro Plus access ($228 annual value). Direct milestone escrow, unlimited project invoicing, and zero platform commission.
             </p>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-xl">
+          <div className="overflow-hidden rounded-2xl border border-teal-500/20 bg-[#070B14] shadow-2xl p-2 sm:p-3">
             <Image
-              src="/marketing/clivora_fee_comparison.jpg"
-              alt="Clivora 0% Fee vs Upwork 10% Fee Comparison Chart"
-              width={1200}
-              height={675}
-              className="w-full h-auto object-cover"
+              src="/marketing/clivora_1111_founder_pass.jpg"
+              alt="Clivora 11.11 Founder Pass 0% Fee VIP Card"
+              width={1024}
+              height={576}
+              className="w-full h-auto rounded-xl object-cover shadow-inner"
               priority
             />
           </div>
@@ -185,7 +185,7 @@ export default function Promo1111Page() {
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-[#F8FAFC] p-5 text-center">
-              <div className="text-3xl font-extrabold text-navy">6,900+</div>
+              <div className="text-3xl font-extrabold text-navy">7,150+</div>
               <div className="mt-1 text-xs font-medium text-slate-600">
                 Direct remote technical job listings with open application paths
               </div>
