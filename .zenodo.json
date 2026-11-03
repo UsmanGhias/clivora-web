@@ -1,0 +1,22 @@
+{
+  "title": "CLIVORA Web: The Open-Source Freelancer OS Web Platform",
+  "description": "The official web platform, client portal, and operations dashboard for CLIVORA, the open-source Freelancer OS.",
+  "creators": [
+    {
+      "name": "Khan, Muhammad Usman",
+      "affiliation": "CODCrafters",
+      "orcid": ""
+    }
+  ],
+  "access_right": "open",
+  "license": "AGPL-3.0-only",
+  "keywords": [
+    "freelancer",
+    "open-source",
+    "nextjs",
+    "typescript",
+    "supabase",
+    "crm",
+    "invoicing"
+  ]
+}

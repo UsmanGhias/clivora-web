@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "If you use this software or its platform design in your research or project, please cite the paper below."
+title: "CLIVORA Web: The Open-Source Freelancer OS Web Platform"
+type: software
+authors:
+  - family-names: "Khan"
+    given-names: "Muhammad Usman"
+    alias: "Usman Ghias"
+    website: "https://usmanghias.co.uk"
+repository-code: "https://github.com/UsmanGhias/clivora-web"
+url: "https://clivora.io"
+license: AGPL-3.0-only
+keywords:
+  - freelancer-os
+  - nextjs
+  - typescript
+  - tailwindcss
+  - supabase
+  - crm
+  - invoicing
+preferred-citation:
+  type: article
+  title: "Durable Edge-Outbox Synchronization: Managing Relational Divergence in Intermittent Mobile Enterprise Workloads"
+  authors:
+    - family-names: "Khan"
+      given-names: "Muhammad Usman"
+  year: 2026
+  month: 9
+  publisher:
+    name: "Zenodo"
+  doi: "10.5281/zenodo.22843765"
