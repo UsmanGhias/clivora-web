@@ -9,7 +9,7 @@ export function getSupabaseUrl(): string {
     if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE) {
       console.warn("WARN: NEXT_PUBLIC_SUPABASE_URL is not set in environment.");
     }
-    return "https://jtzjwgovqczlccyeujhq.supabase.co";
+    return "https://your-project-ref.supabase.co";
   }
   return url;
 }
@@ -20,7 +20,7 @@ export function getSupabaseAnonKey(): string {
     if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE) {
       console.warn("WARN: NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in environment.");
     }
-    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0emp3Z292cWN6bGNjeWV1amhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODAwNzMsImV4cCI6MjA5ODc1NjA3M30.BwatkYlqX88GRCdyAvTCiUmsCF3Nc171an8XfosuuLM";
+    return "your-development-anon-key";
   }
   return key;
 }

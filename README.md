@@ -1,41 +1,53 @@
 # CLIVORA Web
 
-Marketing site, web app, and user documentation for [CLIVORA](https://clivora.io).
+The official web platform and marketing application for CLIVORA, the open-source Freelancer OS.
 
-**Live:** [clivora.io](https://clivora.io)  
-**Docs:** [clivora.io/docs](https://clivora.io/docs)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-0F766E.svg)](LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6.svg)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC.svg)](https://tailwindcss.com)
+[![Live Site](https://img.shields.io/badge/Live-clivora.io-0F172A.svg)](https://clivora.io)
 
-## Documentation (public)
+Live application: https://clivora.io  
+Documentation: https://clivora.io/docs  
+Mobile application (Flutter): https://github.com/UsmanGhias/clivora
 
-| Resource | URL |
-|----------|-----|
-| Docs home | `/docs` |
-| User guide | `/docs/user-guide` |
-| Connect guide | `/docs/connect` |
-| FAQ | `/docs/faq` |
-| Changelog | `/docs/changelog` |
+## Architecture and stack
 
-Markdown sources: `content/docs/`.
+Built with modern web technologies:
+- Next.js (App Router, Server Actions, Server Components)
+- TypeScript for type safety across all database and API schemas
+- Tailwind CSS with responsive layout tokens
+- Supabase for PostgreSQL database, authentication, and real-time events
+- SafePay and Stripe for secure payments
 
-## Pages
+## Quickstart
 
-| Page | URL |
-|------|-----|
-| Home | `/` |
-| Connect | `/connect` |
-| Web app | `/app` |
-| Pro checkout | `/pro` |
-| Documentation | `/docs` |
-
-## Development
-
+1. Clone the repository and install dependencies:
 ```bash
+git clone https://github.com/UsmanGhias/clivora-web.git
+cd clivora-web
 npm install
+```
+
+2. Configure environment variables:
+Copy `.env.example` to `.env.local` and configure your credentials:
+```bash
+cp .env.example .env.local
+```
+
+3. Run the development server:
+```bash
 npm run dev
 ```
 
-## Deploy
+Open http://localhost:3000 in your browser to view the application.
 
-Vercel — import `clivora-web` repo, domain `clivora.io`.
+## Security
 
-**CODCrafters** · CLIVORA © 2026
+Please report vulnerabilities directly to security@clivora.io per our [Security Policy](SECURITY.md). Never open public GitHub issues for security disclosures.
+
+## License
+
+Released under the GNU Affero General Public License v3 (AGPL-3.0). See [LICENSE](LICENSE) for details.  
+Curated and architected by [Usman Ghias](https://usmanghias.co.uk).

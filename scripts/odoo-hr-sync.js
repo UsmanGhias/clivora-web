@@ -3,13 +3,13 @@
  * Synchronizes job positions and candidate applicants between Clivora and Odoo HR.
  */
 
-const ODOO_HR_URL = process.env.ODOO_HR_URL || "https://clivorajobs.odoo.com";
-const ODOO_HR_DB = process.env.ODOO_HR_DB || "clivorajobs";
-const ODOO_HR_KEY = process.env.ODOO_HR_API_KEY || "cc6a65810d91330c90441d184f03caf6aca5e27c";
-const ODOO_HR_UID = Number(process.env.ODOO_HR_UID || 2);
+const ODOO_HR_URL = process.env.ODOO_HR_URL || "";
+const ODOO_HR_DB = process.env.ODOO_HR_DB || "";
+const ODOO_HR_KEY = process.env.ODOO_HR_API_KEY || "";
+const ODOO_HR_UID = Number(process.env.ODOO_HR_UID || 0);
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://jtzjwgovqczlccyeujhq.supabase.co";
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0emp3Z292cWN6bGNjeWV1amhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODAwNzMsImV4cCI6MjA5ODc1NjA3M30.BwatkYlqX88GRCdyAvTCiUmsCF3Nc171an8XfosuuLM";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 
 async function rpc(model, method, args, kwargs) {
   const res = await fetch(ODOO_HR_URL + "/jsonrpc", {
