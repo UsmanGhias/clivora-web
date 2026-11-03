@@ -5,6 +5,7 @@ import { ArrowUpRight, Sparkles, ShieldCheck, Zap } from "lucide-react";
 import { marketing } from "@/lib/marketing";
 import { HeroWorkspacePreview } from "./HeroWorkspacePreview";
 import { useLivePlatformStats } from "@/lib/useLivePlatformStats";
+import { GitHubIcon } from "./SocialBrandIcons";
 
 export function HomeHero() {
   const h = marketing.hero;
@@ -22,12 +23,31 @@ export function HomeHero() {
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-8">
           {/* Left Column: Core Value Proposition */}
           <div className="lg:pr-4">
-            {/* Live Status Pill */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-200/80 bg-teal-50/80 px-3 py-1 shadow-xs">
-              <span className="h-2 w-2 rounded-full bg-teal-600 animate-pulse" />
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-teal-900">
-                {h.badge}
-              </p>
+            {/* Live Status & Open Source Pill */}
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href="https://github.com/UsmanGhias/clivora"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 rounded-full border border-teal-300/80 bg-white px-3 py-1 shadow-xs transition hover:border-teal-500 hover:bg-teal-50/50"
+                title="Star Clivora on GitHub - World's #1 Open-Source Client & Freelancer OS"
+              >
+                <GitHubIcon className="h-4 w-4 text-slate-800" />
+                <span className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-navy">
+                  World&apos;s #1 Open-Source Client OS
+                </span>
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 border border-amber-300/80 px-2 py-0.5 text-[10px] font-black text-amber-900 group-hover:bg-amber-200 transition">
+                  ★ Star on GitHub
+                </span>
+              </a>
+
+              <Link
+                href="/open-source"
+                className="inline-flex items-center gap-1.5 rounded-full border border-teal-200/80 bg-teal-50/80 px-3 py-1 text-[11px] font-bold text-teal-900 hover:bg-teal-100 transition shadow-xs"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-teal-600 animate-pulse" />
+                <span>100% Free · $0 Deal Fees</span>
+              </Link>
             </div>
 
             {/* Main Headline */}
@@ -91,18 +111,22 @@ export function HomeHero() {
             </div>
 
             {/* Trust Highlights */}
-            <ul className="mt-8 grid gap-2.5 sm:grid-cols-3">
+            <ul className="mt-8 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
               <li className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/80 p-3 text-[12px] font-bold text-slate-800 shadow-xs">
                 <ShieldCheck className="h-4 w-4 shrink-0 text-teal-600" />
-                <span>$0 Connect Platform Fee</span>
+                <span>$0 Platform Fee</span>
               </li>
               <li className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/80 p-3 text-[12px] font-bold text-slate-800 shadow-xs">
                 <Zap className="h-4 w-4 shrink-0 text-cyan-600" />
-                <span>Direct Client Invoicing</span>
+                <span>Direct Invoicing</span>
               </li>
               <li className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white/80 p-3 text-[12px] font-bold text-slate-800 shadow-xs">
                 <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
                 <span>Web + Android Sync</span>
+              </li>
+              <li className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50/60 p-3 text-[12px] font-bold text-teal-950 shadow-xs">
+                <GitHubIcon className="h-4 w-4 shrink-0 text-navy" />
+                <span>100% Open Source</span>
               </li>
             </ul>
 

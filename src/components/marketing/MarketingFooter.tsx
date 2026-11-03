@@ -4,6 +4,7 @@ import { site } from "@/lib/site";
 import {
   ColorfulMailIcon,
   FacebookIcon,
+  GitHubIcon,
   InstagramIcon,
   LinkedInIcon,
   TikTokIcon,
@@ -12,6 +13,12 @@ import {
 } from "./SocialBrandIcons";
 
 const socialLinks = [
+  {
+    label: "GitHub",
+    href: site.social.github,
+    Icon: GitHubIcon,
+    className: "text-slate-900 hover:border-slate-900/40 hover:bg-slate-100",
+  },
   {
     label: "Facebook",
     href: site.social.facebook,

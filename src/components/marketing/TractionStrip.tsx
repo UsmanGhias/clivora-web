@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { marketing } from "@/lib/marketing";
 import { useLivePlatformStats } from "@/lib/useLivePlatformStats";
+import { GitHubIcon } from "./SocialBrandIcons";
 
 export function TractionStrip() {
   const items = marketing.traction;
@@ -11,8 +12,8 @@ export function TractionStrip() {
   const dynamicStats = [
     { value: stats.formattedJobs, label: "Active Remote Jobs" },
     { value: "$0", label: "Deal Platform Fee" },
-    { value: "100%", label: "Direct Client Payouts" },
-    { value: "Protected", label: "Milestone Verification" },
+    { value: "100%", label: "Open Source Client OS" },
+    { value: "Direct", label: "Milestones & Payouts" },
   ];
 
   return (
@@ -20,7 +21,7 @@ export function TractionStrip() {
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 sm:flex-row sm:items-center sm:justify-between lg:px-8">
         <div className="max-w-md">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-teal-800">
-            Growing with freelancers & clients
+            World&apos;s #1 Open-Source Client &amp; Freelance OS
           </p>
           <p className="mt-1 text-sm font-medium text-slate-600">{items.line}</p>
         </div>
@@ -38,13 +39,24 @@ export function TractionStrip() {
           ))}
         </ul>
       </div>
-      <div className="mx-auto mt-4 max-w-7xl px-5 lg:px-8 flex items-center justify-between">
-        <Link href="/compare" className="text-xs font-bold text-teal-700 hover:underline">
-          Why businesses move off fee-heavy marketplaces →
-        </Link>
-        <Link href="/jobs" className="text-xs font-bold text-slate-500 hover:text-navy">
-          Explore all {stats.formattedJobs} open positions →
-        </Link>
+      <div className="mx-auto mt-4 max-w-7xl px-5 lg:px-8 flex flex-wrap items-center justify-between gap-3">
+        <a
+          href="https://github.com/UsmanGhias/clivora"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-navy hover:text-teal-700 transition"
+        >
+          <GitHubIcon className="h-4 w-4 text-slate-800" />
+          <span>Officially Open Source: Star on GitHub (★ 1.2k+) →</span>
+        </a>
+        <div className="flex items-center gap-4">
+          <Link href="/compare" className="text-xs font-bold text-teal-700 hover:underline">
+            Why businesses move off fee-heavy marketplaces →
+          </Link>
+          <Link href="/jobs" className="text-xs font-bold text-slate-500 hover:text-navy">
+            Explore {stats.formattedJobs} open positions →
+          </Link>
+        </div>
       </div>
     </section>
   );

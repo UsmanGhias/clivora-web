@@ -21,6 +21,11 @@ export const marketing = {
         badge: "Remote",
       },
       {
+        label: "Open Source",
+        href: "/open-source",
+        badge: "★ 1.2k",
+      },
+      {
         label: "Freelancers",
         href: "/for-freelancers",
         children: [
@@ -616,6 +621,7 @@ export const marketing = {
     columns: {
       Product: [
         { label: "Features", href: "/features" },
+        { label: "Open Source (GitHub)", href: "/open-source" },
         { label: "Free Tools Directory", href: "/tools" },
         { label: "Rate Calculator", href: "/tools/freelance-rate-calculator" },
         { label: "Upwork Fee Calculator", href: "/tools/upwork-fee-calculator" },
@@ -637,6 +643,7 @@ export const marketing = {
       ],
       Company: [
         { label: "About CODCrafters", href: "/about" },
+        { label: "GitHub Repository", href: "https://github.com/UsmanGhias/clivora" },
         { label: "Guides & Articles", href: "/blog" },
         { label: "Contact", href: "/contact" },
         { label: "Support", href: "/support" },

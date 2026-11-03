@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useLivePlatformStats } from "@/lib/useLivePlatformStats";
 import { SiteSearchBar } from "./SiteSearchBar";
 import { PromoBanner1111 } from "./PromoBanner1111";
+import { GitHubIcon } from "./SocialBrandIcons";
 
 type SessionUser = {
   email: string | null;
@@ -278,6 +279,24 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
 
           <div className="hidden items-center gap-2 xl:gap-2.5 lg:flex shrink-0">
             <SiteSearchBar variant="icon" light={light} />
+            <a
+              href="https://github.com/UsmanGhias/clivora"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "group inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold transition shadow-2xs",
+                light
+                  ? "border-slate-300/80 bg-white text-navy hover:border-teal-500 hover:bg-teal-50/40"
+                  : "border-white/20 bg-white/10 text-white hover:bg-white/20 hover:border-teal-300"
+              )}
+              title="Star Clivora on GitHub - World's #1 Open-Source Client & Freelancer OS"
+            >
+              <GitHubIcon className="h-3.5 w-3.5 fill-current" />
+              <span>Star</span>
+              <span className="rounded-full bg-amber-400/25 px-1.5 py-0.2 text-[10px] font-black text-amber-800 dark:text-amber-300 border border-amber-400/40">
+                ★ 1.2k
+              </span>
+            </a>
             <button
               type="button"
               className={cn(
@@ -373,8 +392,23 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
 
       {mobileOpen ? (
         <div className="fixed inset-x-0 top-[68px] z-40 max-h-[calc(100svh-68px)] overflow-y-auto border-b border-slate-200 bg-white p-5 shadow-xl lg:hidden">
-          <div className="mb-4">
+          <div className="mb-4 space-y-2">
             <SiteSearchBar variant="mobile" onSelect={() => setMobileOpen(false)} />
+            <a
+              href="https://github.com/UsmanGhias/clivora"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center justify-between rounded-xl border border-teal-200 bg-teal-50/60 p-2.5 text-xs font-bold text-navy transition hover:bg-teal-100/60"
+            >
+              <div className="flex items-center gap-2">
+                <GitHubIcon className="h-4 w-4" />
+                <span>World&apos;s #1 Open Source Client OS</span>
+              </div>
+              <span className="rounded-md bg-amber-100 border border-amber-300 px-2 py-0.5 text-[10px] font-black text-amber-900">
+                ★ Star on GitHub
+              </span>
+            </a>
           </div>
           <nav className="flex flex-col gap-1">
             {marketing.nav.links.map((link) => {
