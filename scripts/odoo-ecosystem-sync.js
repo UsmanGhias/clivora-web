@@ -7,13 +7,13 @@
 
 const ODOO_MAIN_URL = process.env.ODOO_MAIN_URL || "https://clivora.odoo.com";
 const ODOO_MAIN_DB = process.env.ODOO_MAIN_DB || "clivora";
-const ODOO_MAIN_KEY = process.env.ODOO_MAIN_API_KEY || "REDACTED_ODOO_KEY";
-const ODOO_MAIN_UID = 2;
+const ODOO_MAIN_KEY = process.env.ODOO_MAIN_API_KEY || "";
+const ODOO_MAIN_UID = parseInt(process.env.ODOO_MAIN_UID || "2", 10);
 
 const ODOO_SOCIAL_URL = process.env.ODOO_SOCIAL_URL || "https://clivoraos.odoo.com";
 const ODOO_SOCIAL_DB = process.env.ODOO_SOCIAL_DB || "clivoraos";
-const ODOO_SOCIAL_KEY = process.env.ODOO_SOCIAL_API_KEY || "REDACTED_ODOO_KEY";
-const ODOO_SOCIAL_UID = 2;
+const ODOO_SOCIAL_KEY = process.env.ODOO_SOCIAL_API_KEY || "";
+const ODOO_SOCIAL_UID = parseInt(process.env.ODOO_SOCIAL_UID || "2", 10);
 
 async function rpc(url, db, key, uid, model, method, args, kwargs = {}) {
   const res = await fetch(url + "/jsonrpc", {

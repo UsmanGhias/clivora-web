@@ -12,16 +12,16 @@
 
 const ODOO_URL = process.env.ODOO_MAIN_URL || "https://clivora.odoo.com";
 const ODOO_DB = process.env.ODOO_MAIN_DB || "clivora";
-const ODOO_KEY = process.env.ODOO_MAIN_API_KEY || "REDACTED_ODOO_KEY";
-const ODOO_UID = 2;
+const ODOO_KEY = process.env.ODOO_MAIN_API_KEY || "";
+const ODOO_UID = parseInt(process.env.ODOO_MAIN_UID || "2", 10);
 
 // Pool of Gemini API keys. User can pass comma-separated keys in GEMINI_API_KEYS
 const RAW_KEYS = (process.env.GEMINI_API_KEYS || "").split(",").map(k => k.trim()).filter(Boolean);
 const DEFAULT_KEYS = [
-  process.env.GEMINI_API_KEY || "REDACTED_GEMINI_KEY",
-  process.env.GEMINI_FALLBACK_API_KEY || "REDACTED_GEMINI_KEY",
-  process.env.GEMINI_TERTIARY_API_KEY || "REDACTED_GEMINI_KEY",
-];
+  process.env.GEMINI_API_KEY || "",
+  process.env.GEMINI_FALLBACK_API_KEY || "",
+  process.env.GEMINI_TERTIARY_API_KEY || "",
+].filter(Boolean);
 const GEMINI_KEYS = Array.from(new Set([...RAW_KEYS, ...DEFAULT_KEYS])).filter(Boolean);
 
 let currentKeyIndex = 0;
