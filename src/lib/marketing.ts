@@ -620,6 +620,7 @@ export const marketing = {
     columns: {
       Product: [
         { label: "Features", href: "/features" },
+        { label: "Download App (Google Play)", href: "/download" },
         { label: "Open Source (GitHub)", href: "/open-source" },
         { label: "Free Tools Directory", href: "/tools" },
         { label: "Rate Calculator", href: "/tools/freelance-rate-calculator" },

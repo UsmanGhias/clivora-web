@@ -168,11 +168,13 @@ export default function OpenSourcePage() {
               </Link>
 
               <a
-                href="/download/apk"
+                href={site.playStoreUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-navy shadow-xs transition hover:border-teal-400 hover:bg-teal-50 whitespace-nowrap shrink-0"
               >
-                <Download className="h-4 w-4 text-teal-700 shrink-0" />
-                <span className="whitespace-nowrap">Download Android APK (v5.6.1)</span>
+                <Smartphone className="h-4 w-4 text-teal-700 shrink-0" />
+                <span className="whitespace-nowrap">Install on Google Play (v5.6.1)</span>
               </a>
             </div>
           </div>
@@ -380,19 +382,19 @@ export default function OpenSourcePage() {
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <a
-                  href="/download/apk"
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white transition hover:bg-emerald-700"
-                >
-                  <Download className="h-3 w-3" />
-                  Download APK (v5.6.1)
-                </a>
-                <a
                   href={site.playStoreUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white transition hover:bg-emerald-700"
+                >
+                  <Smartphone className="h-3 w-3" />
+                  Install on Google Play (v5.6.1)
+                </a>
+                <a
+                  href="/download/apk"
                   className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-navy underline"
                 >
-                  Play Store →
+                  Direct APK (v5.6.1) →
                 </a>
               </div>
             </div>

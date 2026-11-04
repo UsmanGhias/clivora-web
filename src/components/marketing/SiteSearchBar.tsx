@@ -71,12 +71,13 @@ const SEARCH_DIRECTORY: QuickLink[] = [
     keywords: ["connect", "hire", "freelancer", "marketplace", "escrow", "direct", "contracts"],
   },
   {
-    label: "Android APK Direct Download",
-    desc: "Native Flutter mobile app (v5.6.1) with SQLite offline sync",
-    href: "/download/apk",
+    label: "CLIVORA on Google Play Store",
+    desc: "Install official release (v5.6.1) for Android with offline SQLite sync",
+    href: "https://play.google.com/store/apps/details?id=org.codcrafters.clivora",
     category: "Platform",
+    external: true,
     icon: Smartphone,
-    keywords: ["apk", "android", "mobile", "app", "download", "install", "flutter", "offline", "sync"],
+    keywords: ["google play", "play store", "play console", "android", "mobile", "app", "download", "install", "apk", "aab", "flutter", "offline", "sync"],
   },
   {
     label: "Fee Comparison vs Upwork & Fiverr",
@@ -183,7 +184,7 @@ const SEARCH_DIRECTORY: QuickLink[] = [
 
 const POPULAR_TAGS = [
   "Open Source",
-  "Android APK",
+  "Google Play App",
   "Remote Jobs",
   "Connect Direct",
   "Architecture",
@@ -395,7 +396,7 @@ export function SiteSearchBar({
                   setQuery(e.target.value);
                   setSelectedIndex(0);
                 }}
-                placeholder="Search jobs, open source, apk, architecture..."
+                placeholder="Search jobs, Google Play app, architecture..."
                 className="w-full bg-transparent text-base sm:text-sm text-slate-900 placeholder-slate-400 outline-none"
               />
               {query && (

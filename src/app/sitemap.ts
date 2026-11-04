@@ -166,6 +166,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/for-clients", priority: 0.9, changeFrequency: "weekly" },
     { path: "/features", priority: 0.9, changeFrequency: "weekly" },
     { path: "/pricing", priority: 0.9, changeFrequency: "weekly" },
+    { path: "/open-source", priority: 0.9, changeFrequency: "weekly" },
+    { path: "/download", priority: 0.88, changeFrequency: "weekly" },
     { path: "/promo/11-11", priority: 0.9, changeFrequency: "daily" },
     { path: "/tools", priority: 0.9, changeFrequency: "weekly" },
     { path: "/tools/freelance-rate-calculator", priority: 0.88, changeFrequency: "weekly" },
