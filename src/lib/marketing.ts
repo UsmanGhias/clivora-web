@@ -23,7 +23,6 @@ export const marketing = {
       {
         label: "Open Source",
         href: "/open-source",
-        badge: "★ 1.2k",
       },
       {
         label: "Freelancers",

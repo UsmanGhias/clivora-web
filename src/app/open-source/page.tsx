@@ -113,7 +113,7 @@ export default function OpenSourcePage() {
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2 py-0.5 text-[11px] font-black text-amber-900">
                   <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                  1.2k+ Stars
+                  ★ 1 Star
                 </span>
               </a>
 
@@ -147,7 +147,7 @@ export default function OpenSourcePage() {
                 <GitHubIcon className="h-5 w-5 fill-white" />
                 <span>Star on GitHub</span>
                 <span className="rounded-md bg-amber-400/25 px-2 py-0.5 text-xs font-extrabold text-amber-300 border border-amber-400/40">
-                  ★ 1.2k
+                  ★ 1
                 </span>
                 <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </a>
@@ -474,7 +474,7 @@ export default function OpenSourcePage() {
                 className="inline-flex items-center gap-2 rounded-2xl bg-teal-400 px-8 py-3.5 text-sm font-bold text-navy shadow-lg shadow-teal-900/30 hover:bg-teal-300 transition"
               >
                 <GitHubIcon className="h-5 w-5" />
-                <span>Star on GitHub (★ 1.2k+)</span>
+                <span>Star on GitHub (★ 1)</span>
               </a>
               <Link
                 href="/signup"

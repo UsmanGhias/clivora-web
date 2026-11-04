@@ -47,7 +47,7 @@ export function TractionStrip() {
           className="inline-flex items-center gap-1.5 text-xs font-bold text-navy hover:text-teal-700 transition"
         >
           <GitHubIcon className="h-4 w-4 text-slate-800" />
-          <span>Officially Open Source: Star on GitHub (★ 1.2k+) →</span>
+          <span>Officially Open Source: Star on GitHub (★ 1) →</span>
         </a>
         <div className="flex items-center gap-4">
           <Link href="/compare" className="text-xs font-bold text-teal-700 hover:underline">

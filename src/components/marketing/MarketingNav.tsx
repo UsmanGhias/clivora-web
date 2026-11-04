@@ -165,7 +165,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
               : "bg-transparent",
         )}
       >
-        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-4 px-5 lg:px-8">
+        <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-2 xl:gap-4 px-3 sm:px-6 lg:px-8">
           <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Clivora Home">
             <Logo size="sm" showText={false} variant={light ? "onLight" : "onDark"} />
             <span className="hidden flex-col leading-none sm:flex">
@@ -183,14 +183,14 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-1 xl:gap-2 lg:flex">
+          <nav className="hidden items-center gap-1 xl:gap-2 lg:flex shrink-0">
             {marketing.nav.links.map((link) => {
               const hasChildren = "children" in link && !!link.children?.length;
               const isExternal = "external" in link && link.external;
               const badge = "badge" in link ? (link.badge as string) : null;
               const isJobsLink = link.label === "Jobs";
               const itemClass = cn(
-                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs xl:text-sm font-semibold transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg px-2 xl:px-2.5 py-1.5 text-xs xl:text-sm font-semibold transition-colors whitespace-nowrap shrink-0",
                 light
                   ? "text-slate-600 hover:bg-slate-100 hover:text-navy"
                   : "text-white/75 hover:bg-white/10 hover:text-white",
@@ -213,7 +213,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                     >
                       <span>{link.label}</span>
                       {badge && (
-                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800">
+                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800 whitespace-nowrap">
                           {badge}
                         </span>
                       )}
@@ -226,11 +226,11 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                     >
                       <span>{link.label}</span>
                       {isJobsLink ? (
-                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-extrabold text-teal-800 border border-teal-200">
+                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-extrabold text-teal-800 border border-teal-200 whitespace-nowrap">
                           {stats.formattedJobs}
                         </span>
                       ) : badge ? (
-                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800">
+                        <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold text-teal-800 whitespace-nowrap">
                           {badge}
                         </span>
                       ) : null}
@@ -277,14 +277,14 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
             })}
           </nav>
 
-          <div className="hidden items-center gap-2 xl:gap-2.5 lg:flex shrink-0">
+          <div className="hidden items-center gap-1.5 xl:gap-2.5 lg:flex shrink-0">
             <SiteSearchBar variant="icon" light={light} />
             <a
               href="https://github.com/UsmanGhias/clivora"
               target="_blank"
               rel="noopener noreferrer"
               className={cn(
-                "group inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold transition shadow-2xs",
+                "group inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold transition shadow-2xs whitespace-nowrap shrink-0",
                 light
                   ? "border-slate-300/80 bg-white text-navy hover:border-teal-500 hover:bg-teal-50/40"
                   : "border-white/20 bg-white/10 text-white hover:bg-white/20 hover:border-teal-300"
@@ -294,13 +294,13 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
               <GitHubIcon className="h-3.5 w-3.5 fill-current" />
               <span>Star</span>
               <span className="rounded-full bg-amber-400/25 px-1.5 py-0.2 text-[10px] font-black text-amber-800 dark:text-amber-300 border border-amber-400/40">
-                ★ 1.2k
+                ★ 1
               </span>
             </a>
             <button
               type="button"
               className={cn(
-                "inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs xl:text-sm font-medium",
+                "inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs xl:text-sm font-medium shrink-0",
                 light ? "text-slate-500 hover:bg-slate-100" : "text-white/70 hover:bg-white/10",
               )}
               aria-label="Language"
@@ -313,7 +313,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
               <div className="flex items-center gap-1.5 xl:gap-2 shrink-0">
                 <span
                   className={cn(
-                    "hidden text-xs xl:text-sm font-semibold xl:inline truncate max-w-[110px]",
+                    "hidden text-xs xl:text-sm font-semibold 2xl:inline truncate max-w-[90px]",
                     light ? "text-slate-600" : "text-white/80",
                   )}
                   title={displayName}
@@ -323,7 +323,7 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                 <Link
                   href="/app"
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs xl:text-sm font-bold shadow-xs transition shrink-0",
+                    "inline-flex items-center gap-1.5 rounded-xl px-3 xl:px-3.5 py-2 text-xs xl:text-sm font-bold shadow-xs transition shrink-0 whitespace-nowrap",
                     light
                       ? "bg-navy text-white hover:bg-navy/90 shadow-navy/10"
                       : "bg-white text-navy hover:bg-white/90 shadow-white/10",
