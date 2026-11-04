@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -198,11 +199,16 @@ export function SiteSearchBar({
   onSelect,
   placeholder = "Search jobs, skills, or docs...",
 }: SiteSearchBarProps) {
+  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Keyboard shortcut listener: Cmd+K / Ctrl+K or '/'
   useEffect(() => {
@@ -361,10 +367,10 @@ export function SiteSearchBar({
         </button>
       )}
 
-      {/* 3. High-End Command Palette Modal */}
-      {isOpen && (
+      {/* 3. High-End Command Palette Modal (Portalled to document.body) */}
+      {mounted && isOpen && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[100] flex items-start justify-center p-3 sm:p-4 pt-[5vh] sm:pt-[8vh] bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto"
+          className="fixed inset-0 z-[9999] flex items-start justify-center p-3 sm:p-4 pt-[10vh] sm:pt-[12vh] bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto"
           onClick={() => setIsOpen(false)}
         >
           <div
@@ -373,7 +379,7 @@ export function SiteSearchBar({
             aria-label="Search Clivora platform"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={handleModalKeyDown}
-            className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl animate-in zoom-in-95 duration-150 my-auto sm:my-0"
+            className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
           >
             {/* Input Header */}
             <form
@@ -566,7 +572,8 @@ export function SiteSearchBar({
               <span className="font-semibold text-teal-700">Clivora OS</span>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
