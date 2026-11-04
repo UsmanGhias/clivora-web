@@ -13,6 +13,7 @@ import {
   Smartphone,
   Star,
   Zap,
+  Download,
 } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { site } from "@/lib/site";
@@ -165,6 +166,14 @@ export default function OpenSourcePage() {
               >
                 <span>Browse 7,150+ Remote Jobs</span>
               </Link>
+
+              <a
+                href="/download/apk"
+                className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 text-sm font-bold text-navy shadow-xs transition hover:border-teal-400 hover:bg-teal-50"
+              >
+                <Download className="h-4 w-4 text-teal-700" />
+                <span>Download Android APK (v5.6.1)</span>
+              </a>
             </div>
           </div>
 
@@ -369,6 +378,23 @@ export default function OpenSourcePage() {
               <p className="mt-2 text-xs text-slate-600 leading-relaxed">
                 Flutter 3.x cross-platform client for Android and iOS with offline-first data sync and biometric unlock.
               </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <a
+                  href="/download/apk"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white transition hover:bg-emerald-700"
+                >
+                  <Download className="h-3 w-3" />
+                  Download APK (v5.6.1)
+                </a>
+                <a
+                  href={site.playStoreUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-navy underline"
+                >
+                  Play Store →
+                </a>
+              </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-6">
