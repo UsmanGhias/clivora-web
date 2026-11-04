@@ -137,42 +137,42 @@ export default function OpenSourcePage() {
             </p>
 
             {/* Action Buttons */}
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 max-w-5xl mx-auto">
               <a
                 href={site.githubRepo}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2.5 rounded-2xl bg-navy px-8 text-sm font-bold text-white shadow-xl shadow-navy/20 transition hover:bg-navy/90 hover:scale-[1.02]"
+                className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-navy px-6 py-3 text-sm font-bold text-white shadow-xl shadow-navy/20 transition hover:bg-navy/90 hover:scale-[1.02] whitespace-nowrap shrink-0"
               >
-                <GitHubIcon className="h-5 w-5 fill-white" />
-                <span>Star on GitHub</span>
-                <span className="rounded-md bg-amber-400/25 px-2 py-0.5 text-xs font-extrabold text-amber-300 border border-amber-400/40">
+                <GitHubIcon className="h-4 w-4 fill-white shrink-0" />
+                <span className="whitespace-nowrap">Star on GitHub</span>
+                <span className="inline-flex items-center gap-1 rounded-md bg-amber-400/25 px-2 py-0.5 text-xs font-extrabold text-amber-300 border border-amber-400/40 whitespace-nowrap">
                   ★ 1
                 </span>
-                <ArrowUpRight className="h-4 w-4 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                <ArrowUpRight className="h-4 w-4 shrink-0 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </a>
 
               <Link
                 href="/signup"
-                className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-7 text-sm font-bold text-navy shadow-xs transition hover:border-teal-400 hover:bg-teal-50"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-navy shadow-xs transition hover:border-teal-400 hover:bg-teal-50 whitespace-nowrap shrink-0"
               >
-                <span>Use Free Cloud Instance</span>
-                <ArrowRight className="h-4 w-4 text-teal-700" />
+                <span className="whitespace-nowrap">Use Free Cloud Instance</span>
+                <ArrowRight className="h-4 w-4 text-teal-700 shrink-0" />
               </Link>
 
               <Link
                 href="/jobs"
-                className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50/70 px-6 text-sm font-bold text-teal-900 transition hover:bg-teal-100"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-teal-200 bg-teal-50/70 px-5 py-3 text-sm font-bold text-teal-900 transition hover:bg-teal-100 whitespace-nowrap shrink-0"
               >
-                <span>Browse 7,150+ Remote Jobs</span>
+                <span className="whitespace-nowrap">Browse 7,150+ Remote Jobs</span>
               </Link>
 
               <a
                 href="/download/apk"
-                className="inline-flex min-h-12 w-full sm:w-auto items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 text-sm font-bold text-navy shadow-xs transition hover:border-teal-400 hover:bg-teal-50"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-navy shadow-xs transition hover:border-teal-400 hover:bg-teal-50 whitespace-nowrap shrink-0"
               >
-                <Download className="h-4 w-4 text-teal-700" />
-                <span>Download Android APK (v5.6.1)</span>
+                <Download className="h-4 w-4 text-teal-700 shrink-0" />
+                <span className="whitespace-nowrap">Download Android APK (v5.6.1)</span>
               </a>
             </div>
           </div>

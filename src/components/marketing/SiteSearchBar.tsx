@@ -16,6 +16,13 @@ import {
   CreditCard,
   Sliders,
   ExternalLink,
+  ShieldCheck,
+  Smartphone,
+  Scale,
+  FileText,
+  Calculator,
+  MessageSquare,
+  Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,7 +38,7 @@ type QuickLink = {
   label: string;
   desc: string;
   href: string;
-  category: "Platform" | "Developer Suite" | "Resources";
+  category: "Open Source" | "Platform" | "Developer Suite" | "Resources";
   icon: React.ComponentType<{ className?: string }>;
   external?: boolean;
   keywords?: string[];
@@ -39,24 +46,72 @@ type QuickLink = {
 
 const SEARCH_DIRECTORY: QuickLink[] = [
   {
+    label: "Open Source Freelancer OS",
+    desc: "100% Free Apache 2.0 / MIT code, self-hostable Docker, and GitHub repo",
+    href: "/open-source",
+    category: "Open Source",
+    icon: ShieldCheck,
+    keywords: ["open source", "opensource", "github", "git", "repo", "apache", "mit", "license", "code", "self host", "docker", "star"],
+  },
+  {
     label: "Remote Jobs Directory",
-    desc: "1,200+ verified engineering, design, and product listings",
+    desc: "7,361+ verified engineering, design, and product listings with direct apply",
     href: "/jobs",
     category: "Platform",
     icon: Briefcase,
-    keywords: ["jobs", "careers", "work", "hiring", "remote", "developer", "designer"],
+    keywords: ["jobs", "careers", "work", "hiring", "remote", "developer", "designer", "engineer", "roles"],
   },
   {
     label: "Connect Marketplace",
-    desc: "Private direct hiring with $0 deal fees",
+    desc: "Private direct hiring with $0 deal fees and milestone protection",
     href: "/connect",
     category: "Platform",
     icon: Users,
-    keywords: ["connect", "hire", "freelancer", "marketplace", "escrow"],
+    keywords: ["connect", "hire", "freelancer", "marketplace", "escrow", "direct", "contracts"],
+  },
+  {
+    label: "Android APK Direct Download",
+    desc: "Native Flutter mobile app (v5.6.1) with SQLite offline sync",
+    href: "/download/apk",
+    category: "Platform",
+    icon: Smartphone,
+    keywords: ["apk", "android", "mobile", "app", "download", "install", "flutter", "offline", "sync"],
+  },
+  {
+    label: "Fee Comparison vs Upwork & Fiverr",
+    desc: "Interactive calculator: see how 0% Clivora beats 20% marketplace taxes",
+    href: "/compare",
+    category: "Resources",
+    icon: Scale,
+    keywords: ["compare", "fees", "calculator", "upwork", "fiverr", "take rate", "commission", "savings", "tax"],
+  },
+  {
+    label: "Freelancer Operating System",
+    desc: "Client CRM, milestone invoices, contracts, proposals, and timesheets",
+    href: "/for-freelancers",
+    category: "Platform",
+    icon: Sliders,
+    keywords: ["freelancer", "freelancers", "os", "crm", "invoices", "proposals", "timesheets", "features"],
+  },
+  {
+    label: "Client Management & Talent Search",
+    desc: "Post jobs for free, review candidates, and manage milestone payouts",
+    href: "/for-clients",
+    category: "Platform",
+    icon: Users,
+    keywords: ["clients", "client", "talent", "hire", "post job", "recruiting", "milestones"],
+  },
+  {
+    label: "Instant AI SOW Generator",
+    desc: "Generate professional client proposals, milestones, and scope of work",
+    href: "/start-a-project",
+    category: "Platform",
+    icon: FileText,
+    keywords: ["sow", "proposal", "scope of work", "contract", "ai generator", "start project", "estimate"],
   },
   {
     label: "Clivora Architecture Studio",
-    desc: "Interactive cloud systems topology and live enterprise canvas",
+    desc: "Interactive cloud systems topology, distributed architecture, and live ER canvas",
     href: "https://arch.clivora.io",
     category: "Developer Suite",
     icon: Layers,
@@ -82,20 +137,38 @@ const SEARCH_DIRECTORY: QuickLink[] = [
     keywords: ["tools", "json", "jwt", "hash", "sha256", "uuid", "base64", "timestamp", "zatca"],
   },
   {
-    label: "Platform Features",
-    desc: "CRM, direct invoices, time tracker, and private Connect",
-    href: "/features",
-    category: "Platform",
-    icon: Sliders,
-    keywords: ["features", "crm", "invoices", "timesheets", "projects", "contracts"],
+    label: "Freelance Rate & Tax Calculators",
+    desc: "Free hourly rate, project pricing, and take-home income calculators",
+    href: "/tools",
+    category: "Resources",
+    icon: Calculator,
+    keywords: ["rate calculator", "calculator", "tax", "hourly", "project price", "free tools"],
+  },
+  {
+    label: "Clivora Engineering Blog",
+    desc: "Technical deep-dives, open-source architecture, and platform release notes",
+    href: "https://community.clivora.io/blog",
+    category: "Resources",
+    icon: Newspaper,
+    external: true,
+    keywords: ["blog", "articles", "news", "updates", "engineering", "release notes"],
+  },
+  {
+    label: "Clivora Community Forum",
+    desc: "Open developer discussions, feature requests, and community Q&A",
+    href: "https://community.clivora.io/forum",
+    category: "Resources",
+    icon: MessageSquare,
+    external: true,
+    keywords: ["forum", "community", "discussions", "feedback", "support", "questions"],
   },
   {
     label: "Documentation Center",
-    desc: "Guides, API specs, and platform onboarding workflows",
+    desc: "Guides, API specs, self-hosting Docker guides, and developer workflows",
     href: "/docs",
     category: "Resources",
     icon: BookOpen,
-    keywords: ["docs", "documentation", "api", "guides", "help", "manual"],
+    keywords: ["docs", "documentation", "api", "guides", "help", "manual", "docker"],
   },
   {
     label: "Pricing & Plans",
@@ -108,12 +181,14 @@ const SEARCH_DIRECTORY: QuickLink[] = [
 ];
 
 const POPULAR_TAGS = [
-  "Full Stack",
+  "Open Source",
+  "Android APK",
+  "Remote Jobs",
+  "Connect Direct",
+  "Architecture",
+  "Fee Calculator",
   "Odoo 19",
   "React & Next.js",
-  "Python AI",
-  "ZATCA Phase 2",
-  "UI/UX Design",
 ];
 
 export function SiteSearchBar({
@@ -289,7 +364,7 @@ export function SiteSearchBar({
       {/* 3. High-End Command Palette Modal */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-[10vh] sm:pt-[12vh] bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-[100] flex items-start justify-center p-3 sm:p-4 pt-[5vh] sm:pt-[8vh] bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-150 overflow-y-auto"
           onClick={() => setIsOpen(false)}
         >
           <div
@@ -298,7 +373,7 @@ export function SiteSearchBar({
             aria-label="Search Clivora platform"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={handleModalKeyDown}
-            className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
+            className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl animate-in zoom-in-95 duration-150 my-auto sm:my-0"
           >
             {/* Input Header */}
             <form
@@ -314,7 +389,7 @@ export function SiteSearchBar({
                   setQuery(e.target.value);
                   setSelectedIndex(0);
                 }}
-                placeholder="Search jobs, skills, architecture, tools..."
+                placeholder="Search jobs, open source, apk, architecture..."
                 className="w-full bg-transparent text-base sm:text-sm text-slate-900 placeholder-slate-400 outline-none"
               />
               {query && (
@@ -330,13 +405,23 @@ export function SiteSearchBar({
                   <X className="h-4 w-4" />
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-              >
-                ESC
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="hidden sm:inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                >
+                  ESC
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+                  aria-label="Close search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </form>
 
             {/* Suggestions & Results List */}
@@ -442,8 +527,11 @@ export function SiteSearchBar({
                       <button
                         key={tag}
                         type="button"
-                        onClick={() => navigateTo(`/jobs?q=${encodeURIComponent(tag)}`)}
-                        className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-teal-500/40 hover:bg-teal-50 hover:text-teal-900"
+                        onClick={() => {
+                          setQuery(tag);
+                          inputRef.current?.focus();
+                        }}
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 transition hover:border-teal-500/40 hover:bg-teal-50 hover:text-teal-900 cursor-pointer"
                       >
                         {tag}
                       </button>
