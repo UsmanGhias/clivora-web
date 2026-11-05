@@ -1,12 +1,11 @@
 /**
- * Clivora AI Autonomous Live Chat Engine (v2.0)
+ * Clivora AI Autonomous Live Chat Engine (v2.1)
  * Integrates Google Gemini with Odoo Live Chat & CRM
  * Features:
  * - Brand Voice: Speaks as "Team Clivora" with helpful, professional tone
- * - Per-User Query Limiter: Max 8 queries per visitor session to protect free tier
+ * - Per-User Query Limiter: Max 12 queries per visitor session
  * - Multi-Key Rotation: Supports an array of Gemini keys with automatic failover
  * - Automatic CRM lead capture when visitors share contact info
- * - Strict token budget (max 150 tokens) to stay within Google free limits
  * - Zero em dashes invariant
  */
 
@@ -15,7 +14,28 @@ const ODOO_DB = process.env.ODOO_MAIN_DB || "clivora";
 const ODOO_KEY = process.env.ODOO_MAIN_API_KEY || "";
 const ODOO_UID = parseInt(process.env.ODOO_MAIN_UID || "2", 10);
 
-// Pool of Gemini API keys. User can pass comma-separated keys in GEMINI_API_KEYS
+// Load environment variables from .env.local if present
+try {
+  const fs = require("fs");
+  const path = require("path");
+  const envPath = path.resolve(__dirname, "../.env.local");
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, "utf-8").split("\n");
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith("#") && trimmed.includes("=")) {
+        const [k, ...v] = trimmed.split("=");
+        const keyName = k.trim();
+        if (!process.env[keyName]) {
+          process.env[keyName] = v.join("=").replace(/^["']|["']$/g, "").trim();
+        }
+      }
+    }
+  }
+} catch {
+  // Continue
+}
+
 const RAW_KEYS = (process.env.GEMINI_API_KEYS || "").split(",").map(k => k.trim()).filter(Boolean);
 const DEFAULT_KEYS = [
   process.env.GEMINI_API_KEY || "",
@@ -23,6 +43,14 @@ const DEFAULT_KEYS = [
   process.env.GEMINI_TERTIARY_API_KEY || "",
 ].filter(Boolean);
 const GEMINI_KEYS = Array.from(new Set([...RAW_KEYS, ...DEFAULT_KEYS])).filter(Boolean);
+
+
+const MODELS = [
+  process.env.GEMINI_MODEL || "gemini-3.1-flash-lite",
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3-flash-preview"
+];
 
 let currentKeyIndex = 0;
 
@@ -33,26 +61,30 @@ function getNextGeminiKey() {
   return key;
 }
 
-// Session query limit per channel to prevent API abuse and stay 100% free
-const MAX_QUERIES_PER_USER = 8;
+// Session query limit per channel
+const MAX_QUERIES_PER_USER = 12;
 const channelQueryCounts = new Map();
 
-const SYSTEM_PROMPT = `You are Clivora AI, the official intelligent assistant for Clivora (clivora.io).
-Always speak warmly and professionally as "Team Clivora" or "our team".
+const SYSTEM_PROMPT = `You are Clivora AI, the official intelligent assistant for Clivora (https://clivora.io).
+You speak warmly, directly, and professionally as "Team Clivora" or "our team".
+Founder & Lead Architect: Usman Ghias (Portfolio: https://usmanghias.co.uk).
 
 Core Knowledge:
-- Clivora is the zero-fee freelance operating system and remote job marketplace.
-- Platform fee is $0 forever. Freelancers keep 100% of their earnings.
-- Over 1,270+ verified remote jobs are live at clivora.io/jobs.
-- Features: Escrow milestone contracts, free invoicing, client CRM, timesheets, and Android app (Flutter v5.3.19).
-- Parent Agency & Custom Development: CODCrafters (codcrafters.org), building custom Web (Next.js), Mobile (Flutter), Odoo ERP, and AI bots.
+- Clivora is the zero-commission freelance operating system and remote job marketplace.
+- Platform fee is $0 forever. Freelancers keep 100% of their earnings with zero commission cut.
+- Over 7,150+ verified remote jobs are live at https://clivora.io/jobs.
+- Features: Milestone escrow contracts, sequential tax invoices, client CRM, timesheets, and Android app (Flutter v5.3.19).
+- Contractor Profiles: Freelancers set up profiles, tech stacks, and rates at https://clivora.io/connect/apply.
+- Hiring Clients: Employers post roles for free and hire contractors directly at https://clivora.io/for-clients.
+- Parent Agency & Custom Development: CODCrafters (https://codcrafters.org), building custom Web (Next.js), Mobile (Flutter), Odoo ERP, and AI bots.
 - Community Forum: community.clivora.io.
 
 Rules:
 - Speak as "Team Clivora" or "our team". Do not mention individual founder names unless directly asked about leadership.
 - NEVER use em dashes (—) or en dashes (–). Use standard hyphens (-), colons (:), commas (,), or parentheses.
-- Keep responses concise, friendly, and under 3 sentences.
-- If the visitor wants custom software or a direct consultation, invite them to share their email so Team Clivora can follow up.`;
+- Answer ANY technical, coding, or platform question directly and thoroughly with clean code examples where appropriate.
+- Do NOT demand an email address on routine questions. Answer their questions first.
+- If the visitor wants custom software, direct consultation, or to hire engineers, provide helpful details and invite them to share their email so Team Clivora can follow up directly.`;
 
 async function rpc(model, method, args, kwargs = {}) {
   const res = await fetch(ODOO_URL + "/jsonrpc", {
@@ -79,41 +111,41 @@ function sanitizeDashes(text) {
 }
 
 async function callGemini(question) {
-  // Try all available keys in the pool if needed
   for (let attempt = 0; attempt < GEMINI_KEYS.length; attempt++) {
     const key = getNextGeminiKey();
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${key}`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: "Instructions: " + SYSTEM_PROMPT }] },
-            { role: "model", parts: [{ text: "Understood. I will respond as Team Clivora with zero em dashes within token limits." }] },
-            { role: "user", parts: [{ text: question }] }
-          ],
-          generationConfig: {
-            maxOutputTokens: 150,
-            temperature: 0.6
-          }
-        })
-      });
+    for (const model of MODELS) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              { role: "user", parts: [{ text: "Instructions: " + SYSTEM_PROMPT }] },
+              { role: "model", parts: [{ text: "Understood. I will respond as Team Clivora with high accuracy and zero em dashes." }] },
+              { role: "user", parts: [{ text: question }] }
+            ],
+            generationConfig: {
+              maxOutputTokens: 500,
+              temperature: 0.5
+            }
+          })
+        });
 
-      if (!res.ok) {
-        console.warn(`Gemini key returned HTTP ${res.status}, rotating key...`);
-        continue;
+        if (!res.ok) {
+          continue;
+        }
+
+        const json = await res.json();
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return sanitizeDashes(text.trim());
+      } catch (err) {
+        // try next model / key
       }
-
-      const json = await res.json();
-      const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) return sanitizeDashes(text.trim());
-    } catch (err) {
-      console.warn("Gemini call error, rotating key:", err.message);
     }
   }
 
-  return "Clivora offers $0 platform fees and 1,270+ live verified remote jobs at clivora.io/jobs. Please leave your email and Team Clivora will follow up with you promptly.";
+  return "Clivora offers $0 platform fees and 7,150+ live verified remote jobs at clivora.io/jobs. How can Team Clivora assist with your projects or engineering needs?";
 }
 
 function stripHtml(html) {
@@ -142,11 +174,10 @@ async function processActiveLivechats() {
     if (isFromVisitor && cleanBody && !cleanBody.startsWith("🤖")) {
       const currentCount = channelQueryCounts.get(ch.id) || 0;
 
-      // Rate limit check: max 8 questions per conversation
       if (currentCount >= MAX_QUERIES_PER_USER) {
-        console.log(`[Channel ${ch.id}] Session limit reached (${currentCount}/${MAX_QUERIES_PER_USER}). Sending rate-limit notice.`);
+        console.log(`[Channel ${ch.id}] Session limit reached (${currentCount}/${MAX_QUERIES_PER_USER}).`);
         await rpc("discuss.channel", "message_post", [[ch.id]], {
-          body: `<p>🤖 <strong>Clivora AI</strong>: You have reached the maximum free question limit for this live session. To discuss your project further or get direct assistance, please share your email address or write to us at contact@clivora.io, and Team Clivora will be delighted to connect with you!</p>`,
+          body: `<p>🤖 <strong>Clivora AI</strong>: For direct assistance or custom enterprise engineering, feel free to email contact@clivora.io or share your email here so Team Clivora can follow up.</p>`,
           message_type: "comment",
           subtype_xmlid: "mail.mt_comment"
         });
@@ -165,18 +196,21 @@ async function processActiveLivechats() {
         subtype_xmlid: "mail.mt_comment"
       });
 
-      // Auto lead capture
+      // Auto lead capture ONLY if user provided an email
       const emailMatch = cleanBody.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
       if (emailMatch) {
         try {
           await rpc("crm.lead", "create", [{
-            name: `Livechat Lead: ${ch.name}`,
+            name: `Livechat Lead: ${cleanBody.slice(0, 50)}`,
             email_from: emailMatch[0],
-            description: `Captured from livechat in channel ${ch.id}.\nInquiry: ${cleanBody}\nClivora AI response: ${aiReply}`
+            partner_name: emailMatch[0].split("@")[0],
+            contact_name: emailMatch[0].split("@")[0],
+            description: `<p>Captured from livechat channel ${ch.id} (${ch.name}).</p><p><strong>Inquiry:</strong> ${cleanBody}</p><p><strong>Clivora AI response:</strong> ${aiReply}</p>`,
+            stage_id: 1 // New
           }]);
           console.log(`[CRM] Auto-created lead for ${emailMatch[0]}`);
-        } catch {
-          // Ignore duplicates
+        } catch (err) {
+          console.warn("[CRM] Lead error:", err.message);
         }
       }
     }
@@ -187,6 +221,7 @@ async function run() {
   console.log("=== CLIVORA AI LIVECHAT WORKER INITIALIZED ===");
   console.log("Connected to Odoo:", ODOO_URL);
   console.log("Active Gemini Key Pool Size:", GEMINI_KEYS.length);
+  console.log("Models:", MODELS.join(", "));
   console.log("Max Questions Per Visitor Session:", MAX_QUERIES_PER_USER);
   await processActiveLivechats();
   console.log("=== CYCLE COMPLETE ===");

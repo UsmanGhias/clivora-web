@@ -63,37 +63,63 @@ export async function getGeminiApiKey(): Promise<string | null> {
 }
 
 export type GeminiGenerateOptions = {
-  prompt: string;
+  prompt?: string;
+  contents?: Array<{ role?: string; parts: Array<{ text: string }> }>;
   systemInstruction?: string;
   maxOutputTokens?: number;
   temperature?: number;
   model?: string;
 };
 
-async function executeGeminiRequest(apiKey: string, options: GeminiGenerateOptions): Promise<string | null> {
-  const model = options.model || "gemini-flash-lite-latest";
-  const maxTokens = Math.min(options.maxOutputTokens || 400, 800);
-  const temperature = options.temperature ?? 0.7;
+const WORKING_MODELS = [
+  process.env.GEMINI_MODEL || "gemini-3.1-flash-lite",
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-3-flash-preview",
+];
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+async function executeGeminiRequest(
+  apiKey: string,
+  options: GeminiGenerateOptions,
+  modelName: string
+): Promise<string | null> {
+  const maxTokens = Math.min(options.maxOutputTokens || 500, 1500);
+  const temperature = options.temperature ?? 0.5;
 
-  const contents: Array<{ role?: string; parts: Array<{ text: string }> }> = [];
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-  if (options.systemInstruction) {
+  let contents: Array<{ role?: string; parts: Array<{ text: string }> }> = [];
+
+  if (options.contents && options.contents.length > 0) {
+    if (options.systemInstruction) {
+      contents.push({
+        role: "user",
+        parts: [{ text: `Instructions: ${options.systemInstruction}` }],
+      });
+      contents.push({
+        role: "model",
+        parts: [{ text: "Understood. I will follow all instructions directly with zero em dashes." }],
+      });
+    }
+    contents.push(...options.contents);
+  } else if (options.prompt) {
+    if (options.systemInstruction) {
+      contents.push({
+        role: "user",
+        parts: [{ text: `Instructions: ${options.systemInstruction}` }],
+      });
+      contents.push({
+        role: "model",
+        parts: [{ text: "Understood. I will follow all instructions directly with zero em dashes." }],
+      });
+    }
     contents.push({
       role: "user",
-      parts: [{ text: `Instructions: ${options.systemInstruction}` }],
+      parts: [{ text: options.prompt }],
     });
-    contents.push({
-      role: "model",
-      parts: [{ text: "Understood. I will follow these instructions strictly with zero em dashes." }],
-    });
+  } else {
+    return null;
   }
-
-  contents.push({
-    role: "user",
-    parts: [{ text: options.prompt }],
-  });
 
   const payload = {
     contents,
@@ -108,11 +134,11 @@ async function executeGeminiRequest(apiKey: string, options: GeminiGenerateOptio
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!res.ok) {
-      console.warn(`[executeGeminiRequest] HTTP ${res.status} with key ${apiKey.slice(0, 10)}...`);
+      console.warn(`[executeGeminiRequest] HTTP ${res.status} with model ${modelName} on key ${apiKey.slice(0, 10)}...`);
       return null;
     }
 
@@ -127,26 +153,31 @@ async function executeGeminiRequest(apiKey: string, options: GeminiGenerateOptio
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
     return rawText ? sanitizeDashes(rawText) : null;
   } catch (err) {
-    console.warn(`[executeGeminiRequest] Key ${apiKey.slice(0, 10)} error or timeout:`, err);
+    console.warn(`[executeGeminiRequest] Model ${modelName} on key ${apiKey.slice(0, 10)} error or timeout:`, err);
     return null;
   }
 }
 
 /**
- * Caller for Google Gemini API with automatic 5-key failover and zero-cost free-tier caps
+ * Caller for Google Gemini API with automatic key and model failover
  */
 export async function callGemini(options: GeminiGenerateOptions): Promise<string | null> {
   const { keys } = await getGeminiApiKeys();
+  const modelsToTry = options.model ? [options.model, ...WORKING_MODELS.filter((m) => m !== options.model)] : WORKING_MODELS;
 
   for (let i = 0; i < keys.length; i++) {
     const key = keys[i];
     if (!key) continue;
-    const result = await executeGeminiRequest(key, options);
-    if (result) {
-      return result;
+
+    for (const model of modelsToTry) {
+      const result = await executeGeminiRequest(key, options, model);
+      if (result) {
+        return result;
+      }
     }
-    console.log(`[callGemini] Key ${i + 1}/${keys.length} failed. Trying next key in failover pool...`);
+    console.log(`[callGemini] Key ${i + 1}/${keys.length} exhausted across models. Trying next key in pool...`);
   }
 
   return null;
 }
+

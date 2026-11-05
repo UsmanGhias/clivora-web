@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { site } from "@/lib/site";
-import { OdooLiveChat } from "@/components/common/OdooLiveChat";
+import { ClivoraAiLiveChat } from "@/components/common/ClivoraAiLiveChat";
 import { CookieConsentBanner } from "@/components/common/CookieConsentBanner";
 import { GoogleAnalytics } from "@/components/common/GoogleAnalytics";
 import { GoogleAdSense } from "@/components/common/GoogleAdSense";
@@ -111,7 +111,7 @@ export default function RootLayout({
       <body className="min-h-screen overflow-x-hidden font-sans">
         {children}
         <CookieConsentBanner />
-        <OdooLiveChat />
+        <ClivoraAiLiveChat />
       </body>
     </html>
   );
