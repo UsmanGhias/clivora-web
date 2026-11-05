@@ -14,7 +14,7 @@ import { site } from "@/lib/site";
 export const metadata: Metadata = {
   title: "Download CLIVORA for Android | Google Play Store & Direct APK",
   description:
-    "Install CLIVORA v5.6.1 directly from Google Play Store or download verified APK. Offline CRM, 7,150+ remote jobs, and milestone invoices on your mobile device.",
+    "Install CLIVORA v5.6.2 directly from Google Play Store or download verified APK. Offline CRM, 7,150+ remote jobs, and milestone invoices on your mobile device.",
   alternates: { canonical: `${site.url}/download` },
 };
 
@@ -25,7 +25,7 @@ export default function DownloadPage() {
         <div className="mx-auto max-w-5xl px-5 text-center lg:px-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50/80 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-teal-800">
             <Smartphone className="h-3.5 w-3.5" />
-            Official Android Release · v5.6.1 (Build 601)
+            Official Android Release · v5.6.2 (Build 602)
           </div>
 
           <h1 className="mt-4 font-display text-4xl font-extrabold tracking-tight text-navy sm:text-5xl">
@@ -55,7 +55,7 @@ export default function DownloadPage() {
               className="inline-flex min-h-13 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-base font-bold text-navy shadow-xs transition hover:border-teal-400 hover:bg-teal-50"
             >
               <Download className="h-4 w-4 text-teal-700" />
-              <span>Download Direct APK (v5.6.1)</span>
+              <span>Download Direct APK (v5.6.2)</span>
             </a>
           </div>
 
@@ -81,7 +81,7 @@ export default function DownloadPage() {
               </div>
               <div className="grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-semibold text-slate-700">Release Version</dt>
-                <dd className="font-mono text-xs text-slate-900 sm:col-span-2">v5.6.1 (Version Code: 601)</dd>
+                <dd className="font-mono text-xs text-slate-900 sm:col-span-2">v5.6.2 (Version Code: 602)</dd>
               </div>
               <div className="grid grid-cols-1 gap-1 px-4 py-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-semibold text-slate-700">Primary Distribution</dt>

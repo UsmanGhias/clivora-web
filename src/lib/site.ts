@@ -61,8 +61,8 @@ export const site = {
   openSourceUrl: "https://github.com/UsmanGhias/clivora",
   playStoreUrl: "https://play.google.com/store/apps/details?id=org.codcrafters.clivora",
   apkDownloadUrl: "/download/apk",
-  githubReleaseUrl: "https://github.com/UsmanGhias/clivora/releases/tag/v5.6.1-open-source",
-  directApkUrl: "https://github.com/UsmanGhias/clivora/releases/download/v5.6.1-open-source/clivora-5.6.1.apk",
+  githubReleaseUrl: "https://github.com/UsmanGhias/clivora/releases/tag/v5.6.2-open-source",
+  directApkUrl: "https://github.com/UsmanGhias/clivora/releases/download/v5.6.2-open-source/clivora-5.6.2.apk",
   /** Custom scheme handled by Android MainActivity */
   appDeepLinkScheme: "clivora",
   appStoreUrl: "#",
