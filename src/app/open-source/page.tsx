@@ -87,9 +87,35 @@ const COMPARISON_ROWS = [
   },
 ];
 
+const openSourceJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  name: "Clivora Open-Source Client & Freelancer OS",
+  description:
+    "The world's first complete open-source client and freelancer operating system. 0% platform fees, 7,150+ live remote jobs, offline Drift SQLite CRM, and self-hostable Docker architecture.",
+  codeRepository: "https://github.com/UsmanGhias/clivora",
+  programmingLanguage: ["Dart", "Flutter", "TypeScript", "Next.js", "SQL"],
+  license: "https://github.com/UsmanGhias/clivora/blob/main/LICENSE",
+  runtimePlatform: "Android, Web, Linux, Docker",
+  author: {
+    "@type": "Person",
+    name: "Usman Ghias",
+    url: "https://usmanghias.co.uk",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "CODCrafters",
+    url: "https://codcrafters.org",
+  },
+};
+
 export default function OpenSourcePage() {
   return (
     <MarketingShell>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(openSourceJsonLd) }}
+      />
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-b from-[#F0FDF9] via-white to-white py-16 sm:py-24">
         <div

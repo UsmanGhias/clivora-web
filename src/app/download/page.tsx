@@ -18,9 +18,42 @@ export const metadata: Metadata = {
   alternates: { canonical: `${site.url}/download` },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "CLIVORA",
+  operatingSystem: "Android, Web Browser",
+  applicationCategory: "BusinessApplication",
+  softwareVersion: "5.6.2",
+  fileSize: "78MB",
+  downloadUrl: site.playStoreUrl,
+  installUrl: "https://clivora.io/download",
+  description:
+    "Business operating system for freelancers and agencies. Offline Drift SQLite CRM, dual-party milestone invoices, and 7,150+ verified remote jobs with zero commission.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  author: {
+    "@type": "Person",
+    name: "Usman Ghias",
+    url: "https://usmanghias.co.uk",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "CODCrafters",
+    url: "https://codcrafters.org",
+  },
+};
+
 export default function DownloadPage() {
   return (
     <MarketingShell>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="border-b border-slate-200/80 bg-gradient-to-b from-teal-50/50 via-white to-slate-50/60 pb-16 pt-14 lg:pb-20">
         <div className="mx-auto max-w-5xl px-5 text-center lg:px-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50/80 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-teal-800">

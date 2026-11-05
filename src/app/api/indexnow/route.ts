@@ -36,6 +36,9 @@ export async function POST(req: Request) {
 
     const coreUrls = [
       "https://clivora.io",
+      "https://clivora.io/open-source",
+      "https://clivora.io/download",
+      "https://clivora.io/download/apk",
       "https://clivora.io/jobs",
       "https://clivora.io/connect",
       "https://clivora.io/for-freelancers",
