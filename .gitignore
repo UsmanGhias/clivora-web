@@ -43,3 +43,4 @@ scripts/outreach-engine/
 # IDE
 .idea
 .vscode
+.env*
