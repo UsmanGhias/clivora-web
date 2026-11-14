@@ -15,6 +15,7 @@
   [![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6.svg?logo=typescript)](https://www.typescriptlang.org)
   [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC.svg?logo=tailwindcss)](https://tailwindcss.com)
   [![Supabase](https://img.shields.io/badge/Backend-Supabase_Postgres-3ECF8E.svg?logo=supabase)](https://supabase.com)
+  [![Sponsor](https://img.shields.io/badge/Sponsor-UsmanGhias-EA4AAA.svg?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/UsmanGhias)
 
   <p>
     <a href="https://clivora.io">Official Website</a> &middot;
@@ -27,6 +28,11 @@
     <a href="https://github.com/UsmanGhias/clivora">Mobile Repository (Flutter)</a>
   </p>
 </div>
+
+> [!TIP]
+> **Enterprise Support, White-Labeling & Custom Integrations**  
+> Need a customized client portal for your software agency, self-hosted deployment, or ERP integration?  
+> Architected by [Usman Ghias](https://usmanghias.co.uk) · [Book a Consultation](https://usmanghias.co.uk) · [Email: iusmanghias@gmail.com](mailto:iusmanghias@gmail.com)
 
 ## Platform Traction and Community Metrics
 
