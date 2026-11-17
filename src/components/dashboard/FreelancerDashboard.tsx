@@ -24,6 +24,7 @@ import { formatConnectCredits } from "@/lib/connect-credits";
 import type { Profile } from "@/lib/profile-types";
 import { isProPlus } from "@/lib/plan";
 import { cn } from "@/lib/utils";
+import { BringYourClientBanner } from "@/components/dashboard/BringYourClientBanner";
 
 type HomeSummary = {
   pending_proposals?: number;
@@ -266,6 +267,9 @@ export function FreelancerDashboard({
         milestones={milestones}
         profileCompleteness={profileCompleteness}
       />
+
+      {/* Bring your own client · 0% fee growth banner */}
+      <BringYourClientBanner userId={profile.id} userName={profile.name} />
 
       {/* KPI strip */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
