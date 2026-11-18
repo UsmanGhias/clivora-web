@@ -25,10 +25,11 @@ type Message = {
 };
 
 const SUGGESTED_QUERIES = [
-  "Explain complete system architecture & database map",
-  "How many real jobs and proposals are in the database?",
-  "Audit our Supabase Row Level Security (RLS) policies",
-  "Check for database sync errors and background issues",
+  "Run Deep System Diagnostics & Internal Bug Audit",
+  "Explain zero-value proposals root cause & frontend fix",
+  "Audit clivora_events observability & empty payloads",
+  "Check database sync conflicts & outbox queue",
+  "Review database indexing on 7,406+ connect_jobs",
   "What are our key advantages over Upwork's business model?",
 ];
 

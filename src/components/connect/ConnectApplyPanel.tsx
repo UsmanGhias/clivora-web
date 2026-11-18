@@ -216,6 +216,13 @@ export function ConnectApplyPanel() {
       return;
     }
 
+    const numericAmount = amount ? Number(amount) : 0;
+    if (numericAmount <= 0) {
+      setError("Please specify a valid bid amount greater than $0.");
+      setBusy(false);
+      return;
+    }
+
     let proposalId: string | undefined;
 
     if (jobInfo) {
@@ -225,7 +232,7 @@ export function ConnectApplyPanel() {
           from_user_id: user.id,
           to_user_id: targetUserId,
           job_id: jobInfo.id,
-          amount: amount ? Number(amount) : 0,
+          amount: numericAmount,
           currency: "USD",
           timeline_days: timelineDays ? Number(timelineDays) : 7,
           message: messageParts.trim(),
@@ -246,7 +253,7 @@ export function ConnectApplyPanel() {
       const { data: pRes, error: err } = await supabase.rpc("connect_submit_proposal", {
         p_to_user_id: targetUserId || user.id,
         p_need_id: needId || null,
-        p_amount: amount ? Number(amount) : 0,
+        p_amount: numericAmount,
         p_currency: "USD",
         p_timeline_days: timelineDays ? Number(timelineDays) : null,
         p_message: messageParts.trim(),
