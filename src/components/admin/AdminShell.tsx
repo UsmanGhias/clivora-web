@@ -33,6 +33,7 @@ import {
   FolderKanban,
   Send,
   Star,
+  Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: "/admin/overview", label: "Overview", icon: LayoutDashboard },
+  { href: "/admin/ai", label: "AI Advisor", icon: Sparkles, section: "Intelligence" },
   { href: "/admin/users", label: "Users", icon: Users, badgeKey: "users" },
   { href: "/admin/freelancers", label: "Freelancers", icon: Briefcase, badgeKey: "freelancers" },
   { href: "/admin/clients", label: "Clients", icon: Handshake, badgeKey: "clients" },
