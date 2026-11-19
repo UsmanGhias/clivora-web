@@ -55,7 +55,7 @@ export function AgencyClientView() {
             Agency Marketplace Fee Elimination Calculator
           </h2>
           <p className="text-sm text-slate-500">
-            See how much cash stays in your agency's treasury when you bill clients through Clivora vs legacy platforms.
+            See how much cash stays in your agency&apos;s treasury when you bill clients through Clivora vs legacy platforms.
           </p>
         </div>
 
@@ -162,7 +162,7 @@ export function AgencyClientView() {
             </div>
             <h3 className="font-bold text-slate-900 text-lg">Subcontractor Talent Sourcing</h3>
             <p className="text-sm text-slate-600 leading-relaxed">
-              Scale your team when project loads spike. Access Clivora's verified remote job crawler and talent network indexing 7,150+ tech professionals worldwide.
+              Scale your team when project loads spike. Access Clivora&apos;s verified remote job crawler and talent network indexing 7,150+ tech professionals worldwide.
             </p>
           </div>
         </div>
@@ -179,7 +179,7 @@ export function AgencyClientView() {
             Proven at scale by CODCrafters
           </h3>
           <p className="text-sm text-slate-300 leading-relaxed">
-            CODCrafters runs enterprise ERP implementations and distributed architectures across 25+ countries using Clivora's direct billing rails.
+            CODCrafters runs enterprise ERP implementations and distributed architectures across 25+ countries using Clivora&apos;s direct billing rails.
           </p>
         </div>
         <div className="shrink-0 flex flex-col sm:flex-row gap-3 w-full md:w-auto">
