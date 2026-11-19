@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicSiteUrl } from "@/lib/site-url";
+import { createSignedOAuthState } from "@/lib/oauth-state";
 
 function googleConfigured() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -31,10 +32,7 @@ export async function GET(req: Request) {
 
   const origin = appOrigin(req);
   const redirectUri = `${origin}/api/integrations/google/drive/callback`;
-  const state = Buffer.from(
-    JSON.stringify({ uid: user.id, ts: Date.now() }),
-    "utf8",
-  ).toString("base64url");
+  const state = createSignedOAuthState(user.id, "google_drive");
 
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,

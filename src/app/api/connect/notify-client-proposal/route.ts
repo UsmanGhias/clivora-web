@@ -87,14 +87,16 @@ export async function POST(request: Request) {
     const reviewToken = crypto.randomUUID();
     const reviewUrl = `https://clivora.io/connect/review?token=${reviewToken}`;
 
-    let targetEmail: string | null = body.companyEmail?.trim().toLowerCase() || null;
+    // Target email must only be derived from verified database entities (profiles or connect_jobs)
+    // Never trust client-supplied companyEmail to prevent arbitrary email relay / phishing
+    let targetEmail: string | null = null;
     let targetName: string = body.companyName?.trim() || "";
     let resolvedTitle: string = body.jobTitle?.trim() || "";
     let externalSourceUrl: string | null = null;
 
     // 1. Resolve from toUserId if client is an authenticated CLIVORA member (connect_need_posts)
     if (
-      (!targetEmail || !targetEmail.includes("@")) &&
+      !targetEmail &&
       body.toUserId &&
       body.toUserId !== "00000000-0000-0000-0000-000000000000"
     ) {
@@ -114,7 +116,7 @@ export async function POST(request: Request) {
     let jobClaimToken: string | null = null;
 
     // 2. Resolve from connect_jobs if applying to a curated / crawled job or direct client job
-    if ((!targetEmail || !targetEmail.includes("@")) && body.jobId) {
+    if (!targetEmail && body.jobId) {
       const { data: jobRow } = await adminDb
         .from("connect_jobs")
         .select("id, title, company_name, company_email, company_domain, description, source_url, posted_by, claimed_by, claim_token")
@@ -149,7 +151,7 @@ export async function POST(request: Request) {
           }
         }
 
-        if (!targetEmail || !targetEmail.includes("@")) {
+        if (!targetEmail) {
           if (jobRow.company_email && jobRow.company_email.includes("@")) {
             targetEmail = jobRow.company_email.trim().toLowerCase();
           } else if (jobRow.description) {

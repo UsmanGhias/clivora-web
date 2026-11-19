@@ -4,9 +4,9 @@ import { callGemini, sanitizeDashes } from "@/lib/gemini";
 // Odoo 19 Configuration for direct CRM Lead ingestion
 const ODOO_URL = process.env.ODOO_MAIN_URL || "https://clivora.odoo.com";
 const ODOO_DB = process.env.ODOO_MAIN_DB || "clivora";
-const ODOO_USER = process.env.ODOO_MAIN_USER || "usmanghias1@gmail.com";
-const ODOO_KEY = process.env.ODOO_MAIN_API_KEY || "d4e37f9afc54226aebb9d4677a1df8e03cded9df";
-const ODOO_UID = parseInt(process.env.ODOO_MAIN_UID || "2", 10);
+const ODOO_USER = process.env.ODOO_MAIN_USER || "";
+const ODOO_KEY = process.env.ODOO_MAIN_API_KEY || process.env.ODOO_API_KEY || "";
+const ODOO_UID = parseInt(process.env.ODOO_MAIN_UID || process.env.ODOO_UID || "0", 10);
 
 const SYSTEM_PROMPT = `You are Clivora AI, the official 24/7 intelligent workspace and live chat assistant for Clivora (https://clivora.io).
 You speak warmly, directly, and professionally as "Team Clivora" or "our team".
@@ -33,6 +33,9 @@ Core Directives:
  * Creates a lead in Odoo CRM (crm.lead) with chat transcript
  */
 async function syncToOdooCrm(email: string, messages: Array<{ role: string; content: string }>, sourceUrl?: string) {
+  if (!ODOO_KEY || !ODOO_UID) {
+    return null;
+  }
   try {
     const transcript = messages
       .map((m) => `${m.role === "user" ? "Visitor" : "Clivora AI"}: ${m.content}`)

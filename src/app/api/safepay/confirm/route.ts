@@ -125,10 +125,10 @@ export async function POST(req: NextRequest) {
     }
 
     const isAuthorized =
-      (requestUserId && callerUser.id === requestUserId) ||
-      (email && callerUser.email === email);
+      Boolean(requestUserId && callerUser.id === requestUserId) ||
+      Boolean(email && callerUser.email && callerUser.email.toLowerCase() === email.toLowerCase());
 
-    if (!isAuthorized && (requestUserId || email)) {
+    if (!isAuthorized) {
       return NextResponse.json(
         { error: "Forbidden: You are not authorized to confirm this payment record." },
         { status: 403 }

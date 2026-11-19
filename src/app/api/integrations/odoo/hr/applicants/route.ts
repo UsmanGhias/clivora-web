@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createOdooApplicant, listOdooJobPositions } from "@/lib/odoo-sync";
+import { adminErrorResponse, adminJson, requireAdmin } from "@/lib/admin-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,24 +20,49 @@ export async function POST(request: Request) {
       applicantNotes?: string;
       salaryExpected?: number;
       linkedinProfile?: string;
+      website_url_hp?: string;
+      bot_trap?: string;
     };
 
-    if (!body.partnerName || !body.email) {
+    // Honeypot check: reject bot submissions
+    if (body.website_url_hp || body.bot_trap) {
+      return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
+    }
+
+    const partnerName = String(body.partnerName || "").trim().slice(0, 120);
+    const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
+    const phone = body.phone ? String(body.phone).trim().slice(0, 40) : undefined;
+    const jobTitle = body.jobTitle ? String(body.jobTitle).trim().slice(0, 150) : undefined;
+    const applicantNotes = body.applicantNotes
+      ? String(body.applicantNotes).trim().slice(0, 2000)
+      : undefined;
+    const linkedinProfile = body.linkedinProfile
+      ? String(body.linkedinProfile).trim().slice(0, 255)
+      : undefined;
+
+    if (!partnerName || !email) {
       return NextResponse.json(
         { error: "partnerName and email are required" },
         { status: 400 },
       );
     }
 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { error: "Valid email address required" },
+        { status: 400 },
+      );
+    }
+
     const result = await createOdooApplicant({
-      partnerName: body.partnerName,
-      email: body.email,
-      phone: body.phone,
-      jobId: body.jobId,
-      jobTitle: body.jobTitle,
-      applicantNotes: body.applicantNotes,
-      salaryExpected: body.salaryExpected,
-      linkedinProfile: body.linkedinProfile,
+      partnerName,
+      email,
+      phone,
+      jobId: typeof body.jobId === "number" ? body.jobId : undefined,
+      jobTitle,
+      applicantNotes,
+      salaryExpected: typeof body.salaryExpected === "number" ? body.salaryExpected : undefined,
+      linkedinProfile,
     });
 
     return NextResponse.json(result);
@@ -48,14 +74,15 @@ export async function POST(request: Request) {
 
 /**
  * GET /api/integrations/odoo/hr/applicants
- * Lists active job positions and candidate recruitment counts
+ * Lists active job positions and candidate recruitment counts.
+ * Requires admin authentication.
  */
 export async function GET() {
   try {
+    await requireAdmin({ requireAal2: false });
     const jobs = await listOdooJobPositions();
-    return NextResponse.json({ jobs });
+    return adminJson({ jobs });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to list job positions";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return adminErrorResponse(error, "Failed to list job positions");
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicSiteUrl } from "@/lib/site-url";
+import { verifySignedOAuthState } from "@/lib/oauth-state";
 
 function googleConfigured() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -43,13 +44,9 @@ export async function GET(req: Request) {
   }
 
   try {
-    if (stateRaw) {
-      const state = JSON.parse(Buffer.from(stateRaw, "base64url").toString("utf8")) as {
-        uid?: string;
-      };
-      if (state.uid && state.uid !== user.id) {
-        throw new Error("OAuth state mismatch");
-      }
+    const stateCheck = verifySignedOAuthState(stateRaw, user.id, "google_calendar");
+    if (!stateCheck.valid) {
+      throw new Error(`OAuth state validation failed: ${stateCheck.error || "unauthorized"}`);
     }
 
     const origin = appOrigin(req);

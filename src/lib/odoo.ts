@@ -36,7 +36,7 @@ export function getOdooConfig() {
   const apiKey =
     process.env.ODOO_API_KEY ||
     process.env.ODOO_MAIN_API_KEY ||
-    "d4e37f9afc54226aebb9d4677a1df8e03cded9df";
+    "";
 
   return { url, db, uid, apiKey };
 }
