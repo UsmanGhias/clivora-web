@@ -124,6 +124,7 @@ export async function POST(req: NextRequest) {
       databaseTables: [
         { name: "connect_jobs", description: "Public remote jobs curated and employer-posted", rls: "Public read, admin write" },
         { name: "connect_proposals", description: "Freelancer bids on connect jobs and needs", rls: "Owner freelancer read/write, client review via token" },
+        { name: "connect_milestones", description: "Contract milestones and two-phase escrow deposits with 14-day auto-release", rls: "Client/freelancer participant isolation" },
         { name: "connect_profiles", description: "Freelancer public contractor profiles", rls: "Public listed read, owner write" },
         { name: "crm_invoices", description: "Tax-compliant milestone and time invoices", rls: "Owner write, public share via signed token" },
         { name: "crm_customers", description: "Freelancer client address book", rls: "Owner isolation only" },
