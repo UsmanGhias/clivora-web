@@ -35,6 +35,7 @@ import {
   X,
   Handshake,
   Compass,
+  Landmark,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { isFeatureEnabledClient } from "@/lib/feature-flags-client";
@@ -187,6 +188,7 @@ export function AppShell({
         items: [
           { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
           { href: "/app/contracts", label: "Contracts", icon: ScrollText },
+          { href: "/app/milestones", label: "Milestones & Escrow", icon: Landmark },
           { href: "/app/tasks", label: "Tasks", icon: ListTodo },
           {
             href: "/app/workspace-tasks",
@@ -300,6 +302,7 @@ export function AppShell({
         items: [
           { href: "/app/projects", label: "Projects", icon: FolderKanban, badge: counts?.projects },
           { href: "/app/contracts", label: "Contracts", icon: ScrollText },
+          { href: "/app/milestones", label: "Milestones & Escrow", icon: Landmark },
           { href: "/app/tasks", label: "Tasks", icon: ListTodo },
           {
             href: "/app/workspace-tasks",

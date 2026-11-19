@@ -105,14 +105,24 @@ export function ClientProposalsPanel({ proposals }: { proposals: ProposalRow[] }
     setActionError(null);
     try {
       const supabase = createClient();
-      const rpc =
-        action === "accept"
-          ? "connect_accept_proposal"
-          : action === "decline"
+      if (action === "accept") {
+        const { data, error } = await supabase.rpc("accept_proposal_and_create_milestone", {
+          p_proposal_id: id,
+        });
+        if (error) throw error;
+        const res = data as { redirect_url?: string } | null;
+        if (res?.redirect_url) {
+          router.push(res.redirect_url);
+          return;
+        }
+      } else {
+        const rpc =
+          action === "decline"
             ? "connect_decline_proposal"
             : "connect_shortlist_proposal";
-      const { error } = await supabase.rpc(rpc, { p_proposal_id: id });
-      if (error) throw error;
+        const { error } = await supabase.rpc(rpc, { p_proposal_id: id });
+        if (error) throw error;
+      }
       startTransition(() => router.refresh());
     } catch (e) {
       setActionError(parseConnectCreditError(e).message);
