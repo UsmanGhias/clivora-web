@@ -110,11 +110,14 @@ export async function POST(request: Request) {
       }
     }
 
+    let isJobUnclaimed = false;
+    let jobClaimToken: string | null = null;
+
     // 2. Resolve from connect_jobs if applying to a curated / crawled job or direct client job
     if ((!targetEmail || !targetEmail.includes("@")) && body.jobId) {
       const { data: jobRow } = await adminDb
         .from("connect_jobs")
-        .select("title, company_name, company_email, company_domain, description, source_url, posted_by")
+        .select("id, title, company_name, company_email, company_domain, description, source_url, posted_by, claimed_by, claim_token")
         .eq("id", body.jobId)
         .maybeSingle();
 
@@ -122,6 +125,16 @@ export async function POST(request: Request) {
         if (!resolvedTitle) resolvedTitle = jobRow.title;
         if (!targetName && jobRow.company_name) targetName = jobRow.company_name;
         externalSourceUrl = jobRow.source_url || null;
+        isJobUnclaimed = !jobRow.claimed_by && !jobRow.posted_by;
+        jobClaimToken = jobRow.claim_token || null;
+
+        if (isJobUnclaimed && !jobClaimToken) {
+          jobClaimToken = crypto.randomUUID().replace(/-/g, "");
+          void adminDb
+            .from("connect_jobs")
+            .update({ claim_token: jobClaimToken })
+            .eq("id", body.jobId);
+        }
 
         // Check if posted directly by a registered Clivora client
         if (jobRow.posted_by) {
@@ -164,7 +177,7 @@ export async function POST(request: Request) {
         client_name: targetName || null,
       })
       .eq("id", proposalId)
-      .eq("freelancer_id", user.id);
+      .eq("from_user_id", user.id);
 
     // Get freelancer's display name
     const { data: freelancerProfile } = await adminDb
@@ -180,24 +193,41 @@ export async function POST(request: Request) {
     // If client email exists, dispatch transactional notification email via send-clivora-email edge function
     if (targetEmail && targetEmail.includes("@") && supabaseUrl && serviceRoleKey) {
       try {
+        const claimUrl = jobClaimToken
+          ? `https://clivora.io/connect/claim?token=${jobClaimToken}&job=${body.jobId}`
+          : `https://clivora.io/connect/jobs/${body.jobId}`;
+
+        // Gated Claim-First Flow: Unclaimed curated jobs receive claim invitation first
+        // Claimed jobs receive direct proposal review link
+        const emailPayload = isJobUnclaimed
+          ? {
+              to: targetEmail,
+              subject: `Your "${resolvedTitle || "Open Role"}" role is live on CLIVORA (Applicants awaiting review)`,
+              purpose: "job_claim",
+              companyName: targetName || "Hiring Team",
+              jobTitle: resolvedTitle || "Open Role",
+              claimUrl,
+            }
+          : {
+              to: targetEmail,
+              subject: `New $0-Fee Proposal for "${resolvedTitle || "Your Project"}" from ${freelancerName}`,
+              purpose: "proposal_received",
+              freelancerName,
+              companyName: targetName || "Hiring Team",
+              jobTitle: resolvedTitle || "Open Role",
+              amount: body.amount || 0,
+              timelineDays: body.timelineDays || 7,
+              pitchMessage: body.pitchMessage || "",
+              reviewUrl,
+            };
+
         const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-clivora-email`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${serviceRoleKey}`,
           },
-          body: JSON.stringify({
-            to: targetEmail,
-            subject: `New $0-Fee Proposal for "${resolvedTitle || "Your Project"}" from ${freelancerName}`,
-            purpose: "proposal_received",
-            freelancerName,
-            companyName: targetName || "Hiring Team",
-            jobTitle: resolvedTitle || "Open Role",
-            amount: body.amount || 0,
-            timelineDays: body.timelineDays || 7,
-            pitchMessage: body.pitchMessage || "",
-            reviewUrl,
-          }),
+          body: JSON.stringify(emailPayload),
         });
 
         const resData = await emailRes.json().catch(() => ({}));
