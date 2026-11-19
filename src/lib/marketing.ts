@@ -21,6 +21,11 @@ export const marketing = {
         badge: "Remote",
       },
       {
+        label: "For Agencies",
+        href: "/agency",
+        badge: "0% Fee",
+      },
+      {
         label: "Open Source",
         href: "/open-source",
       },
