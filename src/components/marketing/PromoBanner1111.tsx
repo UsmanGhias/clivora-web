@@ -44,7 +44,7 @@ export function PromoBanner1111() {
             Officially Open Source
           </span>
           <span className="text-slate-200">
-            World&apos;s #1 Open-Source Freelance &amp; Client OS · $0 Platform Fees · 7,150+ Remote Jobs
+            World&apos;s #1 Open-Source Freelance &amp; Client OS · $0 Platform Fees
           </span>
           <a
             href="https://github.com/UsmanGhias/clivora"
