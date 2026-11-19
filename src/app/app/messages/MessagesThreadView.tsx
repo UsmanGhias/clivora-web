@@ -69,6 +69,22 @@ function counterpartUid(row: MessageRow, myUid: string) {
   return null;
 }
 
+function cleanSubject(sub?: string | null): string {
+  if (!sub) return "";
+  return sub.replace(/^(\s*re:\s*)+/gi, "").trim();
+}
+
+function isReplyOrGenericSubject(sub?: string | null, threadSubject?: string | null): boolean {
+  if (!sub) return true;
+  const s = sub.trim().toLowerCase();
+  if (s === "reply" || s === "message") return true;
+  if (/^(\s*re:\s*)+/i.test(sub)) return true;
+  const cleanSub = cleanSubject(sub).toLowerCase();
+  const cleanThread = cleanSubject(threadSubject).toLowerCase();
+  if (cleanSub === cleanThread) return true;
+  return false;
+}
+
 function ComposeForm({
   fromEmail,
   defaultTo,
@@ -90,7 +106,11 @@ function ComposeForm({
 }) {
   const router = useRouter();
   const [toEmail, setToEmail] = useState(defaultTo ?? "");
-  const [subject, setSubject] = useState(parentSubject ? `Re: ${parentSubject}` : "");
+  const [subject, setSubject] = useState(() => {
+    if (!parentSubject) return "";
+    const clean = cleanSubject(parentSubject);
+    return clean ? `Re: ${clean}` : "Reply";
+  });
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,6 +119,13 @@ function ComposeForm({
   useEffect(() => {
     setToEmail(defaultTo ?? "");
   }, [defaultTo]);
+
+  useEffect(() => {
+    if (parentId && parentSubject) {
+      const clean = cleanSubject(parentSubject);
+      setSubject(clean ? `Re: ${clean}` : "Reply");
+    }
+  }, [parentId, parentSubject]);
 
   useEffect(() => {
     if (toEmail.trim() || !defaultToUid) return;
@@ -173,12 +200,17 @@ function ComposeForm({
         toUid = prof?.id ?? null;
       }
       // client_messages has is_read (boolean) + read_at (timestamptz); to_email is NOT NULL
+      const cleanSub = cleanSubject(subject.trim());
+      const finalSubject = parentId
+        ? (cleanSub ? `Re: ${cleanSub}` : "Reply")
+        : (subject.trim() || "Message");
+
       const { error: err } = await supabase.from("client_messages").insert({
         from_uid: user.id,
         from_email: fromEmail || user.email || "",
         to_email: resolvedTo,
         to_uid: toUid,
-        subject: subject.trim() || (parentId ? "Reply" : "Message"),
+        subject: finalSubject,
         body: body.trim(),
         is_read: false,
         read_at: null,
@@ -711,7 +743,7 @@ export function MessagesThreadView({
                             )}
                           </span>
                           <span className="mt-0.5 block truncate text-[11px] text-text-muted">
-                            {(r.body || r.subject || "").slice(0, 42)}
+                            {(r.body || cleanSubject(r.subject) || "").slice(0, 42)}
                             {r.created_at ? ` · ${formatTime(r.created_at)}` : ""}
                           </span>
                         </span>
@@ -743,7 +775,7 @@ export function MessagesThreadView({
                         {(replyTo || "CLIVORA").split("@")[0]}
                       </h2>
                       <p className="text-[11px] text-text-muted">
-                        {selectedThread.latest.subject || "Conversation"}
+                        {cleanSubject(selectedThread.latest.subject) || selectedThread.latest.subject || "Conversation"}
                         {selectedThread.latest.created_at
                           ? ` · ${formatTime(selectedThread.latest.created_at)}`
                           : ""}
@@ -789,18 +821,37 @@ export function MessagesThreadView({
                             incoming ? "bg-slate-100 text-navy" : outBubbleCls
                           }`}
                         >
-                          {msg.subject && (
-                            <p
-                              className={`mb-0.5 text-[10px] font-semibold ${
-                                incoming ? "text-text-muted" : "text-white/70"
-                              }`}
-                            >
-                              {msg.subject}
+                          {(() => {
+                            const hasBody = Boolean(msg.body?.trim());
+                            const isReply = isReplyOrGenericSubject(
+                              msg.subject,
+                              selectedThread.latest.subject,
+                            );
+                            if (!hasBody && msg.subject) {
+                              return (
+                                <p className="text-[13px] font-semibold leading-snug whitespace-pre-wrap">
+                                  {cleanSubject(msg.subject) || msg.subject}
+                                </p>
+                              );
+                            }
+                            if (hasBody && msg.subject && !isReply) {
+                              return (
+                                <p
+                                  className={`mb-0.5 text-[10px] font-semibold ${
+                                    incoming ? "text-text-muted" : "text-white/70"
+                                  }`}
+                                >
+                                  {cleanSubject(msg.subject) || msg.subject}
+                                </p>
+                              );
+                            }
+                            return null;
+                          })()}
+                          {Boolean(msg.body?.trim()) && (
+                            <p className="text-[13px] leading-snug whitespace-pre-wrap">
+                              {msg.body}
                             </p>
                           )}
-                          <p className="text-[13px] leading-snug whitespace-pre-wrap">
-                            {msg.body || "(empty)"}
-                          </p>
                           <div className="mt-0.5 flex flex-wrap items-center gap-2">
                             <p
                               className={`text-[10px] ${

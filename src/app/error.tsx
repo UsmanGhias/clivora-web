@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, Home, RefreshCw, LifeBuoy } from "lucide-react";
+import { AlertTriangle, Home, RefreshCw, LifeBuoy, LayoutDashboard, ChevronDown } from "lucide-react";
 
 export default function ErrorBoundary({
   error,
@@ -11,6 +11,8 @@ export default function ErrorBoundary({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [showDetails, setShowDetails] = useState(false);
+
   useEffect(() => {
     // Safely log error for diagnostics without crashing
     console.error("[Clivora Error Boundary Caught Exception]:", error);
@@ -37,6 +39,24 @@ export default function ErrorBoundary({
           </p>
         )}
 
+        {error?.message && (
+          <div className="mt-3 text-left">
+            <button
+              type="button"
+              onClick={() => setShowDetails((p) => !p)}
+              className="mx-auto flex items-center justify-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-800 transition"
+            >
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showDetails ? "rotate-180" : ""}`} />
+              <span>{showDetails ? "Hide error details" : "Show error details"}</span>
+            </button>
+            {showDetails && (
+              <pre className="mt-2 max-h-32 overflow-auto rounded-xl bg-slate-50 p-2.5 text-[10px] font-mono text-slate-700 border border-slate-200 text-left">
+                {error.message}
+              </pre>
+            )}
+          </div>
+        )}
+
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2.5">
           <button
             type="button"
@@ -46,6 +66,14 @@ export default function ErrorBoundary({
             <RefreshCw className="h-4 w-4" />
             <span>Try again</span>
           </button>
+
+          <Link
+            href="/app"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span>Dashboard</span>
+          </Link>
 
           <Link
             href="/"
