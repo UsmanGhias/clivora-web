@@ -57,7 +57,7 @@ const PUBLIC_ROUTES = [
 const REDIRECT_ROUTES = [
   { path: "/comapre", expectedTarget: "/compare" },
   { path: "/app", expectedTarget: "/login" },
-  { path: "/admin", expectedTarget: "/login" },
+  { path: "/admin/stats", expectedTarget: "/admin" },
 ];
 
 const FORBIDDEN_STRINGS = [
