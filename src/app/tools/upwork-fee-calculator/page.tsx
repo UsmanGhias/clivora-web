@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight, Home, HelpCircle, ShieldCheck } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
+import { Suspense } from "react";
 import { UpworkFeeCalculatorClient } from "./UpworkFeeCalculatorClient";
 import { site } from "@/lib/site";
 
@@ -98,7 +99,9 @@ export default function UpworkFeeCalculatorPage() {
       {/* Main Interactive Tool */}
       <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <UpworkFeeCalculatorClient />
+          <Suspense fallback={<div className="h-96 w-full animate-pulse rounded-3xl bg-slate-100" />}>
+            <UpworkFeeCalculatorClient />
+          </Suspense>
 
           <div className="mt-12">
             <JobAdSenseSlot format="banner" />
