@@ -192,12 +192,12 @@ export function AgencyClientView() {
             Hire Usman Ghias (Portfolio) ↗
           </a>
           <a
-            href="https://codcrafters.org"
+            href="https://www.codcrafters.org"
             target="_blank"
             rel="noopener noreferrer"
             className="px-5 py-3 rounded-xl bg-white/10 text-white font-semibold text-xs text-center hover:bg-white/20 transition-colors"
           >
-            CODCrafters Studio ↗
+            CODCrafters Studio (www.codcrafters.org) ↗
           </a>
           <Link
             href="/start-a-project"

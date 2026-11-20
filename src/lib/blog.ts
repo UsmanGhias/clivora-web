@@ -9,7 +9,7 @@ export const BLOG_AUTHOR = {
   worksFor: "Clivora & CODCrafters",
   url: "https://usmanghias.co.uk",
   path: "/blog/authors/usman-ghias",
-  sameAs: ["https://usmanghias.co.uk", "https://codcrafters.org"],
+  sameAs: ["https://usmanghias.co.uk", "https://www.codcrafters.org"],
 } as const;
 
 export type PostMeta = {

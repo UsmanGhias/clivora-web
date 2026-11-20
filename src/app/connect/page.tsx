@@ -150,12 +150,12 @@ export default async function ConnectPage({
               <span>Hire Usman (Portfolio) ↗</span>
             </a>
             <a
-              href="https://codcrafters.org"
+              href="https://www.codcrafters.org"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors w-full sm:w-auto"
             >
-              <span>CODCrafters Studio ↗</span>
+              <span>CODCrafters Studio (www.codcrafters.org) ↗</span>
             </a>
             <Link
               href="/start-a-project"

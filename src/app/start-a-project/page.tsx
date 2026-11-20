@@ -89,12 +89,12 @@ export default function StartAProjectPage() {
                 <p className="text-xs text-slate-400 mt-0.5">
                   Founder at{" "}
                   <a
-                    href="https://codcrafters.org"
+                    href="https://www.codcrafters.org"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-teal-400 font-semibold hover:underline"
                   >
-                    CODCrafters Studio
+                    CODCrafters Studio (www.codcrafters.org)
                   </a>{" "}
                   · 10+ Years Enterprise Engineering
                 </p>
@@ -111,12 +111,12 @@ export default function StartAProjectPage() {
                 <span>Live Portfolio (usmanghias.co.uk) ↗</span>
               </a>
               <a
-                href="https://codcrafters.org"
+                href="https://www.codcrafters.org"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition"
               >
-                <span>CODCrafters Studio ↗</span>
+                <span>CODCrafters Studio (www.codcrafters.org) ↗</span>
               </a>
             </div>
           </div>
@@ -323,12 +323,12 @@ export default function StartAProjectPage() {
                   Usman Ghias Portfolio ↗
                 </a>
                 <a
-                  href="https://codcrafters.org"
+                  href="https://www.codcrafters.org"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-colors"
                 >
-                  CODCrafters Studio ↗
+                  CODCrafters Studio (www.codcrafters.org) ↗
                 </a>
                 <Link
                   href="https://wa.link/8soaqu"

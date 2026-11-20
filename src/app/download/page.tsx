@@ -43,7 +43,7 @@ const jsonLd = {
   publisher: {
     "@type": "Organization",
     name: "CODCrafters",
-    url: "https://codcrafters.org",
+    url: "https://www.codcrafters.org",
   },
 };
 

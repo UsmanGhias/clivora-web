@@ -2,7 +2,7 @@
 
 **Last Verified**: September 2026  
 **Lead Systems Architect**: Usman Ghias ([https://usmanghias.co.uk](https://usmanghias.co.uk))  
-**Studio**: CODCrafters ([https://codcrafters.org](https://codcrafters.org))  
+**Studio**: CODCrafters ([https://www.codcrafters.org](https://www.codcrafters.org))  
 **Production Domain**: [https://clivora.io](https://clivora.io)  
 
 ---

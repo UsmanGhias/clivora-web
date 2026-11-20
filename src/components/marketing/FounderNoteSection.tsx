@@ -102,12 +102,12 @@ export function FounderNoteSection() {
                 </a>
                 , Founder and Lead Architect building CLIVORA at{" "}
                 <a
-                  href="https://codcrafters.org"
+                  href="https://www.codcrafters.org"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-bold text-teal-300 hover:underline"
                 >
-                  CODCrafters
+                  CODCrafters Studio (www.codcrafters.org)
                 </a>
                 . Between client work and shipping the Android app, I watched freelancers lose fees on every invoice and clients pay extra for the same marketplace middleman, while CRM, proposals, and files lived in five different tabs.
               </p>
@@ -144,12 +144,12 @@ export function FounderNoteSection() {
                   Hire Usman (Portfolio) ↗
                 </a>
                 <a
-                  href="https://codcrafters.org"
+                  href="https://www.codcrafters.org"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white hover:bg-white/20 transition whitespace-nowrap"
                 >
-                  CODCrafters Studio ↗
+                  CODCrafters Studio (www.codcrafters.org) ↗
                 </a>
                 <Link
                   href="/start-a-project"

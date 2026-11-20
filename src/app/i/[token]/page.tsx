@@ -183,12 +183,12 @@ export default async function PublicInvoicePage({
               </a>
               <span>·</span>
               <a
-                href="https://codcrafters.org"
+                href="https://www.codcrafters.org"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-slate-600 hover:text-slate-900 underline"
               >
-                CODCrafters Studio ↗
+                CODCrafters Studio (www.codcrafters.org) ↗
               </a>
             </div>
           </div>

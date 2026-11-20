@@ -163,12 +163,12 @@ export function ClientHiringWorkflowSection() {
                 <span>Hire Usman Ghias (Portfolio) ↗</span>
               </a>
               <a
-                href="https://codcrafters.org"
+                href="https://www.codcrafters.org"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
-                <span>CODCrafters Studio ↗</span>
+                <span>CODCrafters Studio (www.codcrafters.org) ↗</span>
               </a>
               <Link
                 href="/start-a-project"

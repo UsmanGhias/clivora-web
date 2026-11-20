@@ -48,7 +48,7 @@ export const marketing = {
           { label: "Post a Remote Job (Free)", href: "/app/connect/manage" },
           { label: "Instant AI SOW Generator", href: "/start-a-project" },
           { label: "Hire Lead Architect: Usman Ghias ↗", href: "https://usmanghias.co.uk", external: true },
-          { label: "CODCrafters Studio (Enterprise ERP) ↗", href: "https://codcrafters.org", external: true },
+          { label: "CODCrafters Studio (www.codcrafters.org) ↗", href: "https://www.codcrafters.org", external: true },
         ],
       },
       {
@@ -74,7 +74,7 @@ export const marketing = {
           { label: "Security Architecture", href: "/security" },
           { label: "Plans & Pricing ($0 Fee)", href: "/pricing" },
           { label: "Community Blog", href: "https://community.clivora.io/blog", external: true },
-          { label: "Services & Agency", href: "https://codcrafters.org", external: true },
+          { label: "CODCrafters Studio (www.codcrafters.org) ↗", href: "https://www.codcrafters.org", external: true },
           { label: "Support & Contact", href: "/contact" },
         ],
       },
@@ -652,7 +652,7 @@ export const marketing = {
       ],
       Company: [
         { label: "Hire Usman Ghias (Portfolio)", href: "https://usmanghias.co.uk" },
-        { label: "CODCrafters Studio", href: "https://codcrafters.org" },
+        { label: "CODCrafters Studio (www.codcrafters.org)", href: "https://www.codcrafters.org" },
         { label: "Start a Project SOW", href: "/start-a-project" },
         { label: "About CODCrafters", href: "/about" },
         { label: "GitHub Repository", href: "https://github.com/UsmanGhias/clivora" },

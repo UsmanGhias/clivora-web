@@ -56,12 +56,12 @@ export function PromoBanner1111() {
           </a>
           <span className="hidden md:inline text-slate-500">·</span>
           <a
-            href="https://codcrafters.org"
+            href="https://www.codcrafters.org"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden md:inline-flex items-center gap-1 font-semibold text-slate-300 hover:text-white transition-colors text-xs"
           >
-            CODCrafters Studio ↗
+            www.codcrafters.org ↗
           </a>
           <span className="hidden md:inline text-slate-500">·</span>
           <Link

@@ -320,12 +320,12 @@ Best regards,`;
               </a>{" "}
               at{" "}
               <a
-                href="https://codcrafters.org"
+                href="https://www.codcrafters.org"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-bold text-slate-900 hover:text-teal-700 underline"
               >
-                CODCrafters
+                CODCrafters Studio (www.codcrafters.org)
               </a>{" "}
               to free independent developers and agencies from predatory platform commissions.
             </p>
@@ -340,12 +340,12 @@ Best regards,`;
               </a>
               <span className="text-slate-300">·</span>
               <a
-                href="https://codcrafters.org"
+                href="https://www.codcrafters.org"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900"
               >
-                CODCrafters Studio ↗
+                CODCrafters Studio (www.codcrafters.org) ↗
               </a>
               <span className="text-slate-300">·</span>
               <Link

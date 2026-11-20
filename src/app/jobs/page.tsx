@@ -295,12 +295,12 @@ export default async function JobsIndexPage({
               <span>Hire Usman (Portfolio) ↗</span>
             </a>
             <a
-              href="https://codcrafters.org"
+              href="https://www.codcrafters.org"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition w-full sm:w-auto"
             >
-              <span>CODCrafters Studio ↗</span>
+              <span>CODCrafters Studio (www.codcrafters.org) ↗</span>
             </a>
             <Link
               href="/start-a-project"

@@ -105,7 +105,7 @@ const openSourceJsonLd = {
   publisher: {
     "@type": "Organization",
     name: "CODCrafters",
-    url: "https://codcrafters.org",
+    url: "https://www.codcrafters.org",
   },
 };
 
@@ -466,12 +466,12 @@ export default function OpenSourcePage() {
                     Personal Portfolio (usmanghias.co.uk) ↗
                   </a>
                   <a
-                    href="https://codcrafters.org"
+                    href="https://www.codcrafters.org"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:underline hover:text-white transition"
                   >
-                    CODCrafters Studio ↗
+                    CODCrafters Studio (www.codcrafters.org) ↗
                   </a>
                   <a
                     href={site.githubRepo}

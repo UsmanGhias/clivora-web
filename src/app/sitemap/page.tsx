@@ -217,8 +217,8 @@ const SITEMAP_SECTIONS = [
         desc: "Direct support, partnership inquiries, and contact form",
       },
       {
-        label: "CODCrafters Studio",
-        href: "https://codcrafters.org",
+        label: "CODCrafters Studio (www.codcrafters.org)",
+        href: "https://www.codcrafters.org",
         desc: "Parent software engineering studio and enterprise solutions",
         external: true,
       },
