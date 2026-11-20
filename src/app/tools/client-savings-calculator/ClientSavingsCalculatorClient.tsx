@@ -362,9 +362,17 @@ Audit link: https://clivora.io/tools/client-savings-calculator?spend=${annualSpe
               href="/start-a-project"
               className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-navy py-2.5 px-4 text-xs font-bold text-white transition hover:bg-navy/90 text-center"
             >
-              <span>Post a Project Free</span>
+              <span>Post a Project Free (Start SOW)</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
+            <a
+              href="https://usmanghias.co.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-teal-50 border border-teal-200 py-2.5 px-4 text-xs font-bold text-teal-900 transition hover:bg-teal-100 text-center"
+            >
+              <span>Hire Usman Ghias (Lead Architect) ↗</span>
+            </a>
             <Link
               href="/connect"
               className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs font-bold text-navy transition hover:bg-slate-100 text-center"

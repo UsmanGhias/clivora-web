@@ -193,6 +193,20 @@ export default async function JobsIndexPage({
               <Plus className="h-3.5 w-3.5" />
               Post a Job (Free)
             </Link>
+            <a
+              href="https://usmanghias.co.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50/80 px-3.5 py-2 text-xs font-bold text-teal-900 hover:bg-teal-100 transition-colors"
+            >
+              Hire Lead Architect ↗
+            </a>
+            <Link
+              href="/start-a-project"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Start SOW →
+            </Link>
           </div>
         </div>
 
@@ -250,6 +264,50 @@ export default async function JobsIndexPage({
               <p className="text-xl font-bold text-slate-900">100%</p>
               <p className="text-xs font-medium text-slate-500">You Keep</p>
             </div>
+          </div>
+        </div>
+
+        {/* Lead Architect & Enterprise ERP Spotlight */}
+        <div className="mt-8 rounded-2xl border border-teal-200/90 bg-gradient-to-r from-teal-50/90 via-white to-teal-50/70 p-5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-teal-800 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
+              UG
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm font-bold text-navy">Looking to hire an Enterprise Architect or Studio?</p>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 border border-teal-200">
+                  Lead Architect
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-0.5">
+                Hire Usman Ghias (Portfolio: usmanghias.co.uk) &amp; CODCrafters Studio for custom Odoo 17/18/19 ERP, Flutter mobile apps, and Next.js platforms.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto flex-wrap">
+            <a
+              href="https://usmanghias.co.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-teal-700 px-4 py-2 text-xs font-bold text-white hover:bg-teal-800 transition shadow-xs w-full sm:w-auto"
+            >
+              <span>Hire Usman (Portfolio) ↗</span>
+            </a>
+            <a
+              href="https://codcrafters.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition w-full sm:w-auto"
+            >
+              <span>CODCrafters Studio ↗</span>
+            </a>
+            <Link
+              href="/start-a-project"
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-teal-300 bg-teal-50 px-3.5 py-2 text-xs font-bold text-teal-900 hover:bg-teal-100 transition w-full sm:w-auto"
+            >
+              <span>Start Project SOW →</span>
+            </Link>
           </div>
         </div>
 

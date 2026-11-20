@@ -169,6 +169,29 @@ export default async function PublicInvoicePage({
               <span>Create Client Workspace</span>
             </Link>
           </div>
+
+          <div className="pt-2 border-t border-teal-200/60 flex items-center justify-between gap-2 flex-wrap text-[11px] text-slate-500">
+            <span>Need dedicated architecture or custom ERP?</span>
+            <div className="flex items-center gap-2">
+              <a
+                href="https://usmanghias.co.uk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-teal-800 hover:text-teal-950 underline"
+              >
+                Hire Usman Ghias (Portfolio) ↗
+              </a>
+              <span>·</span>
+              <a
+                href="https://codcrafters.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-slate-600 hover:text-slate-900 underline"
+              >
+                CODCrafters Studio ↗
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Security and Trust Footer */}

@@ -59,17 +59,86 @@ export default function StartAProjectPage() {
 
       {/* Main Content Area */}
       <main className="max-w-4xl mx-auto px-4 py-12 flex-1 w-full">
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-medium mb-3">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Instant Technical SOW Generator</span>
+            <span>Instant Technical SOW Generator · $0 Platform Cut</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
             Start a Project with <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-cyan-400">Usman Ghias</span>
           </h1>
           <p className="mt-3 text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
-            Tell us about your technical requirements. Our system instantly generates a tailored Statement of Work (SOW) and routes your brief directly to our engineering team.
+            Direct technical engagement with Usman Ghias and the CODCrafters engineering studio. Submit your requirements below to generate an instant Statement of Work (SOW).
           </p>
+        </div>
+
+        {/* Lead Architect & Studio Credentials Showcase */}
+        <div className="mb-8 rounded-2xl border border-teal-500/30 bg-gradient-to-br from-slate-900/90 via-teal-950/20 to-slate-900/90 p-5 sm:p-6 backdrop-blur-xl shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+            <div className="flex items-center gap-3.5">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 text-slate-950 font-black text-lg flex items-center justify-center shadow-md">
+                UG
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-bold text-white text-base">Usman Ghias</h3>
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-400/30">
+                    Lead Systems Architect
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Founder at{" "}
+                  <a
+                    href="https://codcrafters.org"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal-400 font-semibold hover:underline"
+                  >
+                    CODCrafters Studio
+                  </a>{" "}
+                  · 10+ Years Enterprise Engineering
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <a
+                href="https://usmanghias.co.uk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs transition shadow-sm"
+              >
+                <span>Live Portfolio (usmanghias.co.uk) ↗</span>
+              </a>
+              <a
+                href="https://codcrafters.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition"
+              >
+                <span>CODCrafters Studio ↗</span>
+              </a>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 text-xs">
+            <div className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-800">
+              <div className="text-teal-400 font-bold text-[11px] uppercase tracking-wider">Enterprise ERP</div>
+              <div className="text-slate-300 font-medium mt-0.5">Odoo 17/18/19 &amp; Migrations</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-800">
+              <div className="text-teal-400 font-bold text-[11px] uppercase tracking-wider">Web &amp; Cloud</div>
+              <div className="text-slate-300 font-medium mt-0.5">Next.js, TS &amp; PostgreSQL</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-800">
+              <div className="text-teal-400 font-bold text-[11px] uppercase tracking-wider">Mobile Apps</div>
+              <div className="text-slate-300 font-medium mt-0.5">Flutter 3.x (Android &amp; iOS)</div>
+            </div>
+            <div className="p-2.5 rounded-xl bg-slate-800/50 border border-slate-800">
+              <div className="text-teal-400 font-bold text-[11px] uppercase tracking-wider">Platform Take-Rate</div>
+              <div className="text-slate-300 font-medium mt-0.5">0% Commission via Clivora</div>
+            </div>
+          </div>
         </div>
 
         {!submitted ? (
@@ -244,7 +313,23 @@ export default function StartAProjectPage() {
                 &larr; Submit another inquiry
               </button>
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-2.5">
+                <a
+                  href="https://usmanghias.co.uk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-bold transition-colors"
+                >
+                  Usman Ghias Portfolio ↗
+                </a>
+                <a
+                  href="https://codcrafters.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition-colors"
+                >
+                  CODCrafters Studio ↗
+                </a>
                 <Link
                   href="https://wa.link/8soaqu"
                   target="_blank"
@@ -255,7 +340,7 @@ export default function StartAProjectPage() {
                 </Link>
                 <Link
                   href="/"
-                  className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 text-xs font-bold transition-colors"
+                  className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-medium transition-colors"
                 >
                   Explore Clivora OS
                 </Link>

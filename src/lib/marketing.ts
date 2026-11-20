@@ -47,6 +47,8 @@ export const marketing = {
           { label: "Hire Verified Talent", href: "/connect?tab=talent" },
           { label: "Post a Remote Job (Free)", href: "/app/connect/manage" },
           { label: "Instant AI SOW Generator", href: "/start-a-project" },
+          { label: "Hire Lead Architect: Usman Ghias ↗", href: "https://usmanghias.co.uk", external: true },
+          { label: "CODCrafters Studio (Enterprise ERP) ↗", href: "https://codcrafters.org", external: true },
         ],
       },
       {
@@ -630,6 +632,8 @@ export const marketing = {
         { label: "Free Tools Directory", href: "/tools" },
         { label: "Rate Calculator", href: "/tools/freelance-rate-calculator" },
         { label: "Upwork Fee Calculator", href: "/tools/upwork-fee-calculator" },
+        { label: "Fiverr Fee Calculator", href: "/tools/fiverr-fee-calculator" },
+        { label: "Client Savings Calculator", href: "/tools/client-savings-calculator" },
         { label: "Invoice Generator", href: "/tools/invoice-generator" },
         { label: "Connect", href: "/connect" },
         { label: "Documentation", href: "/docs" },
@@ -647,6 +651,9 @@ export const marketing = {
         { label: "Integrations", href: "/integrations" },
       ],
       Company: [
+        { label: "Hire Usman Ghias (Portfolio)", href: "https://usmanghias.co.uk" },
+        { label: "CODCrafters Studio", href: "https://codcrafters.org" },
+        { label: "Start a Project SOW", href: "/start-a-project" },
         { label: "About CODCrafters", href: "/about" },
         { label: "GitHub Repository", href: "https://github.com/UsmanGhias/clivora" },
         { label: "Guides & Articles", href: "/blog" },

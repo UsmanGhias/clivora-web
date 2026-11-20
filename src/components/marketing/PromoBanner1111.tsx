@@ -41,26 +41,35 @@ export function PromoBanner1111() {
         <div className="flex flex-1 items-center justify-center gap-2 text-center sm:gap-3 flex-wrap">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-500/20 border border-teal-400/30 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wider text-teal-300">
             <Sparkles className="h-3 w-3 text-teal-300" />
-            Officially Open Source
+            Engineering &amp; Architecture
           </span>
           <span className="text-slate-200">
-            World&apos;s #1 Open-Source Freelance &amp; Client OS · $0 Platform Fees
+            Need custom ERP, web, or mobile systems?
           </span>
           <a
-            href="https://github.com/UsmanGhias/clivora"
+            href="https://usmanghias.co.uk"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 font-bold text-teal-300 underline-offset-4 hover:text-white hover:underline transition-colors"
           >
-            ★ Star on GitHub
-            <ArrowRight className="h-3.5 w-3.5" />
+            Hire Usman Ghias (Portfolio) ↗
           </a>
-          <span className="hidden md:inline text-slate-500">|</span>
-          <Link
-            href="/promo/11-11"
+          <span className="hidden md:inline text-slate-500">·</span>
+          <a
+            href="https://codcrafters.org"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden md:inline-flex items-center gap-1 font-semibold text-slate-300 hover:text-white transition-colors text-xs"
           >
-            Claim 1-Year Free Pro Pass →
+            CODCrafters Studio ↗
+          </a>
+          <span className="hidden md:inline text-slate-500">·</span>
+          <Link
+            href="/start-a-project"
+            className="inline-flex items-center gap-1 font-bold text-white bg-teal-600/90 hover:bg-teal-500 px-2.5 py-0.5 rounded-full text-xs transition-colors shadow-xs"
+          >
+            Start Project SOW
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
 

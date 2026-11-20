@@ -128,6 +128,38 @@ export function FounderNoteSection() {
               </p>
             </div>
 
+            {/* Direct Hire & Architecture Booking Card */}
+            <div className="rounded-2xl border border-teal-400/30 bg-teal-950/40 p-4 backdrop-blur-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="space-y-0.5 text-center sm:text-left">
+                <p className="text-xs font-bold text-white">Need enterprise software architecture or custom ERP?</p>
+                <p className="text-[11px] text-teal-300/80">Hire Usman Ghias directly or partner with CODCrafters Studio.</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 flex-wrap justify-center sm:justify-end">
+                <a
+                  href="https://usmanghias.co.uk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl bg-teal-400 px-3.5 py-2 text-xs font-bold text-navy hover:bg-teal-300 transition shadow-xs whitespace-nowrap"
+                >
+                  Hire Usman (Portfolio) ↗
+                </a>
+                <a
+                  href="https://codcrafters.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white hover:bg-white/20 transition whitespace-nowrap"
+                >
+                  CODCrafters Studio ↗
+                </a>
+                <Link
+                  href="/start-a-project"
+                  className="rounded-xl bg-teal-500/20 border border-teal-400/40 px-3 py-2 text-xs font-semibold text-teal-300 hover:bg-teal-500/30 transition whitespace-nowrap"
+                >
+                  Start Project SOW →
+                </Link>
+              </div>
+            </div>
+
             <div className="flex flex-wrap gap-4 border-t border-white/10 pt-4 text-xs font-semibold uppercase tracking-wide text-teal-200/90">
               <span>For freelancers: keep your rate</span>
               <span className="text-white/25">·</span>

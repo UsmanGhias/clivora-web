@@ -278,7 +278,20 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
           </nav>
 
           <div className="hidden items-center gap-1.5 xl:gap-2.5 lg:flex shrink-0">
-            <SiteSearchBar variant="icon" light={light} />
+            <a
+              href="https://usmanghias.co.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold transition shadow-2xs whitespace-nowrap shrink-0",
+                light
+                  ? "border-teal-200 bg-teal-50/80 text-teal-900 hover:bg-teal-100 hover:border-teal-300"
+                  : "border-teal-400/30 bg-teal-500/20 text-teal-300 hover:bg-teal-500/30 hover:border-teal-300"
+              )}
+              title="Hire Lead Architect Usman Ghias (Live Portfolio: usmanghias.co.uk)"
+            >
+              <span>Hire Usman Ghias ↗</span>
+            </a>
             <a
               href="https://github.com/UsmanGhias/clivora"
               target="_blank"
@@ -468,6 +481,26 @@ export function MarketingNav({ variant = "light" }: { variant?: "light" | "overl
                 </div>
               );
             })}
+            <div className="pt-2 border-t border-slate-100 space-y-1.5">
+              <a
+                href="https://usmanghias.co.uk"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileOpen(false)}
+                className="block rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-center text-xs font-bold text-teal-900"
+              >
+                Hire Lead Architect: Usman Ghias (Portfolio) ↗
+              </a>
+              <a
+                href="https://codcrafters.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileOpen(false)}
+                className="block rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-center text-xs font-semibold text-slate-700"
+              >
+                CODCrafters Studio (Enterprise ERP) ↗
+              </a>
+            </div>
             {loggedIn ? (
               <>
                 <Link
