@@ -44,17 +44,32 @@ const FAQS = [
 export default function FiverrFeeCalculatorPage() {
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name: "Fiverr Fee Calculator",
-    applicationCategory: "BusinessApplication",
-    operatingSystem: "Web",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
-    description:
-      "Calculate total Fiverr deductions including the 20% seller commission, buyer fees, and payout withdrawal costs.",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        name: "Fiverr Fee Calculator",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+        },
+        description:
+          "Calculate total Fiverr deductions including the 20% seller commission, buyer fees, and payout withdrawal costs.",
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQS.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+    ],
   };
 
   return (

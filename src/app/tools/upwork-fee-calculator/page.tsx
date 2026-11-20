@@ -44,17 +44,32 @@ const FAQS = [
 export default function UpworkFeeCalculatorPage() {
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name: "Upwork Fee Calculator",
-    applicationCategory: "BusinessApplication",
-    operatingSystem: "Web",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
-    description:
-      "Calculate total Upwork fee deductions including 10% service charges, connects costs, and payout processing fees.",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        name: "Upwork Fee Calculator",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+        },
+        description:
+          "Calculate total Upwork fee deductions including 10% service charges, connects costs, and payout processing fees.",
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQS.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+    ],
   };
 
   return (

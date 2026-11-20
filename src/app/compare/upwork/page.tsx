@@ -105,8 +105,36 @@ const FAQS = [
 ];
 
 export default function CompareUpworkPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        name: "Clivora vs Upwork Comparison",
+        description:
+          "Compare Clivora and Upwork side-by-side. See why freelancers choose Clivora's $0 fee operating system.",
+        url: `${site.url}/compare/upwork`,
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQS.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+    ],
+  };
+
   return (
     <MarketingShell>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Hero */}
       <section className="relative border-b border-slate-200 bg-gradient-to-b from-[#F0FDFA] via-[#F8FAFC] to-white py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">

@@ -172,6 +172,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/tools", priority: 0.9, changeFrequency: "weekly" },
     { path: "/tools/freelance-rate-calculator", priority: 0.88, changeFrequency: "weekly" },
     { path: "/tools/upwork-fee-calculator", priority: 0.88, changeFrequency: "weekly" },
+    { path: "/tools/fiverr-fee-calculator", priority: 0.88, changeFrequency: "weekly" },
     { path: "/tools/invoice-generator", priority: 0.88, changeFrequency: "weekly" },
     { path: "/start-a-project", priority: 0.85, changeFrequency: "weekly" },
     { path: "/compare", priority: 0.85, changeFrequency: "weekly" },

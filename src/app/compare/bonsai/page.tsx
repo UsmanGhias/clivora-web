@@ -78,8 +78,36 @@ const FAQS = [
 ];
 
 export default function CompareBonsaiPage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        name: "Clivora vs Hello Bonsai Comparison",
+        description:
+          "Compare Clivora and Hello Bonsai side-by-side. See why consultants and engineers choose Clivora.",
+        url: `${site.url}/compare/bonsai`,
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQS.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+    ],
+  };
+
   return (
     <MarketingShell>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="relative border-b border-slate-200 bg-gradient-to-b from-[#F0FDFA] via-[#F8FAFC] to-white py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-1.5 text-xs text-slate-500">

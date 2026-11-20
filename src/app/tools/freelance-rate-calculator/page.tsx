@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight, Home, HelpCircle, ShieldCheck } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
+import { Suspense } from "react";
 import { RateCalculatorClient } from "./RateCalculatorClient";
 import { site } from "@/lib/site";
 
@@ -42,17 +43,32 @@ const FAQS = [
 export default function FreelanceRateCalculatorPage() {
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    name: "Freelance Hourly & Day Rate Calculator",
-    applicationCategory: "BusinessApplication",
-    operatingSystem: "Web",
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
-    description:
-      "Calculate your exact target freelance hourly rate, day rate, and annual billable revenue targets based on net income and overhead.",
+    "@graph": [
+      {
+        "@type": "WebApplication",
+        name: "Freelance Hourly & Day Rate Calculator",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+        },
+        description:
+          "Calculate your exact target freelance hourly rate, day rate, and annual billable revenue targets based on net income and overhead.",
+      },
+      {
+        "@type": "FAQPage",
+        mainEntity: FAQS.map((faq) => ({
+          "@type": "Question",
+          name: faq.q,
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: faq.a,
+          },
+        })),
+      },
+    ],
   };
 
   return (
@@ -97,7 +113,9 @@ export default function FreelanceRateCalculatorPage() {
       {/* Main Interactive Tool */}
       <section className="py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <RateCalculatorClient />
+          <Suspense fallback={<div className="h-96 rounded-3xl bg-slate-100 animate-pulse" />}>
+            <RateCalculatorClient />
+          </Suspense>
 
           <div className="mt-12">
             <JobAdSenseSlot format="banner" />
