@@ -65,6 +65,17 @@ const TOOLS = [
     isExternal: false,
   },
   {
+    title: "Client Marketplace Fee Savings Calculator",
+    slug: "/tools/client-savings-calculator",
+    badge: "Corporate Procurement",
+    icon: ShieldCheck,
+    color: "from-emerald-500/10 to-emerald-500/5 text-emerald-700 border-emerald-200",
+    description:
+      "Calculate how much companies and hiring managers save by eliminating Upwork's 7.99% client marketplace fee and initiation surcharges.",
+    highlights: ["7.99% client markup audit", "Multi-year budget retention", "Monospace corporate audit statement"],
+    isExternal: false,
+  },
+  {
     title: "Instant PDF Invoice Generator",
     slug: "/tools/invoice-generator",
     badge: "Document Builder",

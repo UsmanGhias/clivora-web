@@ -83,6 +83,22 @@ export function ClientHiringWorkflowSection() {
 
         </div>
 
+        {/* Corporate Fee Audit Callout */}
+        <div className="mt-8 rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1 text-center sm:text-left">
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">Corporate Fee Audit</span>
+            <p className="text-sm font-bold text-navy">See how much your company saves by eliminating Upwork&apos;s 7.99% client markup.</p>
+            <p className="text-xs text-slate-600">Model your annual contractor spend and generate a corporate procurement audit statement.</p>
+          </div>
+          <Link
+            href="/tools/client-savings-calculator"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-navy px-4 py-2.5 text-xs font-bold text-white transition hover:bg-navy/90"
+          >
+            <span>Open Client Savings Calculator</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
         {/* Outreach / Existing Employer Access Notice */}
         <div className="mt-12 rounded-3xl border border-slate-800 bg-slate-950 p-8 text-white shadow-xl sm:p-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">

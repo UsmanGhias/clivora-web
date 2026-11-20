@@ -9,6 +9,7 @@ import { JobFilterPills } from "@/components/jobs/JobFilterPills";
 import { JobsFeedView } from "@/components/jobs/JobsFeedView";
 import { type JobCardData } from "@/components/jobs/JobListingCard";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
+import { JobAlertSubscriptionBox } from "@/components/jobs/JobAlertSubscriptionBox";
 import {
   Briefcase,
   Building2,
@@ -260,6 +261,11 @@ export default async function JobsIndexPage({
           <Suspense fallback={null}>
             <JobFilterPills />
           </Suspense>
+        </div>
+
+        {/* Daily Job Alerts Subscription Box */}
+        <div className="mt-8">
+          <JobAlertSubscriptionBox />
         </div>
 
         {/* Job Listings Feed with Quick Preview Drawer */}
