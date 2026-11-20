@@ -54,6 +54,17 @@ const TOOLS = [
     isExternal: false,
   },
   {
+    title: "Fiverr 20% Seller Fee Calculator",
+    slug: "/tools/fiverr-fee-calculator",
+    badge: "Fee Analysis",
+    icon: Percent,
+    color: "from-orange-500/10 to-orange-500/5 text-orange-700 border-orange-200",
+    description:
+      "Model your real earnings loss from Fiverr's 20% flat seller commission on gig orders and buyer tips vs $0 deal fees on Clivora.",
+    highlights: ["20% seller cut & tips", "Multi-year loss modeling", "Thermal paper fee receipt"],
+    isExternal: false,
+  },
+  {
     title: "Instant PDF Invoice Generator",
     slug: "/tools/invoice-generator",
     badge: "Document Builder",

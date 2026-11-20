@@ -118,6 +118,15 @@ export default function CompareFiverrPage() {
               Compare the economics of selling pre-packaged gigs under heavy commission cuts versus running
               a high-ticket freelance business with direct invoicing and $0 fees.
             </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <Link
+                href="/tools/fiverr-fee-calculator"
+                className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-orange-700 shadow-xs"
+              >
+                <span>Calculate Your 20% Fiverr Cut</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
