@@ -45,8 +45,20 @@ export async function POST(req: Request) {
       "https://clivora.io/for-clients",
       "https://clivora.io/pricing",
       "https://clivora.io/tools",
+      "https://clivora.io/tools/upwork-fee-calculator",
+      "https://clivora.io/tools/fiverr-fee-calculator",
+      "https://clivora.io/tools/client-savings-calculator",
+      "https://clivora.io/tools/freelance-rate-calculator",
+      "https://clivora.io/tools/invoice-generator",
+      "https://clivora.io/tools/contract-generator",
+      "https://clivora.io/tools/badge-generator",
       "https://clivora.io/compare",
+      "https://clivora.io/compare/upwork",
+      "https://clivora.io/compare/fiverr",
+      "https://clivora.io/compare/contra",
+      "https://clivora.io/compare/bonsai",
       "https://clivora.io/blog",
+      "https://clivora.io/sitemap",
     ];
 
     const jobUrls = (jobs || []).map((j) => `https://clivora.io/jobs/view/${j.seo_slug}`);
