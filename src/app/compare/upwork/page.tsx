@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
+import { LiveMarketplaceFeeComparison } from "@/components/compare/LiveMarketplaceFeeComparison";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -209,6 +210,10 @@ export default function CompareUpworkPage() {
           </div>
 
           <div className="mt-12">
+            <LiveMarketplaceFeeComparison platform="upwork" />
+          </div>
+
+          <div className="mt-12">
             <JobAdSenseSlot format="banner" />
           </div>
 
@@ -222,7 +227,7 @@ export default function CompareUpworkPage() {
                 </h2>
                 <div className="space-y-2 text-sm text-slate-600 leading-relaxed">
                   <p>
-                    <strong>On Upwork:</strong> You lose $1,000 in service commission, $30–$50 in connects tokens, and $30 in withdrawal fees every month. Your client pays an extra $500 in marketplace fees. Total capital extracted: <strong>$18,000+ per year</strong>.
+                    <strong>On Upwork:</strong> You lose $1,000 in service commission, $30-$50 in connects tokens, and $30 in withdrawal fees every month. Your client pays an extra $500 in marketplace fees. Total capital extracted: <strong>$18,000+ per year</strong>.
                   </p>
                   <p>
                     <strong>On Clivora:</strong> Platform fee stays $0. Your client pays you directly against your invoice. You retain $10,000. Total annual capital saved: <strong>$18,000+ per year</strong>.

@@ -87,6 +87,26 @@ const SITEMAP_SECTIONS = [
         desc: "Analyze 10% commission, connects, and withdrawal costs vs $0 on Clivora",
       },
       {
+        label: "Fiverr 20% Fee Calculator",
+        href: "/tools/fiverr-fee-calculator",
+        desc: "Calculate 20% seller cuts and clearance delays vs 0% fees on Clivora",
+      },
+      {
+        label: "Client Marketplace Savings Calculator",
+        href: "/tools/client-savings-calculator",
+        desc: "Calculate how much hiring managers save by avoiding marketplace client markups",
+      },
+      {
+        label: "Freelance Contract & Agreement Generator",
+        href: "/tools/contract-generator",
+        desc: "Draft milestone service contracts with plain-English legal terms and 100% IP transfer",
+      },
+      {
+        label: "Freelancer Badge & Button Generator",
+        href: "/tools/badge-generator",
+        desc: "Embed zero-fee hiring badges and buttons on GitHub READMEs and portfolios",
+      },
+      {
         label: "Free PDF Invoice Generator",
         href: "/tools/invoice-generator",
         desc: "Generate, itemize, and print professional PDF invoices with multi-currency support",

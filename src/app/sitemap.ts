@@ -175,6 +175,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/tools/fiverr-fee-calculator", priority: 0.88, changeFrequency: "weekly" },
     { path: "/tools/client-savings-calculator", priority: 0.88, changeFrequency: "weekly" },
     { path: "/tools/invoice-generator", priority: 0.88, changeFrequency: "weekly" },
+    { path: "/tools/contract-generator", priority: 0.88, changeFrequency: "weekly" },
+    { path: "/tools/badge-generator", priority: 0.88, changeFrequency: "weekly" },
     { path: "/start-a-project", priority: 0.85, changeFrequency: "weekly" },
     { path: "/compare", priority: 0.85, changeFrequency: "weekly" },
     { path: "/compare/upwork", priority: 0.85, changeFrequency: "weekly" },

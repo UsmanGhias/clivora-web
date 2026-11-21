@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
+import { LiveMarketplaceFeeComparison } from "@/components/compare/LiveMarketplaceFeeComparison";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -197,6 +198,10 @@ export default function CompareFiverrPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="mt-12">
+            <LiveMarketplaceFeeComparison platform="fiverr" />
           </div>
 
           <div className="mt-12">

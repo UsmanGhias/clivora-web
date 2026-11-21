@@ -635,6 +635,8 @@ export const marketing = {
         { label: "Fiverr Fee Calculator", href: "/tools/fiverr-fee-calculator" },
         { label: "Client Savings Calculator", href: "/tools/client-savings-calculator" },
         { label: "Invoice Generator", href: "/tools/invoice-generator" },
+        { label: "Contract Generator", href: "/tools/contract-generator" },
+        { label: "Badge Generator", href: "/tools/badge-generator" },
         { label: "Connect", href: "/connect" },
         { label: "Documentation", href: "/docs" },
         { label: "Sign in", href: "/login" },

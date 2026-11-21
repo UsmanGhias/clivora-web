@@ -10,6 +10,8 @@ import {
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
+  FileText,
+  BadgeCheck,
 } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
@@ -95,6 +97,28 @@ const TOOLS = [
     description:
       "Transform raw project ideas into structured engineering briefs with milestone deliverables, timelines, and technical requirements.",
     highlights: ["Milestone breakdown", "Deliverables checklist", "Convert directly to contract"],
+    isExternal: false,
+  },
+  {
+    title: "Freelance Contract & Milestone Agreement Generator",
+    slug: "/tools/contract-generator",
+    badge: "Legal Document",
+    icon: FileText,
+    color: "from-teal-500/10 to-teal-500/5 text-teal-700 border-teal-200",
+    description:
+      "Draft legally sound freelance service contracts and milestone agreements in minutes. Plain-English terms, 100% IP transfer, and $0 middleman fees.",
+    highlights: ["Milestone payment schedule", "100% IP assignment clause", "Print to PDF & text export"],
+    isExternal: false,
+  },
+  {
+    title: "Freelancer Badge & Direct Hire Button Generator",
+    slug: "/tools/badge-generator",
+    badge: "Viral Distribution",
+    icon: BadgeCheck,
+    color: "from-emerald-500/10 to-emerald-500/5 text-emerald-700 border-emerald-200",
+    description:
+      "Generate customizable GitHub README shields, portfolio badges, and hire buttons. Let clients hire you directly through Clivora with zero platform commission.",
+    highlights: ["GitHub README Shields", "Portfolio HTML pill", "Direct bio share link"],
     isExternal: false,
   },
   {

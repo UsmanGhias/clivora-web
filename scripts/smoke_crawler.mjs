@@ -50,6 +50,8 @@ const PUBLIC_ROUTES = [
   "/tools/upwork-fee-calculator",
   "/tools/fiverr-fee-calculator",
   "/tools/client-savings-calculator",
+  "/tools/contract-generator",
+  "/tools/badge-generator",
   "/trust",
   "/login",
   "/signup",
