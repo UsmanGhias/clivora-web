@@ -7,6 +7,7 @@ import { CTASection } from "@/components/marketing/CTASection";
 import { PortalPageHero } from "@/components/marketing/PortalPageHero";
 import { ClientHiringWorkflowSection } from "@/components/marketing/ClientHiringWorkflowSection";
 import { ClientDashMock } from "@/components/marketing/mockups/ClientDashMock";
+import { LiveMarketplaceFeeComparison } from "@/components/compare/LiveMarketplaceFeeComparison";
 import { marketing } from "@/lib/marketing";
 
 export const metadata: Metadata = {
@@ -36,6 +37,22 @@ export default function ForClientsPage() {
           "Pay freelancers directly against CLIVORA invoices",
         ]}
       />
+      <section className="bg-slate-900 py-16 text-white border-y border-slate-800">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center mb-10">
+            <span className="inline-block rounded-full bg-slate-800 px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-teal-400 border border-slate-700">
+              Client Cost Comparison
+            </span>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Eliminate Marketplace Client Markups & Surcharges
+            </h2>
+            <p className="mt-3 text-sm text-slate-300">
+              Legacy platforms bill clients up to 7.99% on top of every contractor invoice plus contract initiation fees. Compare your savings below.
+            </p>
+          </div>
+          <LiveMarketplaceFeeComparison platform="upwork" />
+        </div>
+      </section>
       <ClientHiringWorkflowSection />
       <SocialProofSection />
       <ConnectSection />

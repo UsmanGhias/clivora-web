@@ -24,6 +24,8 @@ import {
   Calculator,
   MessageSquare,
   Newspaper,
+  BadgeCheck,
+  Percent,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +41,7 @@ type QuickLink = {
   label: string;
   desc: string;
   href: string;
-  category: "Open Source" | "Platform" | "Developer Suite" | "Resources";
+  category: "Open Source" | "Platform" | "Developer Suite" | "Resources" | "Tools & Calculators";
   icon: React.ComponentType<{ className?: string }>;
   external?: boolean;
   keywords?: string[];
@@ -142,9 +144,41 @@ const SEARCH_DIRECTORY: QuickLink[] = [
     label: "Freelance Rate & Tax Calculators",
     desc: "Free hourly rate, project pricing, and take-home income calculators",
     href: "/tools",
-    category: "Resources",
+    category: "Tools & Calculators",
     icon: Calculator,
     keywords: ["rate calculator", "calculator", "tax", "hourly", "project price", "free tools"],
+  },
+  {
+    label: "Freelance Contract & Agreement Generator",
+    desc: "Draft milestone service contracts with 100% IP transfer clauses",
+    href: "/tools/contract-generator",
+    category: "Tools & Calculators",
+    icon: FileText,
+    keywords: ["contract", "agreement", "nda", "legal", "freelance contract", "service agreement", "ip transfer"],
+  },
+  {
+    label: "Freelancer Badge & Button Generator",
+    desc: "Create embeddable GitHub README badges and zero-fee hire buttons",
+    href: "/tools/badge-generator",
+    category: "Tools & Calculators",
+    icon: BadgeCheck,
+    keywords: ["badge", "shields.io", "github badge", "hire button", "readme", "profile badge"],
+  },
+  {
+    label: "Upwork Fee Comparison & Savings Calculator",
+    desc: "See how much Upwork takes in 10% fees and connects vs $0 on Clivora",
+    href: "/compare/upwork",
+    category: "Tools & Calculators",
+    icon: Percent,
+    keywords: ["upwork", "upwork fee", "compare upwork", "connects", "upwork calculator"],
+  },
+  {
+    label: "Fiverr Fee Comparison & Savings Calculator",
+    desc: "Calculate 20% Fiverr seller cuts vs 0% commission on Clivora",
+    href: "/compare/fiverr",
+    category: "Tools & Calculators",
+    icon: Percent,
+    keywords: ["fiverr", "fiverr fee", "compare fiverr", "20 percent", "fiverr calculator"],
   },
   {
     label: "Clivora Engineering Blog",

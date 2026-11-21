@@ -76,7 +76,7 @@ const FORBIDDEN_STRINGS = [
 async function checkRoute(path) {
   const url = `${BASE_URL}${path}`;
   try {
-    const res = await fetch(url, { redirect: "manual" });
+    const res = await fetch(url, { redirect: "follow" });
     const status = res.status;
 
     if (status !== 200) {
