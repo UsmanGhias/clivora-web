@@ -139,47 +139,6 @@ export function ClientHiringWorkflowSection() {
           </div>
         </div>
 
-        {/* Lead Architect & Enterprise Engineering Direct Engagement */}
-        <div className="mt-8 rounded-3xl border border-teal-200 bg-gradient-to-r from-teal-50 via-white to-teal-50/70 p-8 shadow-sm">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-            <div className="space-y-2 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full border border-teal-300 bg-teal-100/80 px-3 py-1 text-xs font-bold text-teal-900">
-                <span>Enterprise Architecture &amp; ERP Consulting</span>
-              </div>
-              <h3 className="text-2xl font-extrabold text-slate-900">
-                Need dedicated technical leadership or custom software engineering?
-              </h3>
-              <p className="text-sm text-slate-600 max-w-2xl leading-relaxed">
-                Hire Clivora Founder &amp; Lead Systems Architect Usman Ghias for enterprise Odoo ERP migrations, cross-platform Flutter mobile applications, and high-concurrency Next.js / PostgreSQL platforms.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-3 shrink-0">
-              <a
-                href="https://usmanghias.co.uk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl bg-teal-600 px-5 py-3 text-xs font-bold text-white hover:bg-teal-700 shadow-sm transition"
-              >
-                <span>Hire Usman Ghias (Portfolio) ↗</span>
-              </a>
-              <a
-                href="https://www.codcrafters.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
-              >
-                <span>CODCrafters Studio (www.codcrafters.org) ↗</span>
-              </a>
-              <Link
-                href="/start-a-project"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-teal-300 bg-teal-50 px-4 py-3 text-xs font-bold text-teal-900 hover:bg-teal-100 transition"
-              >
-                <span>Generate Project SOW →</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-
       </div>
     </section>
   );

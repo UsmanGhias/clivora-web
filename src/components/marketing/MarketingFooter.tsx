@@ -118,17 +118,47 @@ export function MarketingFooter() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-8 sm:flex-row">
-          <p className="text-sm text-slate-400">
-            © {new Date().getFullYear()} {site.company.name}. {site.name} is a product of{" "}
-            {site.company.name}. Founded by Usman Ghias.
+        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-slate-100 pt-8 sm:flex-row text-xs text-slate-400">
+          <p>
+            © {new Date().getFullYear()} {site.company.name}. {site.name} is an open-source platform by{" "}
+            <a
+              href="https://www.codcrafters.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-500 hover:text-teal-700 underline-offset-2 hover:underline font-medium"
+            >
+              CODCrafters Studio
+            </a>
+            . Architected by{" "}
+            <a
+              href="https://usmanghias.co.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-500 hover:text-teal-700 underline-offset-2 hover:underline font-medium"
+            >
+              Usman Ghias
+            </a>
+            .
           </p>
-          <a
-            href={site.company.url}
-            className="text-sm text-slate-400 transition hover:text-primary"
-          >
-            {site.company.url.replace("https://", "")}
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href="https://usmanghias.co.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-teal-700 transition"
+            >
+              Founder Portfolio
+            </a>
+            <span>·</span>
+            <a
+              href="https://www.codcrafters.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-teal-700 transition"
+            >
+              CODCrafters Studio
+            </a>
+          </div>
         </div>
       </div>
     </footer>

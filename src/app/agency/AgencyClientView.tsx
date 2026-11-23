@@ -176,41 +176,27 @@ export function AgencyClientView() {
             <span>Built by Agency Founders for Agency Founders</span>
           </div>
           <h3 className="text-2xl font-bold tracking-tight">
-            Proven at scale by CODCrafters &amp; Usman Ghias
+            Proven at scale by CODCrafters
           </h3>
           <p className="text-sm text-slate-300 leading-relaxed">
-            CODCrafters runs enterprise ERP implementations and distributed architectures across 25+ countries using Clivora&apos;s direct billing rails, led by Founder and Lead Architect Usman Ghias.
+            CODCrafters runs enterprise ERP implementations and distributed architectures across 25+ countries using Clivora&apos;s direct billing rails.
           </p>
         </div>
-        <div className="shrink-0 flex flex-col sm:flex-row gap-2.5 w-full md:w-auto flex-wrap">
-          <a
-            href="https://usmanghias.co.uk"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-5 py-3 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs text-center hover:bg-emerald-400 transition-colors shadow-sm"
+        <div className="shrink-0 flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <Link
+            href="/signup?role=freelancer"
+            className="px-6 py-3 rounded-xl bg-white text-slate-900 font-bold text-sm text-center hover:bg-slate-100 transition-colors"
           >
-            Hire Usman Ghias (Portfolio) ↗
-          </a>
+            Open Free Agency Account
+          </Link>
           <a
             href="https://www.codcrafters.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-5 py-3 rounded-xl bg-white/10 text-white font-semibold text-xs text-center hover:bg-white/20 transition-colors"
+            className="px-6 py-3 rounded-xl bg-white/10 text-white font-semibold text-sm text-center hover:bg-white/20 transition-colors"
           >
-            CODCrafters Studio (www.codcrafters.org) ↗
+            Visit CODCrafters
           </a>
-          <Link
-            href="/start-a-project"
-            className="px-5 py-3 rounded-xl border border-emerald-400/30 bg-emerald-950/40 text-emerald-300 font-semibold text-xs text-center hover:bg-emerald-900/50 transition-colors"
-          >
-            Start Project SOW →
-          </Link>
-          <Link
-            href="/signup?role=freelancer"
-            className="px-5 py-3 rounded-xl bg-white text-slate-900 font-bold text-xs text-center hover:bg-slate-100 transition-colors"
-          >
-            Open Free Agency Account
-          </Link>
         </div>
       </div>
     </div>

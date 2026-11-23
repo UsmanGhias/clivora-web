@@ -329,32 +329,7 @@ Best regards,`;
               </a>{" "}
               to free independent developers and agencies from predatory platform commissions.
             </p>
-            <div className="mt-2.5 flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
-              <a
-                href="https://usmanghias.co.uk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 hover:text-teal-900 underline"
-              >
-                Hire Usman (Portfolio) ↗
-              </a>
-              <span className="text-slate-300">·</span>
-              <a
-                href="https://www.codcrafters.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900"
-              >
-                CODCrafters Studio (www.codcrafters.org) ↗
-              </a>
-              <span className="text-slate-300">·</span>
-              <Link
-                href="/start-a-project"
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-800 hover:text-teal-950"
-              >
-                Start SOW →
-              </Link>
-            </div>
+
           </div>
         </div>
       </div>
