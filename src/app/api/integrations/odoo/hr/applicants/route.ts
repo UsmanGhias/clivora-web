@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createOdooApplicant, listOdooJobPositions } from "@/lib/odoo-sync";
 import { adminErrorResponse, adminJson, requireAdmin } from "@/lib/admin-auth";
+import { consumeIpRateLimit, getClientIp } from "@/lib/security-utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,13 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
   try {
+    const rate = consumeIpRateLimit("odoo_hr_applicant", getClientIp(request), 8, 10 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many applications submitted. Please wait before trying again." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } },
+      );
+    }
     const body = (await request.json().catch(() => ({}))) as {
       partnerName?: string;
       email?: string;

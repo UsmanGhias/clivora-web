@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
+import { buildClientShareFilter } from "@/lib/security-utils";
 import { ClientCard, ClientPageHeader, money } from "@/components/client/ui";
 import { ArrowLeftRight } from "lucide-react";
 
@@ -21,9 +22,7 @@ export default async function TransactionsPage() {
   }> = [];
 
   try {
-    const invoiceFilter = profile.email
-      ? `client_uid.eq.${profile.id},client_email.eq.${(profile.email ?? '').toLowerCase()}`
-      : `client_uid.eq.${profile.id}`;
+    const invoiceFilter = buildClientShareFilter(profile.id, profile.email);
     const { data } = await supabase
       .from("invoice_shares")
       .select("share_id, invoice_number, total, status, updated_at")

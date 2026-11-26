@@ -1,16 +1,60 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { adminErrorResponse, requireAdminRequest } from "@/lib/admin-auth";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/env";
+import { extractAuthToken, timingSafeStringEqual } from "@/lib/security-utils";
 
-const INDEXNOW_KEY = "9e8b2f1a6c4d7e0f8123456789abcdef";
+const INDEXNOW_KEY =
+  process.env.INDEXNOW_KEY?.trim() || "9e8b2f1a6c4d7e0f8123456789abcdef";
 const INDEXNOW_ENDPOINT = "https://www.bing.com/indexnow";
+
+async function authorizeIndexNow(req: Request): Promise<void> {
+  const token = extractAuthToken(req, ["x-indexnow-token", "x-cron-secret"]);
+  const validTokens = [
+    process.env.INDEXNOW_ADMIN_TOKEN?.trim(),
+    process.env.CRON_SECRET?.trim(),
+  ].filter((t): t is string => Boolean(t));
+
+  if (token && validTokens.some((secret) => timingSafeStringEqual(token, secret))) {
+    return;
+  }
+
+  await requireAdminRequest(req, { requireAal2: true });
+}
+
+function sanitizeClivoraUrls(rawUrls: unknown): string[] {
+  if (!Array.isArray(rawUrls)) return [];
+  const clean: string[] = [];
+  for (const item of rawUrls) {
+    if (typeof item !== "string") continue;
+    try {
+      const parsed = new URL(item.trim());
+      if (
+        parsed.protocol === "https:" &&
+        (parsed.hostname === "clivora.io" || parsed.hostname === "www.clivora.io")
+      ) {
+        clean.push(parsed.toString());
+      }
+    } catch {
+      // Ignore malformed URLs.
+    }
+    if (clean.length >= 1000) break;
+  }
+  return Array.from(new Set(clean));
+}
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const urls: string[] = body.urls || [];
+    await authorizeIndexNow(req);
+  } catch (err) {
+    return adminErrorResponse(err, "Unauthorized");
+  }
 
-    if (urls.length > 0) {
+  try {
+    const body = (await req.json().catch(() => ({}))) as { urls?: unknown };
+    const providedUrls = sanitizeClivoraUrls(body.urls);
+
+    if (providedUrls.length > 0) {
       const resp = await fetch(INDEXNOW_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -18,11 +62,15 @@ export async function POST(req: Request) {
           host: "clivora.io",
           key: INDEXNOW_KEY,
           keyLocation: `https://clivora.io/${INDEXNOW_KEY}.txt`,
-          urlList: urls.slice(0, 1000),
+          urlList: providedUrls,
         }),
       });
 
-      return NextResponse.json({ ok: resp.ok, status: resp.status, count: urls.length });
+      return NextResponse.json({
+        ok: resp.ok,
+        status: resp.status,
+        count: providedUrls.length,
+      });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -61,7 +109,9 @@ export async function POST(req: Request) {
       "https://clivora.io/sitemap",
     ];
 
-    const jobUrls = (jobs || []).map((j) => `https://clivora.io/jobs/view/${j.seo_slug}`);
+    const jobUrls = (jobs || [])
+      .filter((j) => Boolean(j.seo_slug))
+      .map((j) => `https://clivora.io/jobs/view/${j.seo_slug}`);
     const allUrls = Array.from(new Set([...coreUrls, ...jobUrls]));
 
     const resp = await fetch(INDEXNOW_ENDPOINT, {
@@ -86,7 +136,13 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  try {
+    await authorizeIndexNow(req);
+  } catch (err) {
+    return adminErrorResponse(err, "Unauthorized");
+  }
+
   return NextResponse.json({
     service: "CLIVORA IndexNow Submitter",
     endpoint: INDEXNOW_ENDPOINT,

@@ -18,6 +18,7 @@ import {
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { site } from "@/lib/site";
 import { GitHubIcon } from "@/components/marketing/SocialBrandIcons";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "World's #1 Open-Source Client & Freelancer OS | Clivora",
@@ -112,10 +113,7 @@ const openSourceJsonLd = {
 export default function OpenSourcePage() {
   return (
     <MarketingShell>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(openSourceJsonLd) }}
-      />
+      <JsonLd data={openSourceJsonLd} />
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-b from-[#F0FDF9] via-white to-white py-16 sm:py-24">
         <div

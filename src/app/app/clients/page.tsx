@@ -5,6 +5,7 @@ import { canCreateCustomer } from "@/lib/plan-gates";
 import { CustomersCrmPanel } from "@/components/crm/CrmPanels";
 import { CrmEnrichmentPanel } from "@/components/crm/CrmEnrichmentPanel";
 import { createClient } from "@/lib/supabase/server";
+import { buildClientShareFilter } from "@/lib/security-utils";
 
 type SharedWorkRow = {
   share_id: string;
@@ -35,9 +36,7 @@ export default async function ClientsPage() {
     const supabase = await createClient();
     let sharedWork: SharedWorkRow[] = [];
     try {
-      const clientFilter = profile?.email
-        ? `client_uid.eq.${profile.id},client_email.eq.${(profile.email ?? '').toLowerCase()}`
-        : `client_uid.eq.${profile?.id ?? ""}`;
+      const clientFilter = buildClientShareFilter(profile?.id ?? "", profile?.email);
       const { data } = await supabase
         .from("project_shares")
         .select("share_id, freelancer_email, project_name, status, updated_at")

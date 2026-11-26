@@ -1,4 +1,5 @@
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 /** Sitewide structured data for public marketing pages. */
 export function MarketingJsonLd() {
@@ -84,22 +85,10 @@ export function MarketingJsonLd() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(org) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(software) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(service) }}
-      />
+      <JsonLd data={org} />
+      <JsonLd data={website} />
+      <JsonLd data={software} />
+      <JsonLd data={service} />
     </>
   );
 }

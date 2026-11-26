@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { callGemini, sanitizeDashes } from "@/lib/gemini";
 import { loadPlatformSnapshot } from "@/lib/admin-platform";
-import { requireAdminRequest } from "@/lib/admin-auth";
+import { adminErrorResponse, adminJson, requireAdminRequest } from "@/lib/admin-auth";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/env";
 
 export const dynamic = "force-dynamic";
@@ -33,18 +33,8 @@ Formatting Directives:
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Authorize admin caller
-    try {
-      await requireAdminRequest(req, { requireAal2: false });
-    } catch (authErr) {
-      const devBypass = process.env.NODE_ENV !== "production" && !process.env.VERCEL;
-      if (!devBypass) {
-        return NextResponse.json(
-          { error: "Admin authorization required" },
-          { status: 403 },
-        );
-      }
-    }
+    // 1. Always authorize admin caller (no environment bypass)
+    await requireAdminRequest(req, { requireAal2: false });
 
     const body = await req.json();
     const { message, messages } = body as {
@@ -53,7 +43,7 @@ export async function POST(req: NextRequest) {
     };
 
     if (!message && (!messages || messages.length === 0)) {
-      return NextResponse.json({ error: "Missing message query" }, { status: 400 });
+      return adminJson({ error: "Missing message query" }, { status: 400 });
     }
 
     // 2. Fetch live ground-truth telemetry
@@ -177,19 +167,12 @@ export async function POST(req: NextRequest) {
       ? sanitizeDashes(reply)
       : "The AI Advisor could not generate a response. Please verify that your Gemini API key is configured.";
 
-    return NextResponse.json({
+    return adminJson({
       ok: true,
       reply: safeReply,
       telemetry: telemetryContext,
     });
   } catch (error) {
-    console.error("[Admin AI Advisor Error]", error);
-    return NextResponse.json(
-      {
-        error: "internal_error",
-        message: "Failed to generate admin AI advisor diagnosis",
-      },
-      { status: 500 },
-    );
+    return adminErrorResponse(error, "Failed to generate admin AI advisor diagnosis");
   }
 }

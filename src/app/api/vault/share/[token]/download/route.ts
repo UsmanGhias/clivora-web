@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { consumeIpRateLimit, getClientIp } from "@/lib/security-utils";
+import { createClient } from "@/lib/supabase/server";
 
 // Counted download for a vault share link.
 //
@@ -14,39 +17,57 @@ import { isFeatureEnabled } from "@/lib/feature-flags";
 
 const SIGNED_URL_TTL_SECONDS = 60 * 5;
 
-function deny(code: string, status: number, detail?: unknown) {
+function deny(code: string, status: number, detail?: unknown, retryAfterSeconds?: number) {
   if (detail) console.error(`[vault/share/download] ${code}`, detail);
-  return NextResponse.json({ error: code }, { status });
+  return NextResponse.json(
+    { error: code },
+    retryAfterSeconds
+      ? { status, headers: { "Retry-After": String(retryAfterSeconds) } }
+      : { status },
+  );
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
   try {
+    const rate = consumeIpRateLimit("vault_share_download", getClientIp(req), 25, 60_000);
+    if (!rate.allowed) {
+      return deny("rate_limit_exceeded", 429, undefined, rate.retryAfterSeconds);
+    }
+
     const vaultOn =
       (await isFeatureEnabled("vault_cloud")) || (await isFeatureEnabled("phase5_vault_cloud"));
     if (!vaultOn) return deny("vault_disabled", 503);
 
     const { token } = await params;
-    if (!token) return deny("token_required", 400);
+    const trimmed = token?.trim() ?? "";
+    if (!trimmed || !/^[A-Za-z0-9_-]{8,128}$/.test(trimmed)) {
+      return deny("link_unavailable", 404);
+    }
 
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("vault_redeem_share_token", {
-      p_token: token,
+      p_token: trimmed,
     });
     if (error) return deny("redeem_failed", 400, error.message);
 
     const redeemed = Array.isArray(data) ? data[0] : data;
-    if (!redeemed?.storage_path) {
+    const storagePath = String(redeemed?.storage_path ?? "");
+    if (!storagePath || storagePath.includes("..") || storagePath.startsWith("/")) {
       // Unknown token, past its expiry, or out of downloads. Deliberately one
       // response for all three so this cannot be used to probe for live tokens.
       return deny("link_unavailable", 404);
     }
 
-    const { data: signed, error: signErr } = await supabase.storage
+    const cfg = requireAdminServiceConfig();
+    const service = createServiceClient(cfg.url, cfg.serviceRoleKey, {
+      auth: { persistSession: false },
+    });
+    const { data: signed, error: signErr } = await service.storage
       .from("vault")
-      .createSignedUrl(redeemed.storage_path, SIGNED_URL_TTL_SECONDS);
+      .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
     if (signErr || !signed?.signedUrl) return deny("sign_failed", 502, signErr?.message);
 
     return NextResponse.redirect(signed.signedUrl);

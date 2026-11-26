@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Download CLIVORA for Android | Google Play Store & Direct APK",
@@ -50,10 +51,7 @@ const jsonLd = {
 export default function DownloadPage() {
   return (
     <MarketingShell>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
       <section className="border-b border-slate-200/80 bg-gradient-to-b from-teal-50/50 via-white to-slate-50/60 pb-16 pt-14 lg:pb-20">
         <div className="mx-auto max-w-5xl px-5 text-center lg:px-8">
           <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50/80 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-teal-800">

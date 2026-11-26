@@ -6,6 +6,7 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { FiverrFeeCalculatorClient } from "./FiverrFeeCalculatorClient";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Fiverr Fee Calculator: Calculate Your 20% Platform Cut (2026)",
@@ -74,10 +75,7 @@ export default function FiverrFeeCalculatorPage() {
 
   return (
     <MarketingShell>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       <section className="relative border-b border-slate-200 bg-gradient-to-b from-[#FFF7ED] via-[#F8FAFC] to-white py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">

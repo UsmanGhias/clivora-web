@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
   try {
-    await requireAdmin({ requireAal2: false });
+    await requireAdmin({ requireAal2: true });
     const body = (await request.json().catch(() => ({}))) as {
       message?: string;
       twitterMessage?: string;

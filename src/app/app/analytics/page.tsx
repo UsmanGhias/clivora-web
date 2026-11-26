@@ -34,6 +34,7 @@ import {
   money as clientMoney,
 } from "@/components/client/ui";
 import { createClient } from "@/lib/supabase/server";
+import { buildClientShareFilter } from "@/lib/security-utils";
 
 export const metadata = { title: "Analytics" };
 
@@ -56,9 +57,7 @@ export default async function AnalyticsPage() {
     };
     let shares: ShareRow[] = [];
     try {
-      const invoiceFilter = profile.email
-        ? `client_uid.eq.${profile.id},client_email.eq.${(profile.email ?? '').toLowerCase()}`
-        : `client_uid.eq.${profile.id}`;
+      const invoiceFilter = buildClientShareFilter(profile.id, profile.email);
       const { data } = await supabase
         .from("invoice_shares")
         .select(
@@ -190,28 +189,25 @@ export default async function AnalyticsPage() {
               </li>
             </ul>
           </ClientCard>
-          <ClientCard title="Vendor retention">
+          <ClientCard title="Settlement progress">
             {(() => {
               const freelancers = new Set(
                 shares.map((s) => s.freelancer_email).filter(Boolean),
               ).size;
-              const repeat = Math.min(
-                10,
-                Math.max(1, Math.round((paid > 0 ? 8 : freelancers > 0 ? 5 : 0))),
-              );
-              const pct = repeat * 10;
+              const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+              const filled = Math.round(pct / 10);
               return (
                 <>
                   <p className="font-display text-4xl font-extrabold text-navy">{pct}%</p>
                   <p className="mt-1 text-sm text-text-secondary">
-                    Repeat engagement signal across {freelancers || 0} freelancers
+                    Paid ratio across {freelancers} freelancer{freelancers === 1 ? "" : "s"}
                   </p>
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {Array.from({ length: 10 }).map((_, i) => (
                       <span
                         key={i}
                         className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white ${
-                          i < repeat ? "bg-client-accent" : "bg-slate-300"
+                          i < filled ? "bg-client-accent" : "bg-slate-300"
                         }`}
                       >
                         {i + 1}
@@ -238,31 +234,53 @@ export default async function AnalyticsPage() {
   }).length;
   const hoursLabel = `${Math.floor(fin.timeHours)}h ${Math.round((fin.timeHours % 1) * 60)}m`;
   const successRate = fin.projects.length
-    ? Math.round((completedProjects / Math.max(1, fin.projects.length)) * 100)
-    : 98;
+    ? Math.round((completedProjects / fin.projects.length) * 100)
+    : 0;
 
-  const performance = [
-    { name: "Billable", value: Math.max(1, Math.round(fin.billableHours || 75)), color: "#0D9488" },
-    { name: "Non-billable", value: Math.max(1, Math.round((fin.timeHours - fin.billableHours) || 18)), color: "#0EA5E9" },
-    { name: "Untracked", value: 7, color: "#F59E0B" },
-  ];
+  const billableRounded = Math.max(0, Math.round(fin.billableHours));
+  const nonBillableRounded = Math.max(0, Math.round(fin.timeHours - fin.billableHours));
+  const performance =
+    billableRounded + nonBillableRounded > 0
+      ? [
+          { name: "Billable", value: billableRounded, color: "#0D9488" },
+          { name: "Non-billable", value: nonBillableRounded, color: "#0EA5E9" },
+        ].filter((s) => s.value > 0)
+      : [{ name: "No logged hours", value: 1, color: "#E2E8F0" }];
 
+  const onHoldProjects = fin.projects.filter((p) =>
+    (p.status || "").toLowerCase().includes("hold"),
+  ).length;
   const projectSlices = [
-    { name: "Completed", value: completedProjects || 1, color: "#0EA5E9" },
-    { name: "In Progress", value: activeProjects || 1, color: "#0D9488" },
-    {
-      name: "On Hold",
-      value: fin.projects.filter((p) => (p.status || "").toLowerCase().includes("hold")).length || 0,
-      color: "#F59E0B",
-    },
+    { name: "Completed", value: completedProjects, color: "#0EA5E9" },
+    { name: "In Progress", value: activeProjects, color: "#0D9488" },
+    { name: "On Hold", value: onHoldProjects, color: "#F59E0B" },
   ].filter((x) => x.value > 0);
 
-  const categories = [
-    { name: "Web Development", amount: fin.totalRevenue * 0.5, pct: 50 },
-    { name: "UI/UX Design", amount: fin.totalRevenue * 0.25, pct: 25 },
-    { name: "Mobile Apps", amount: fin.totalRevenue * 0.15, pct: 15 },
-    { name: "Consulting", amount: fin.totalRevenue * 0.1, pct: 10 },
-  ];
+  const invoiceVolume = Math.max(fin.paid + fin.pending + fin.overdue, fin.totalRevenue);
+  const categories =
+    invoiceVolume > 0
+      ? [
+          {
+            name: "Paid invoices",
+            amount: fin.paid,
+            pct: Math.round((fin.paid / invoiceVolume) * 100),
+          },
+          {
+            name: "Pending invoices",
+            amount: fin.pending,
+            pct: Math.round((fin.pending / invoiceVolume) * 100),
+          },
+          {
+            name: "Overdue invoices",
+            amount: fin.overdue,
+            pct: Math.round((fin.overdue / invoiceVolume) * 100),
+          },
+        ]
+      : [];
+  const periodLabel = new Date().toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
 
   return (
     <div className="space-y-6 pb-10">
@@ -273,7 +291,7 @@ export default async function AnalyticsPage() {
         actions={
           <>
             <span className="inline-flex min-h-11 items-center rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-semibold text-navy">
-              Jul 1 - Jul 31, 2026
+              {periodLabel} · Last 6 months
             </span>
             <PrimaryButton href="/app/earnings">
               <Download className="h-4 w-4" />
@@ -356,20 +374,26 @@ export default async function AnalyticsPage() {
           centerValue={fin.projects.length}
           centerLabel="Total"
         />
-        <FreelancerCard title="Top earning categories">
-          <ul className="space-y-3">
-            {categories.map((c) => (
-              <li key={c.name}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-navy">{c.name}</span>
-                  <span className="font-bold text-navy">{money(c.amount)}</span>
-                </div>
-                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-background">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${c.pct}%` }} />
-                </div>
-              </li>
-            ))}
-          </ul>
+        <FreelancerCard title="Invoice settlement breakdown">
+          {categories.length === 0 ? (
+            <p className="py-6 text-sm text-text-secondary">
+              No invoice volume recorded yet. Send an invoice to track real settlement totals.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {categories.map((c) => (
+                <li key={c.name}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold text-navy">{c.name}</span>
+                    <span className="font-bold text-navy">{money(c.amount)}</span>
+                  </div>
+                  <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-background">
+                    <div className="h-full rounded-full bg-primary" style={{ width: `${c.pct}%` }} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </FreelancerCard>
       </div>
 
@@ -396,22 +420,19 @@ export default async function AnalyticsPage() {
             </li>
           </ul>
         </FreelancerCard>
-        <FreelancerCard title="Client retention">
+        <FreelancerCard title="Completion progress">
           {(() => {
             const clients = fin.customers.length;
-            const filled = Math.min(
-              10,
-              Math.max(
-                clients > 0 ? Math.round((completedProjects / Math.max(1, fin.projects.length)) * 10) : 0,
-                clients > 0 ? 4 : 0,
-              ),
-            );
-            const pct = clients === 0 ? 0 : filled * 10;
+            const pct =
+              fin.projects.length > 0
+                ? Math.min(100, Math.round((completedProjects / fin.projects.length) * 100))
+                : 0;
+            const filled = Math.round(pct / 10);
             return (
               <>
                 <p className="font-display text-4xl font-extrabold text-navy">{pct}%</p>
                 <p className="mt-1 text-sm text-text-secondary">
-                  Repeat engagement across {clients} clients · {completedProjects} completed projects
+                  {completedProjects} of {fin.projects.length} projects completed · {clients} clients
                 </p>
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   {Array.from({ length: 10 }).map((_, i) => (

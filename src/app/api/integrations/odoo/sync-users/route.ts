@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server";
-import { adminErrorResponse, requireAdmin } from "@/lib/admin-auth";
+import { adminErrorResponse, adminJson, requireAdmin } from "@/lib/admin-auth";
 import { createClient } from "@/lib/supabase/server";
 
-const ODOO_URL = process.env.ODOO_URL || "https://clivora.odoo.com";
-const ODOO_DB = process.env.ODOO_DB || "clivora";
-const ODOO_KEY = process.env.ODOO_API_KEY || "REDACTED_ODOO_KEY";
-const ODOO_UID = Number(process.env.ODOO_UID || 2);
+const ODOO_URL = (process.env.ODOO_MAIN_URL || process.env.ODOO_URL || "").replace(/\/+$/, "");
+const ODOO_DB = process.env.ODOO_MAIN_DB || process.env.ODOO_DB || "clivora";
+const ODOO_KEY = process.env.ODOO_MAIN_API_KEY || process.env.ODOO_API_KEY || "";
+const ODOO_UID = Number(process.env.ODOO_MAIN_UID || process.env.ODOO_UID || 2);
 
 async function odooRpc(model: string, method: string, args: unknown[], kwargs: Record<string, unknown> = {}) {
   const res = await fetch(`${ODOO_URL}/jsonrpc`, {
@@ -31,8 +30,11 @@ async function odooRpc(model: string, method: string, args: unknown[], kwargs: R
 
 export async function POST(request: Request) {
   try {
-    // Writes res.partner / creates res.users in Odoo with the admin API key: admins only.
-    await requireAdmin({ requireAal2: false });
+    // Writes res.partner in Odoo with the admin API key: AAL2 admins only.
+    await requireAdmin({ requireAal2: true });
+    if (!ODOO_URL || !ODOO_KEY) {
+      return adminJson({ error: "Odoo credentials are not configured" }, { status: 503 });
+    }
     const body = (await request.json().catch(() => ({}))) as {
       user?: { id?: string; email: string; name?: string; account_type?: string; role?: string };
       syncAll?: boolean;
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
         .order("created_at", { ascending: false });
 
       if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return adminJson({ error: error.message }, { status: 500 });
       }
       usersToSync = profiles || [];
     }
@@ -118,7 +120,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({
+    return adminJson({
       success: true,
       synced: syncedCount,
       total: usersToSync.length,

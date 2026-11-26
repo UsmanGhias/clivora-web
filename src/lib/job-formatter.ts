@@ -1,4 +1,5 @@
 import { cleanText } from "@/lib/clean-text";
+import { escapeHtml } from "@/lib/html-safety";
 
 export type StructuredJobSection = {
   title: string;
@@ -394,12 +395,12 @@ export function formatGoogleJobsHtml(raw?: string | null): string {
 
   return sections
     .map((s) => {
-      let html = `<p><strong>${s.title}</strong></p>`;
+      let html = `<p><strong>${escapeHtml(s.title)}</strong></p>`;
       for (const p of s.paragraphs) {
-        html += `<p>${p}</p>`;
+        html += `<p>${escapeHtml(p)}</p>`;
       }
       if (s.bullets.length > 0) {
-        html += `<ul>${s.bullets.map((b) => `<li>${b}</li>`).join("")}</ul>`;
+        html += `<ul>${s.bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>`;
       }
       return html;
     })

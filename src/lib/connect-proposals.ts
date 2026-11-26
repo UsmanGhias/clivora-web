@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { SAFE_CONNECT_PROPOSAL_COLUMNS } from "@/lib/connect-columns";
 import type { ProposalRow } from "@/lib/connect-proposals-shared";
 
 export type { ProposalRow } from "@/lib/connect-proposals-shared";
@@ -8,7 +9,7 @@ export async function listFreelancerProposals(uid: string): Promise<ProposalRow[
   const supabase = await createClient();
   const { data } = await supabase
     .from("connect_proposals")
-    .select("*")
+    .select(SAFE_CONNECT_PROPOSAL_COLUMNS)
     .eq("from_user_id", uid)
     .order("created_at", { ascending: false })
     .limit(80);
@@ -60,7 +61,7 @@ export async function listClientProposals(uid: string): Promise<ProposalRow[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("connect_proposals")
-    .select("*")
+    .select(SAFE_CONNECT_PROPOSAL_COLUMNS)
     .eq("to_user_id", uid)
     .order("created_at", { ascending: false })
     .limit(80);

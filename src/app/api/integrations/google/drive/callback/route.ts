@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicSiteUrl } from "@/lib/site-url";
 import { verifySignedOAuthState } from "@/lib/oauth-state";
+import { adminServiceHeaders, requireAdminServiceConfig } from "@/lib/admin-service";
 
 function googleConfigured() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
@@ -73,11 +74,29 @@ export async function GET(req: Request) {
       scope?: string;
     };
 
+    if (tokens.refresh_token) {
+      const cfg = requireAdminServiceConfig();
+      const saveRes = await fetch(`${cfg.url}/rest/v1/user_integration_tokens?on_conflict=user_id,provider`, {
+        method: "POST",
+        headers: adminServiceHeaders(cfg.serviceRoleKey, "resolution=merge-duplicates,return=minimal"),
+        body: JSON.stringify({
+          user_id: user.id,
+          provider: "google_drive",
+          refresh_token: tokens.refresh_token,
+          scope: tokens.scope || "",
+          updated_at: new Date().toISOString(),
+        }),
+      });
+      if (!saveRes.ok) {
+        throw new Error("Could not store Google Drive token securely");
+      }
+    }
+
     await supabase.auth.updateUser({
       data: {
         google_drive_connected: true,
         google_drive_scope: tokens.scope || "",
-        google_drive_refresh: tokens.refresh_token || null,
+        google_drive_refresh: null,
         google_drive_connected_at: new Date().toISOString(),
       },
     });

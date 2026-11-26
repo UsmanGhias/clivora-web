@@ -239,19 +239,16 @@ function MilestonesPanel({
   }
 
   async function updateStatus(id: string, status: MilestoneStatus) {
+    if (status === "funded") {
+      window.location.href = `/checkout/escrow?milestone=${encodeURIComponent(id)}`;
+      return;
+    }
     setBusy(true);
     try {
       const supabase = createClient();
-      const patch: Record<string, string> = {
-        status,
-        updated_at: new Date().toISOString(),
-      };
-      if (status === "funded") patch.funded_at = new Date().toISOString();
-      if (status === "released") patch.released_at = new Date().toISOString();
-      if (status === "disputed") patch.disputed_at = new Date().toISOString();
       const { error: msErr } = await supabase.rpc("connect_transition_milestone", {
         p_milestone_id: id,
-        p_status: patch.status,
+        p_status: status,
       });
       if (msErr) throw msErr;
       await load();

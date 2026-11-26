@@ -6,6 +6,7 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { ClientSavingsCalculatorClient } from "./ClientSavingsCalculatorClient";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Client Fee Savings Calculator: Audit Upwork Marketplace Surcharges (2026)",
@@ -74,10 +75,7 @@ export default function ClientSavingsCalculatorPage() {
 
   return (
     <MarketingShell>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       <section className="relative border-b border-slate-200 bg-gradient-to-b from-[#F0FDF4] via-[#F8FAFC] to-white py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">

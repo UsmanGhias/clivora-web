@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { buildClientShareFilter } from "@/lib/security-utils";
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { TasksClient, type TaskPeer, type TaskRow } from "./TasksClient";
 
@@ -44,9 +45,7 @@ export default async function TasksPage() {
         .order("updated_at", { ascending: false })
         .limit(100);
       shareQuery = client
-        ? profile.email
-          ? shareQuery.or(`client_uid.eq.${profile.id},client_email.eq.${(profile.email ?? '').toLowerCase()}`)
-          : shareQuery.eq("client_uid", profile.id)
+        ? shareQuery.or(buildClientShareFilter(profile.id, profile.email))
         : shareQuery.eq("freelancer_uid", profile.id);
       const { data: shareRows } = await shareQuery;
       peers = (shareRows ?? [])

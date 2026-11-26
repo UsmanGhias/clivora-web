@@ -8,7 +8,6 @@ import { site } from "@/lib/site";
 import { authErrorMessage, isRateLimitError } from "@/lib/auth-errors";
 import { ResendVerification } from "@/components/auth/ResendVerification";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
-import { earlyAccessPlanForSignup } from "@/lib/early-access";
 import { useAuthAnim } from "@/components/auth/animated/AuthAnimContext";
 import { safeNextPath } from "@/lib/safe-redirect";
 
@@ -78,7 +77,6 @@ export default function SignupForm() {
         email: trimmedEmail,
         name: name.trim(),
         account_type: accountType,
-        subscription_plan: earlyAccessPlanForSignup(),
         updated_at: new Date().toISOString(),
       });
     }
@@ -192,12 +190,13 @@ export default function SignupForm() {
             {info}
           </div>
         )}
-        {awaitingVerify && <ResendVerification email={email} />}
 
         <button type="submit" className="aa-btn-primary" disabled={loading}>
           {loading ? "Creating…" : "Create account"}
         </button>
       </form>
+
+      {awaitingVerify && <ResendVerification email={email} />}
 
       <div className="aa-divider">OR</div>
       <GoogleAuthButton mode="signup" accountType={accountType} next={next} variant="animated" />

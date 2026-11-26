@@ -1,49 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  AdminServiceConfigurationError,
+  adminServiceHeaders,
+  requireAdminServiceConfig,
+} from "@/lib/admin-service";
+import {
+  BOT_JOB_SELECT,
+  PUBLIC_JOB_SELECT,
+  sanitizeJobPatchBody,
+  sanitizeSlugOrUuidFilter,
+  verifyJobBotApiKey,
+} from "@/lib/api-v1/jobs-helpers";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://jtzjwgovqczlccyeujhq.supabase.co";
-
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-  "";
-
-function verifyApiKey(req: NextRequest): boolean {
-  const allowed = [
-    process.env.JOB_BOT_API_KEY,
-    process.env.CLIVORA_API_KEY,
-  ].filter((k): k is string => Boolean(k && k.trim()));
-
-  if (allowed.length === 0) return false;
-
-  const headerKey = req.headers.get("x-api-key");
-  const authHeader = req.headers.get("authorization");
-  let bearerToken = "";
-  if (authHeader?.startsWith("Bearer ")) {
-    bearerToken = authHeader.slice(7).trim();
-  }
-  const token = headerKey || bearerToken;
-  if (!token) return false;
-  return allowed.includes(token);
-}
-
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  try {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    const filter = isUuid ? `id=eq.${id}` : `seo_slug=eq.${id}`;
+  const target = sanitizeSlugOrUuidFilter(id);
+  if (!target.valid || !target.filter) {
+    return NextResponse.json({ ok: false, error: "Invalid job identifier" }, { status: 400 });
+  }
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/connect_jobs?${filter}`, {
+  const isAuthed = verifyJobBotApiKey(req);
+
+  try {
+    let baseUrl = SUPABASE_URL;
+    let apiKey = SUPABASE_ANON_KEY;
+
+    if (isAuthed) {
+      const cfg = requireAdminServiceConfig();
+      baseUrl = cfg.url;
+      apiKey = cfg.serviceRoleKey;
+    } else if (!baseUrl || !apiKey) {
+      return NextResponse.json({ ok: false, error: "Jobs service unavailable" }, { status: 503 });
+    }
+
+    const query = new URLSearchParams();
+    query.set("select", isAuthed ? BOT_JOB_SELECT : PUBLIC_JOB_SELECT);
+    if (!isAuthed) {
+      query.set("is_public", "eq.true");
+      query.set("status", "eq.published");
+    }
+    const [col, val] = target.filter.split("=eq.");
+    query.set(col, `eq.${val}`);
+    query.set("limit", "1");
+
+    const res = await fetch(`${baseUrl}/rest/v1/connect_jobs?${query.toString()}`, {
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
+        apikey: apiKey,
+        Authorization: `Bearer ${apiKey}`,
       },
       next: { revalidate: 0 },
     });
@@ -52,47 +61,64 @@ export async function GET(
       return NextResponse.json({ ok: false, error: "Job not found" }, { status: 404 });
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as Array<Record<string, unknown>>;
     if (!data.length) {
       return NextResponse.json({ ok: false, error: "Job not found" }, { status: 404 });
     }
 
     return NextResponse.json({ ok: true, job: data[0] });
   } catch (e) {
+    if (e instanceof AdminServiceConfigurationError) {
+      return NextResponse.json({ ok: false, error: "Jobs service unavailable" }, { status: 503 });
+    }
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!verifyApiKey(req)) {
+  if (!verifyJobBotApiKey(req)) {
     return NextResponse.json(
       { ok: false, error: "Unauthorized: Valid API Key required" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
   const { id } = await params;
-  try {
-    const body = await req.json();
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    const filter = isUuid ? `id=eq.${id}` : `seo_slug=eq.${id}`;
+  const target = sanitizeSlugOrUuidFilter(id);
+  if (!target.valid || !target.filter) {
+    return NextResponse.json({ ok: false, error: "Invalid job identifier" }, { status: 400 });
+  }
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/connect_jobs?${filter}`, {
+  let adminCfg: { url: string; serviceRoleKey: string };
+  try {
+    adminCfg = requireAdminServiceConfig();
+  } catch {
+    return NextResponse.json({ ok: false, error: "Database configuration missing" }, { status: 503 });
+  }
+
+  try {
+    const rawBody = await req.json().catch(() => null);
+    const patch = sanitizeJobPatchBody(rawBody);
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json({ ok: false, error: "No updatable job fields provided" }, { status: 400 });
+    }
+
+    const query = new URLSearchParams();
+    const [col, val] = target.filter.split("=eq.");
+    query.set(col, `eq.${val}`);
+    query.set("select", BOT_JOB_SELECT);
+
+    const res = await fetch(`${adminCfg.url}/rest/v1/connect_jobs?${query.toString()}`, {
       method: "PATCH",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "return=representation",
-      },
+      headers: adminServiceHeaders(adminCfg.serviceRoleKey, "return=representation"),
       body: JSON.stringify({
-        ...body,
+        ...patch,
         updated_at: new Date().toISOString(),
       }),
     });
@@ -100,16 +126,16 @@ export async function PATCH(
     if (!res.ok) {
       return NextResponse.json(
         { ok: false, error: "Failed to update job" },
-        { status: res.status }
+        { status: res.status },
       );
     }
 
-    const updated = await res.json();
+    const updated = (await res.json()) as Array<Record<string, unknown>>;
     return NextResponse.json({ ok: true, job: updated[0] || updated });
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

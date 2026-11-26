@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { verifySafepayWebhook } from "@/lib/safepay";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
+import { PRO_PLUS_PRICE_USD, PRO_PRICE_USD } from "@/lib/pricing";
+import {
+  activateSafepaySubscription,
+  parseSafepayAmountMinor,
+  verifySafepayWebhook,
+} from "@/lib/safepay";
+import { isSafepayPaidState } from "@/lib/security-utils";
 
 export const runtime = "nodejs";
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://jtzjwgovqczlccyeujhq.supabase.co";
-
-function serviceKey() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
-}
 
 function digString(obj: Record<string, unknown>, keys: string[]): string | null {
   for (const key of keys) {
@@ -20,6 +18,13 @@ function digString(obj: Record<string, unknown>, keys: string[]): string | null 
   }
   return null;
 }
+
+const PAID_WEBHOOK_EVENTS = new Set([
+  "payment.succeeded",
+  "payment.success",
+  "tracker.ended",
+  "payment_intent.succeeded",
+]);
 
 /** SafePay dashboard URL ping / health. */
 export async function GET() {
@@ -57,7 +62,7 @@ export async function POST(req: NextRequest) {
   const metadata = (data.metadata ?? {}) as Record<string, unknown>;
   const eventType =
     digString(payload, ["type", "event", "event_type"])?.toLowerCase() ?? "";
-  const state = digString(data, ["state", "status", "event", "type"])?.toLowerCase() ?? "";
+  const state = digString(data, ["state", "status", "event", "type"]) ?? "";
   const trackerObj = data.tracker;
   const trackerFromObj =
     trackerObj && typeof trackerObj === "object"
@@ -67,99 +72,102 @@ export async function POST(req: NextRequest) {
     trackerFromObj ||
     digString(data, ["tracker", "token", "tracker_token"]) ||
     digString(payload, ["tracker", "token"]);
-  const paid =
-    eventType.includes("payment.succeeded") ||
-    eventType.includes("payment.success") ||
-    state.includes("paid") ||
-    state.includes("success") ||
-    state.includes("completed") ||
-    state.includes("captured") ||
-    data.success === true ||
-    Boolean(data.paid);
+
+  const stateLooksPaid = isSafepayPaidState(state);
+  const eventLooksPaid = PAID_WEBHOOK_EVENTS.has(eventType);
+  const paid = state ? stateLooksPaid : eventLooksPaid;
 
   if (!paid) {
-    return NextResponse.json({ ok: true, ignored: true, state });
+    return NextResponse.json({ ok: true, ignored: true, state: state || eventType });
+  }
+  if (!tracker) {
+    return NextResponse.json({ error: "Missing tracker in paid webhook" }, { status: 400 });
   }
 
-  const key = serviceKey();
-  if (!key) {
+  let adminCfg: { url: string; serviceRoleKey: string };
+  try {
+    adminCfg = requireAdminServiceConfig();
+  } catch {
     return NextResponse.json({ error: "Service role missing" }, { status: 503 });
   }
-  const admin = createClient(SUPABASE_URL, key);
+  const admin = createClient(adminCfg.url, adminCfg.serviceRoleKey, {
+    auth: { persistSession: false },
+  });
 
   let requestId = digString(metadata, ["order_id", "orderId", "payment_request_id"]);
+  let userId: string | null = digString(metadata, ["user_id"]);
   let email = digString(metadata, ["email"])?.toLowerCase() ?? null;
-  let plan = digString(metadata, ["plan"])?.toLowerCase() ?? "pro_plus";
-  if (plan !== "pro" && plan !== "pro_plus") plan = "pro_plus";
+  let plan: "pro" | "pro_plus" =
+    digString(metadata, ["plan"])?.toLowerCase() === "pro" ? "pro" : "pro_plus";
+  let expectedAmountUsd: number | null = null;
+  let expectedCurrency = (process.env.SAFEPAY_CURRENCY || "USD").toUpperCase();
 
-  if (tracker) {
-    const { data: byRef } = await admin
-      .from("pro_payment_requests")
-      .select("id, email, plan, status")
-      .eq("payment_reference", tracker)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (byRef) {
-      requestId = String(byRef.id);
-      email = String(byRef.email || email || "").toLowerCase() || email;
-      plan = String(byRef.plan || plan).toLowerCase() === "pro" ? "pro" : "pro_plus";
+  const { data: byRef, error: byRefErr } = await admin
+    .from("pro_payment_requests")
+    .select("id, user_id, email, plan, amount_usd, currency, status")
+    .eq("payment_reference", tracker)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (byRefErr) {
+    return NextResponse.json({ error: byRefErr.message }, { status: 500 });
+  }
+
+  if (byRef) {
+    requestId = String(byRef.id);
+    userId = byRef.user_id ? String(byRef.user_id) : userId;
+    email = String(byRef.email || email || "").toLowerCase() || email;
+    plan = String(byRef.plan || plan).toLowerCase() === "pro" ? "pro" : "pro_plus";
+    if (typeof byRef.amount_usd === "number" && Number.isFinite(byRef.amount_usd)) {
+      expectedAmountUsd = byRef.amount_usd;
+    }
+    if (typeof byRef.currency === "string" && byRef.currency.trim()) {
+      expectedCurrency = byRef.currency.trim().toUpperCase();
     }
   }
 
-  if (requestId) {
-    await admin
-      .from("pro_payment_requests")
-      .update({
-        status: "approved",
-        reviewed_at: new Date().toISOString(),
-        payment_reference: tracker ?? requestId,
-      })
-      .eq("id", requestId);
+  const paidCurrency = digString(data, ["currency"])?.toUpperCase() ?? null;
+  if (paidCurrency && paidCurrency !== expectedCurrency) {
+    return NextResponse.json(
+      { error: `Currency mismatch: expected ${expectedCurrency}, got ${paidCurrency}` },
+      { status: 400 },
+    );
   }
 
-  if (email) {
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("id")
-      .ilike("email", email)
-      .limit(1)
-      .maybeSingle();
-    if (profile?.id) {
-      const nowIso = new Date().toISOString();
-      await admin
-        .from("profiles")
-        .update({ subscription_plan: plan, updated_at: nowIso })
-        .eq("id", profile.id);
-      const purchaseToken = tracker || `safepay_${profile.id}_${Date.now()}`;
-      const { data: existingSub } = await admin
-        .from("subscriptions")
-        .select("id")
-        .eq("purchase_token", purchaseToken)
-        .maybeSingle();
-
-      if (!existingSub) {
-        await admin.from("subscriptions").delete().eq("user_id", profile.id).like("product_id", "safepay_%");
-        await admin.from("subscriptions").insert({
-          user_id: profile.id,
-          product_id: `safepay_${plan}`,
-          purchase_token: purchaseToken,
-          status: "active",
-          expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
-          verified_at: nowIso,
-        });
-      } else {
-        await admin
-          .from("subscriptions")
-          .update({
-            status: "active",
-            expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
-            verified_at: nowIso,
-          })
-          .eq("id", existingSub.id);
-      }
-    }
+  const paidMinor = parseSafepayAmountMinor(data);
+  const minimumUsd =
+    expectedAmountUsd ?? (plan === "pro" ? PRO_PRICE_USD : PRO_PLUS_PRICE_USD);
+  if (paidMinor != null && paidMinor < Math.max(0, Math.round(minimumUsd * 100))) {
+    return NextResponse.json(
+      { error: "Paid amount is less than expected plan price" },
+      { status: 400 },
+    );
   }
 
-  return NextResponse.json({ ok: true, paid: true, tracker, requestId, email, plan });
+  try {
+    const result = await activateSafepaySubscription({
+      tracker,
+      requestId,
+      userId,
+      email,
+      plan,
+      source: "webhook",
+      state: state || eventType,
+    });
+    return NextResponse.json({
+      ok: true,
+      paid: true,
+      deduplicated: result.deduplicated,
+      tracker,
+      requestId,
+      email,
+      plan,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "SafePay activation failed" },
+      { status: 500 },
+    );
+  }
 }

@@ -45,7 +45,6 @@ export function ConnectApplyPanel() {
     id: string;
     title: string;
     company_name: string;
-    company_email?: string | null;
     description: string;
     salary?: string;
     posted_by?: string | null;
@@ -61,8 +60,6 @@ export function ConnectApplyPanel() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [planOk, setPlanOk] = useState(false);
-  const [reviewUrl, setReviewUrl] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const combinedText = useMemo(
     () => [coverLetter, approach, portfolioLinks, milestones].join("\n"),
@@ -77,7 +74,8 @@ export function ConnectApplyPanel() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        router.replace(`/login?next=/app/connect/apply?job_id=${encodeURIComponent(jobId)}&needId=${encodeURIComponent(needId)}&mode=${mode}`);
+        const nextTarget = `/app/connect/apply?job_id=${encodeURIComponent(jobId)}&needId=${encodeURIComponent(needId)}&mode=${encodeURIComponent(mode)}`;
+        router.replace(`/login?next=${encodeURIComponent(nextTarget)}`);
         return;
       }
       const { data: profile } = await supabase
@@ -94,7 +92,7 @@ export function ConnectApplyPanel() {
       if (jobId) {
         const { data: jData } = await supabase
           .from("connect_jobs")
-          .select("id, title, company_name, company_email, description, salary_min, salary_max, currency, posted_by, source_url")
+          .select("id, title, company_name, description, salary_min, salary_max, currency, posted_by, source_url")
           .eq("id", jobId)
           .maybeSingle();
         if (jData) {
@@ -107,7 +105,6 @@ export function ConnectApplyPanel() {
             id: jData.id,
             title: jData.title,
             company_name: jData.company_name,
-            company_email: jData.company_email,
             description: jData.description,
             salary,
             posted_by: jData.posted_by,
@@ -226,29 +223,20 @@ export function ConnectApplyPanel() {
     let proposalId: string | undefined;
 
     if (jobInfo) {
-      const { data: pData, error: pErr } = await supabase
-        .from("connect_proposals")
-        .insert({
-          from_user_id: user.id,
-          to_user_id: targetUserId,
-          job_id: jobInfo.id,
-          amount: numericAmount,
-          currency: "USD",
-          timeline_days: timelineDays ? Number(timelineDays) : 7,
-          message: messageParts.trim(),
-          status: "pending",
-          client_name: jobInfo.company_name,
-          client_email: jobInfo.company_email,
-        })
-        .select("id")
-        .single();
+      const { data: pData, error: pErr } = await supabase.rpc("connect_submit_job_proposal", {
+        p_job_id: jobInfo.id,
+        p_amount: numericAmount,
+        p_currency: "USD",
+        p_timeline_days: timelineDays ? Number(timelineDays) : 7,
+        p_message: messageParts.trim(),
+      });
 
       if (pErr) {
         setBusy(false);
-        setError(pErr.message || "Failed to submit proposal");
+        setError(parseConnectCreditError(pErr).message);
         return;
       }
-      proposalId = pData?.id;
+      proposalId = typeof pData === "string" ? pData : undefined;
     } else {
       const { data: pRes, error: err } = await supabase.rpc("connect_submit_proposal", {
         p_to_user_id: targetUserId || user.id,
@@ -270,14 +258,13 @@ export function ConnectApplyPanel() {
     if (proposalId) {
       void (async () => {
         try {
-          const res = await fetch("/api/connect/notify-client-proposal", {
+          await fetch("/api/connect/notify-client-proposal", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               proposalId,
               jobId: jobInfo?.id,
               toUserId: targetUserId,
-              companyEmail: jobInfo?.company_email,
               companyName: jobInfo?.company_name,
               jobTitle: jobInfo?.title || need?.title,
               amount: amount ? Number(amount) : 0,
@@ -285,10 +272,6 @@ export function ConnectApplyPanel() {
               pitchMessage: messageParts.trim(),
             }),
           });
-          const data = await res.json().catch(() => ({}));
-          if (data?.reviewUrl) {
-            setReviewUrl(data.reviewUrl);
-          }
         } catch (e) {
           console.error("Client email notification error:", e);
         }
@@ -318,36 +301,6 @@ export function ConnectApplyPanel() {
           (−{CONNECT_CREDIT_COSTS[mode === "contact" ? "contact" : "proposal"]} Connect credit)
           The hiring team is notified to review your proposal privately.
         </p>
-
-        {reviewUrl && (
-          <div className="mt-6 rounded-xl border border-border bg-slate-50 p-4 text-left">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-              1-Click Client Review Link
-            </p>
-            <p className="mt-1 text-xs text-slate-600">
-              Share this link directly with the hiring manager or in external outreach. It tracks views automatically and lets the client review your bid with $0 platform fees.
-            </p>
-            <div className="mt-3 flex items-center gap-2">
-              <input
-                type="text"
-                readOnly
-                value={reviewUrl}
-                className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-mono text-slate-700 select-all"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  void navigator.clipboard.writeText(reviewUrl);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2500);
-                }}
-                className="rounded-lg bg-teal-700 px-3 py-2 text-xs font-bold text-white hover:bg-teal-800 transition-colors shrink-0"
-              >
-                {copied ? "Copied!" : "Copy Link"}
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link

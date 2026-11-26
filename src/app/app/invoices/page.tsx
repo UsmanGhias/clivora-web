@@ -8,6 +8,7 @@ import type { CrmInvoice } from "@/lib/crm/api";
 import { canCreateInvoice, invoicesCreatedThisMonth } from "@/lib/plan-gates";
 import { InvoicesCrmPanel } from "@/components/crm/CrmPanels";
 import { createClient } from "@/lib/supabase/server";
+import { buildClientShareFilter } from "@/lib/security-utils";
 import { AlertTriangle, Clock, FileText, Plus, Settings, TrendingUp } from "lucide-react";
 import { DonutChart } from "@/components/dashboard/DonutChart";
 import {
@@ -63,7 +64,7 @@ export default async function InvoicesPage() {
         .select(
           "share_id, invoice_number, total, currency, status, freelancer_uid, freelancer_email, client_uid, client_email, public_token, due_date, updated_at",
         )
-        .or(`client_uid.eq.${uid},client_email.eq.${(profile?.email ?? '').toLowerCase()}`)
+        .or(buildClientShareFilter(uid, profile?.email))
         .order("updated_at", { ascending: false })
         .limit(40);
       if (!error && data) rows = data;

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual, createHmac } from "crypto";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
 
 // AUTO hardening (AUTO-001..005):
 // - header-only auth (no query-string secret); constant-time compare
@@ -10,8 +11,6 @@ import { timingSafeEqual, createHmac } from "crypto";
 
 const AUTOMATION_WEBHOOK_SECRET = process.env.AUTOMATION_WEBHOOK_SECRET;
 const AUTOMATION_WEBHOOK_SIGNING_SECRET = process.env.AUTOMATION_WEBHOOK_SIGNING_SECRET;
-const SUPABASE_URL = process.env.SUPABASE_URL ?? "https://jtzjwgovqczlccyeujhq.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const MAX_BODY_BYTES = 64 * 1024; // 64 KB
 const SIGNATURE_TOLERANCE_MS = 5 * 60 * 1000; // 5 minutes
@@ -24,13 +23,18 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(ab, bb);
 }
 
-async function enqueue(rawBody: string, source: string, idempotencyKey: string): Promise<boolean> {
-  if (!SUPABASE_SERVICE_ROLE_KEY) return false;
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/automation_webhook_queue`, {
+async function enqueue(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  rawBody: string,
+  source: string,
+  idempotencyKey: string,
+): Promise<boolean> {
+  const res = await fetch(`${supabaseUrl}/rest/v1/automation_webhook_queue`, {
     method: "POST",
     headers: {
-      apikey: SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
       "Content-Type": "application/json",
       Prefer: "return=minimal,resolution=ignore-duplicates",
     },
@@ -95,13 +99,9 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-webhook-idempotency-key") ??
     `${source}:${req.headers.get("x-webhook-timestamp") ?? Date.now()}`;
 
-  if (!SUPABASE_SERVICE_ROLE_KEY) {
-    // Cannot durably accept work - tell the caller to retry rather than lie.
-    return NextResponse.json({ error: "queue_unavailable" }, { status: 503 });
-  }
-
   try {
-    const queued = await enqueue(rawBody, source, idempotencyKey);
+    const cfg = requireAdminServiceConfig();
+    const queued = await enqueue(cfg.url, cfg.serviceRoleKey, rawBody, source, idempotencyKey);
     if (!queued) {
       return NextResponse.json({ error: "queue_unavailable" }, { status: 503 });
     }

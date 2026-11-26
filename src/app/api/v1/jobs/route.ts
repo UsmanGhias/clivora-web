@@ -1,89 +1,100 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import {
+  AdminServiceConfigurationError,
+  adminServiceHeaders,
+  requireAdminServiceConfig,
+} from "@/lib/admin-service";
+import {
+  BOT_JOB_SELECT,
+  PUBLIC_JOB_SELECT,
+  buildJobSearchOrClause,
+  sanitizeJobStatus,
+  sanitizePostgrestToken,
+  verifyJobBotApiKey,
+} from "@/lib/api-v1/jobs-helpers";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://jtzjwgovqczlccyeujhq.supabase.co";
-
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-  "";
-
-function verifyApiKey(req: NextRequest): boolean {
-  const allowed = [
-    process.env.JOB_BOT_API_KEY,
-    process.env.CLIVORA_API_KEY,
-  ].filter((k): k is string => Boolean(k && k.trim()));
-
-  if (allowed.length === 0) return false;
-
-  const headerKey = req.headers.get("x-api-key");
-  const authHeader = req.headers.get("authorization");
-  let bearerToken = "";
-  if (authHeader?.startsWith("Bearer ")) {
-    bearerToken = authHeader.slice(7).trim();
-  }
-
-  const token = headerKey || bearerToken;
-  if (!token) return false;
-  return allowed.includes(token);
-}
-
 /**
  * GET /api/v1/jobs
- * Query jobs for job.clivora.io bot and applications
+ * Query jobs for job.clivora.io bot and public job feeds.
  */
 export async function GET(req: NextRequest) {
-  const isAuthed = verifyApiKey(req);
+  const isAuthed = verifyJobBotApiKey(req);
   const { searchParams } = new URL(req.url);
-  const limit = Math.min(Number(searchParams.get("limit") || 50), 200);
-  const page = Math.max(Number(searchParams.get("page") || 1), 1);
+  const limitRaw = Number(searchParams.get("limit") || 50);
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(Math.trunc(limitRaw), 1), 200) : 50;
+  const pageRaw = Number(searchParams.get("page") || 1);
+  const page = Number.isFinite(pageRaw) ? Math.max(Math.trunc(pageRaw), 1) : 1;
   const offset = (page - 1) * limit;
+
   const category = searchParams.get("category");
   const language = searchParams.get("lang") || searchParams.get("language");
   const tag = searchParams.get("tag") || searchParams.get("tech");
   const jobType = searchParams.get("job_type") || searchParams.get("type");
   const query = searchParams.get("q") || searchParams.get("query");
-  const status = searchParams.get("status") || "published";
+  const rawStatus = searchParams.get("status");
 
   try {
+    let baseUrl = SUPABASE_URL;
+    let apiKey = SUPABASE_ANON_KEY;
+
+    if (isAuthed) {
+      const cfg = requireAdminServiceConfig();
+      baseUrl = cfg.url;
+      apiKey = cfg.serviceRoleKey;
+    } else if (!baseUrl || !apiKey) {
+      return NextResponse.json(
+        { ok: false, error: "Public jobs database is not configured" },
+        { status: 503 },
+      );
+    }
+
     const params = new URLSearchParams();
-    params.set("select", "*");
+    params.set("select", isAuthed ? BOT_JOB_SELECT : PUBLIC_JOB_SELECT);
     params.set("order", "created_at.desc");
     params.set("limit", String(limit));
     params.set("offset", String(offset));
 
-    if (status !== "all") {
-      params.set("status", `in.(${status},published,active)`);
+    if (!isAuthed) {
+      params.set("is_public", "eq.true");
+      params.set("status", "eq.published");
+    } else if (rawStatus !== "all") {
+      const safeStatus = sanitizeJobStatus(rawStatus);
+      params.set("status", `in.(${safeStatus},published,active)`);
     }
 
     if (category && category !== "all" && category !== "general") {
-      params.set("category", `eq.${category}`);
+      const safeCategory = sanitizePostgrestToken(category, /^[a-z0-9 _-]{1,80}$/i);
+      if (safeCategory) params.set("category", `eq.${safeCategory}`);
     }
 
     if (language && language !== "all") {
-      params.set("language", `eq.${language.toLowerCase()}`);
+      const safeLang = sanitizePostgrestToken(language, /^[a-z]{2,8}(?:-[a-z0-9]{2,8})?$/i);
+      if (safeLang) params.set("language", `eq.${safeLang.toLowerCase()}`);
     }
 
     if (jobType && jobType !== "all") {
-      params.set("job_type", `eq.${jobType.toLowerCase()}`);
+      const safeType = sanitizePostgrestToken(jobType, /^[a-z0-9_-]{1,40}$/i);
+      if (safeType) params.set("job_type", `eq.${safeType.toLowerCase()}`);
     }
 
     if (tag && tag !== "all") {
-      params.set("tags", `cs.{${tag.toLowerCase()}}`);
+      const safeTag = sanitizePostgrestToken(tag, /^[a-z0-9._+#/-]{1,50}$/i);
+      if (safeTag) params.set("tags", `cs.{${safeTag.toLowerCase()}}`);
     }
 
-    if (query) {
-      params.set("or", `(title.ilike.*${query}*,company_name.ilike.*${query}*,description.ilike.*${query}*)`);
+    const orClause = buildJobSearchOrClause(query);
+    if (orClause) {
+      params.set("or", orClause);
     }
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/connect_jobs?${params.toString()}`, {
+    const res = await fetch(`${baseUrl}/rest/v1/connect_jobs?${params.toString()}`, {
       headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
+        apikey: apiKey,
+        Authorization: `Bearer ${apiKey}`,
         Prefer: "count=exact",
       },
       next: { revalidate: 0 },
@@ -92,11 +103,11 @@ export async function GET(req: NextRequest) {
     if (!res.ok) {
       return NextResponse.json(
         { ok: false, error: "Failed to fetch jobs from database" },
-        { status: res.status }
+        { status: res.status },
       );
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as Array<Record<string, unknown>>;
     const contentRange = res.headers.get("content-range");
     let totalCount = data.length;
     if (contentRange) {
@@ -104,8 +115,7 @@ export async function GET(req: NextRequest) {
       if (match) totalCount = Number(match[1]);
     }
 
-    // Mask sensitive publisher fields if not authenticated with bot key
-    const sanitized = data.map((job: Record<string, unknown>) => {
+    const sanitized = data.map((job) => {
       if (!isAuthed) {
         return {
           id: job.id,
@@ -137,9 +147,15 @@ export async function GET(req: NextRequest) {
       jobs: sanitized,
     });
   } catch (e) {
+    if (e instanceof AdminServiceConfigurationError) {
+      return NextResponse.json(
+        { ok: false, error: "Jobs service is unavailable" },
+        { status: 503 },
+      );
+    }
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -149,10 +165,20 @@ export async function GET(req: NextRequest) {
  * Ingest new jobs from job.clivora.io crawler bot
  */
 export async function POST(req: NextRequest) {
-  if (!verifyApiKey(req)) {
+  if (!verifyJobBotApiKey(req)) {
     return NextResponse.json(
       { ok: false, error: "Unauthorized: Valid API Key required in x-api-key or Authorization Bearer header" },
-      { status: 401 }
+      { status: 401 },
+    );
+  }
+
+  let adminCfg: { url: string; serviceRoleKey: string };
+  try {
+    adminCfg = requireAdminServiceConfig();
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Database service configuration missing" },
+      { status: 503 },
     );
   }
 
@@ -170,8 +196,8 @@ export async function POST(req: NextRequest) {
       salary_max = null,
       currency = "USD",
       location = "Remote",
-      job_type = "Full-time",
-      source = "bot",
+      job_type = "full_time",
+      source = "import",
       source_id = null,
       source_url = null,
     } = body;
@@ -179,7 +205,7 @@ export async function POST(req: NextRequest) {
     if (!title || !description) {
       return NextResponse.json(
         { ok: false, error: "Missing required fields: title and description are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -187,7 +213,7 @@ export async function POST(req: NextRequest) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-    const randomSuffix = Math.random().toString(36).substring(2, 7);
+    const randomSuffix = randomUUID().slice(0, 6);
     const seo_slug = `${slugBase}-${randomSuffix}`;
 
     const newJob = {
@@ -207,20 +233,15 @@ export async function POST(req: NextRequest) {
       source_id,
       source_url,
       seo_slug,
-      status: "active",
+      status: "published",
       is_public: true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/connect_jobs`, {
+    const res = await fetch(`${adminCfg.url}/rest/v1/connect_jobs`, {
       method: "POST",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "return=representation",
-      },
+      headers: adminServiceHeaders(adminCfg.serviceRoleKey, "return=representation"),
       body: JSON.stringify(newJob),
     });
 
@@ -228,19 +249,21 @@ export async function POST(req: NextRequest) {
       const errText = await res.text();
       return NextResponse.json(
         { ok: false, error: "Failed to insert job: " + errText },
-        { status: res.status }
+        { status: res.status },
       );
     }
 
-    const inserted = await res.json();
+    const inserted = (await res.json()) as Array<Record<string, unknown>>;
+    const row = inserted[0] ?? {};
+    delete row.claim_token;
     return NextResponse.json(
-      { ok: true, message: "Job successfully created", job: inserted[0] || inserted },
-      { status: 201 }
+      { ok: true, message: "Job successfully created", job: row },
+      { status: 201 },
     );
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

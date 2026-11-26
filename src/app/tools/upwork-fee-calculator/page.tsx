@@ -6,6 +6,7 @@ import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { Suspense } from "react";
 import { UpworkFeeCalculatorClient } from "./UpworkFeeCalculatorClient";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Upwork Fee Calculator: Calculate True Platform Cuts (2026)",
@@ -74,10 +75,7 @@ export default function UpworkFeeCalculatorPage() {
 
   return (
     <MarketingShell>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       <section className="relative border-b border-slate-200 bg-gradient-to-b from-[#FFF1F2] via-[#F8FAFC] to-white py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">

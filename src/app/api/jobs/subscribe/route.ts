@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
+import { consumeIpRateLimit, getClientIp } from "@/lib/security-utils";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const rate = consumeIpRateLimit("jobs_subscribe", getClientIp(request), 6, 10 * 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many subscription requests. Please wait before trying again." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } },
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const { email, category, tech } = body;
 
@@ -17,14 +27,10 @@ export async function POST(request: Request) {
     const cleanCategory = typeof category === "string" ? category.trim().slice(0, 50) : "all";
     const cleanTech = typeof tech === "string" ? tech.trim().slice(0, 100) : "all";
 
-    const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://jtzjwgovqczlccyeujhq.supabase.co";
-    const supabaseKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      "";
-
-    const supabase = createServiceClient(supabaseUrl, supabaseKey);
+    const { url, serviceRoleKey } = requireAdminServiceConfig();
+    const supabase = createServiceClient(url, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
 
     const { error: insertErr } = await supabase.from("clivora_events").insert({
       event_type: "job_alert_subscription",

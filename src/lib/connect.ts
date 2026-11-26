@@ -1,5 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { cleanText } from "@/lib/clean-text";
+import {
+  AUTHED_CONNECT_JOB_COLUMNS,
+  PUBLIC_CONNECT_JOB_COLUMNS,
+  SAFE_CONNECT_PROPOSAL_COLUMNS,
+} from "@/lib/connect-columns";
 import type { ConnectNeed, ConnectProfile, ConnectRequestRow } from "@/lib/connect-types";
 
 export type { ConnectNeed, ConnectProfile, ConnectRequestRow } from "@/lib/connect-types";
@@ -40,6 +45,12 @@ export async function listPublicConnectProfiles(search?: string) {
 
 export async function listPublicConnectNeeds(search?: string) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const baseJobsQuery = user
+    ? supabase.from("connect_jobs").select(AUTHED_CONNECT_JOB_COLUMNS)
+    : supabase.from("connect_jobs").select(PUBLIC_CONNECT_JOB_COLUMNS);
   const [needsRes, jobsRes] = await Promise.all([
     supabase
       .from("connect_need_posts")
@@ -50,11 +61,7 @@ export async function listPublicConnectNeeds(search?: string) {
       .eq("moderation_status", "approved")
       .order("created_at", { ascending: false })
       .limit(100),
-    supabase
-      .from("connect_jobs")
-      .select(
-        "id, title, company_name, company_email, description, category, tags, salary_min, salary_max, currency, location, job_type, seo_slug, posted_by, created_at",
-      )
+    baseJobsQuery
       .eq("is_public", true)
       .eq("status", "published")
       .order("created_at", { ascending: false })
@@ -85,7 +92,7 @@ export async function listPublicConnectNeeds(search?: string) {
       moderation_status: "approved",
       created_at: j.created_at,
       company_name: cleanText(j.company_name),
-      company_email: j.company_email,
+      company_email: (j as { company_email?: string | null }).company_email ?? null,
       job_id: j.id,
       seo_slug: j.seo_slug,
       location: j.location,
@@ -178,7 +185,7 @@ export async function listProposalsForNeed(needId: string): Promise<ConnectPropo
   const supabase = await createClient();
   const { data } = await supabase
     .from("connect_proposals")
-    .select("*")
+    .select(SAFE_CONNECT_PROPOSAL_COLUMNS)
     .eq("need_id", needId)
     .order("created_at", { ascending: false });
   return (data ?? []) as ConnectProposal[];

@@ -4,6 +4,7 @@ import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { BLOG_AUTHOR, formatPostDate, getAllPosts } from "@/lib/blog";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Guides for Freelance Engineers and Agencies",
@@ -31,7 +32,7 @@ export default function BlogIndexPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-text-primary">
       <MarketingNav variant="light" />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumb) }} />
+      <JsonLd data={breadcrumb} />
       <main className="mx-auto max-w-4xl px-4 py-12 sm:py-16">
         <header className="mb-10">
           <p className="text-sm font-semibold uppercase tracking-wide text-primary-dark">Guides</p>

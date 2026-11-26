@@ -1,39 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { AdminServiceConfigurationError, requireAdminServiceConfig } from "@/lib/admin-service";
 import { callGemini, sanitizeDashes } from "@/lib/gemini";
+import { consumeIpRateLimit, getClientIp } from "@/lib/security-utils";
 import { createClient } from "@/lib/supabase/server";
-
-interface RateLimitRecord {
-  count: number;
-  resetAt: number;
-}
-
-const rateLimitMap = new Map<string, RateLimitRecord>();
-
-function checkRateLimit(ip: string, limit: number, windowMs: number): { allowed: boolean; retryAfter: number } {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + windowMs });
-    if (rateLimitMap.size > 1000) {
-      for (const [key, val] of rateLimitMap.entries()) {
-        if (now > val.resetAt) rateLimitMap.delete(key);
-      }
-    }
-    return { allowed: true, retryAfter: 0 };
-  }
-
-  if (record.count >= limit) {
-    return { allowed: false, retryAfter: Math.ceil((record.resetAt - now) / 1000) };
-  }
-
-  record.count += 1;
-  return { allowed: true, retryAfter: 0 };
-}
 
 export async function POST(req: NextRequest) {
   try {
-    const forwarded = req.headers.get("x-forwarded-for");
-    const clientIp = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") ?? "127.0.0.1");
+    const clientIp = getClientIp(req);
 
     let isAuthenticated = false;
     let authUser: { id: string; email?: string } | null = null;
@@ -51,16 +25,21 @@ export async function POST(req: NextRequest) {
     // Rate limiting: 5 requests per 15 minutes for anon, 25 for authenticated
     const maxRequests = isAuthenticated ? 25 : 5;
     const windowMs = 15 * 60 * 1000;
-    const rateCheck = checkRateLimit(`rate:${clientIp}:${authUser?.id || "anon"}`, maxRequests, windowMs);
+    const rateCheck = consumeIpRateLimit(
+      "proposals_generate",
+      `${clientIp}:${authUser?.id || "anon"}`,
+      maxRequests,
+      windowMs,
+    );
     if (!rateCheck.allowed) {
       return NextResponse.json(
         {
           error: "Rate limit exceeded. Please wait before generating another statement of work.",
-          retryAfter: rateCheck.retryAfter,
+          retryAfter: rateCheck.retryAfterSeconds,
         },
         {
           status: 429,
-          headers: { "Retry-After": String(rateCheck.retryAfter) },
+          headers: { "Retry-After": String(rateCheck.retryAfterSeconds) },
         }
       );
     }
@@ -151,19 +130,29 @@ Delivery of a scalable ${projectType || "enterprise system"} addressing core wor
 - Phase 2: Core modules, API integrations, and milestone demo on staging
 - Phase 3: QA verification, production deployment, and client handover`;
 
-    // Optionally record lead in Supabase if database is connected
+    // Record lead in clivora_events using server credentials when configured
     try {
-      const supabase = await createClient();
-      await supabase.from("contacts").insert({
-        name: clientName,
-        email,
-        company: company || null,
-        type: "client",
-        status: "lead",
-        notes: `Inbound Portfolio Project (${projectType || "General"}):\n${scopeDescription}`,
+      const cfg = requireAdminServiceConfig();
+      const service = createServiceClient(cfg.url, cfg.serviceRoleKey, {
+        auth: { persistSession: false },
       });
-    } catch {
-      // Gracefully continue even if database table is not active
+      await service.from("clivora_events").insert({
+        event_type: "sow_lead",
+        user_email: email,
+        user_name: clientName,
+        source: "web_sow_generator",
+        payload: {
+          company: company || null,
+          project_type: projectType || "General",
+          budget: budget || null,
+          timeline: timeline || null,
+          scope_preview: scopeDescription.slice(0, 1000),
+        },
+      });
+    } catch (e) {
+      if (!(e instanceof AdminServiceConfigurationError)) {
+        console.warn("[proposals/generate] lead log skipped:", e);
+      }
     }
 
     return NextResponse.json({
@@ -177,10 +166,10 @@ Delivery of a scalable ${projectType || "enterprise system"} addressing core wor
       },
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : "Internal Server Error";
+    console.error("[proposals/generate] error:", err);
     return NextResponse.json(
-      { error: "Failed to generate statement of work", details: errorMsg },
-      { status: 500 }
+      { error: "Failed to generate statement of work" },
+      { status: 500 },
     );
   }
 }

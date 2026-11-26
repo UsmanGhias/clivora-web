@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { AUTHED_CONNECT_JOB_COLUMNS, PUBLIC_CONNECT_JOB_COLUMNS } from "@/lib/connect-columns";
 import { site } from "@/lib/site";
 import { cleanText } from "@/lib/clean-text";
 import { JobStructuredDescription } from "@/components/jobs/JobStructuredDescription";
@@ -9,6 +10,7 @@ import { DirectClientContactCard } from "@/components/jobs/DirectClientContactCa
 import { formatGoogleJobsHtml } from "@/lib/job-formatter";
 import { getLanguageBadge } from "@/lib/job-languages";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
+import { JsonLd } from "@/components/seo/JsonLd";
 import {
   MapPin,
   Clock,
@@ -42,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient();
   const { data: job } = await supabase
     .from("connect_jobs")
-    .select("*")
+    .select(PUBLIC_CONNECT_JOB_COLUMNS)
     .eq("seo_slug", slug)
     .single();
 
@@ -102,20 +104,26 @@ export default async function JobViewPage({ params }: Props) {
   const { slug } = await params;
 
   const supabase = await createClient();
-  const [{ data: job }, { data: { user } }] = await Promise.all([
-    supabase
-      .from("connect_jobs")
-      .select("*")
-      .eq("seo_slug", slug)
-      .single(),
-    supabase.auth.getUser(),
-  ]);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthenticated = Boolean(user);
+
+  const { data: job } = isAuthenticated
+    ? await supabase
+        .from("connect_jobs")
+        .select(AUTHED_CONNECT_JOB_COLUMNS)
+        .eq("seo_slug", slug)
+        .single()
+    : await supabase
+        .from("connect_jobs")
+        .select(PUBLIC_CONNECT_JOB_COLUMNS)
+        .eq("seo_slug", slug)
+        .single();
 
   if (!job || !job.is_public || job.status !== "published") {
     notFound();
   }
-
-  const isAuthenticated = Boolean(user);
 
   const cleanJobTitle = cleanText(job.title);
   const cleanCompany = cleanText(job.company_name);
@@ -215,14 +223,8 @@ export default async function JobViewPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-slate-50/50 py-10">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbsJsonLd} />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Back navigation */}
@@ -370,7 +372,13 @@ export default async function JobViewPage({ params }: Props) {
                 jobTitle={cleanJobTitle}
                 companyName={cleanCompany}
                 companyDomain={job.company_domain}
-                companyEmail={job.company_email}
+                companyEmail={
+                  isAuthenticated &&
+                  "company_email" in job &&
+                  typeof job.company_email === "string"
+                    ? job.company_email
+                    : null
+                }
                 sourceUrl={job.source_url}
                 location={cleanLocation}
                 salaryText={formatSalary(job.salary_min, job.salary_max, job.currency)}

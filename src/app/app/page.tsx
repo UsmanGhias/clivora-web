@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { buildClientShareFilter } from "@/lib/security-utils";
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { FreelancerDashboard } from "@/components/dashboard/FreelancerDashboard";
 import { ClientDashboard } from "@/components/dashboard/ClientDashboard";
@@ -38,13 +39,9 @@ export default async function AppHomePage() {
   const client = isClientAccount(profile);
   const supabase = await createClient();
   const uid = profile.id;
-  const clientEmail = profile.email?.trim().toLowerCase();
-  const clientProjectFilter = clientEmail
-    ? `client_uid.eq.${uid},client_email.eq.${clientEmail}`
-    : `client_uid.eq.${uid}`;
-  const clientInvoiceFilter = clientEmail
-    ? `client_uid.eq.${uid},client_email.eq.${clientEmail}`
-    : `client_uid.eq.${uid}`;
+  const clientShareFilter = buildClientShareFilter(uid, profile.email);
+  const clientProjectFilter = clientShareFilter;
+  const clientInvoiceFilter = clientShareFilter;
 
   let home: HomeSummary = {};
   let credits: ConnectCreditSummary | null = null;

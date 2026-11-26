@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -36,13 +36,13 @@ function EscrowCheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const milestoneId = searchParams.get("milestone");
+  const paymentState = searchParams.get("payment");
 
   const [milestone, setMilestone] = useState<MilestoneDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [funding, setFunding] = useState(false);
   const [fundedSuccess, setFundedSuccess] = useState(false);
-  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!milestoneId) {
@@ -56,7 +56,8 @@ function EscrowCheckoutContent() {
         const supabase = createClient();
         const { data: { user }, error: authErr } = await supabase.auth.getUser();
         if (authErr || !user) {
-          router.push(`/login?next=/checkout/escrow?milestone=${milestoneId}`);
+          const targetPath = `/checkout/escrow?milestone=${encodeURIComponent(milestoneId ?? "")}`;
+          router.push(`/login?next=${encodeURIComponent(targetPath)}`);
           return;
         }
 
@@ -104,8 +105,10 @@ function EscrowCheckoutContent() {
           job_title: jobTitle,
         });
 
-        if (ms.status === "funded") {
+        if (ms.status === "funded" || ms.status === "submitted" || ms.status === "released") {
           setFundedSuccess(true);
+        } else if (paymentState === "cancel") {
+          setError("Escrow checkout was cancelled before payment completed.");
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Failed to load escrow details");
@@ -115,7 +118,7 @@ function EscrowCheckoutContent() {
     }
 
     void fetchMilestone();
-  }, [milestoneId, router]);
+  }, [milestoneId, paymentState, router]);
 
   const handleFundEscrow = async () => {
     if (!milestoneId || funding) return;
@@ -123,23 +126,21 @@ function EscrowCheckoutContent() {
     setError(null);
 
     try {
-      const supabase = createClient();
-      const { error: fundErr } = await supabase.rpc("connect_transition_milestone", {
-        p_milestone_id: milestoneId,
-        p_status: "funded",
+      const res = await fetch("/api/escrow/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ milestoneId }),
       });
-
-      if (fundErr) {
-        throw new Error(fundErr.message || "Failed to fund escrow");
+      const json = (await res.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (!res.ok || !json.url) {
+        throw new Error(json.error || "Unable to initiate escrow payment checkout");
       }
-
-      setFundedSuccess(true);
-      startTransition(() => {
-        router.refresh();
-      });
+      window.location.href = json.url;
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Escrow deposit failed");
-    } finally {
       setFunding(false);
     }
   };
@@ -312,10 +313,10 @@ function EscrowCheckoutContent() {
         <button
           type="button"
           onClick={handleFundEscrow}
-          disabled={funding || isPending}
+          disabled={funding}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 px-6 text-base font-bold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark transition disabled:opacity-50"
         >
-          {funding || isPending ? (
+          {funding ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
               Securing Escrow Deposit...

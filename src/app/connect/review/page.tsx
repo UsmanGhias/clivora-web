@@ -32,13 +32,13 @@ export default async function ReviewProposalPage({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!token) {
-    // If logged in, fetch their recent proposals
-    let recentProposals: Array<{ id: string; client_name?: string | null; amount?: number | null; created_at: string; review_token?: string | null }> = [];
+    // Only show proposals received by the signed-in client, without minting review tokens in UI
+    let recentProposals: Array<{ id: string; client_name?: string | null; amount?: number | null; created_at: string }> = [];
     if (user) {
       const { data } = await supabase
         .from("connect_proposals")
-        .select("id, client_name, amount, created_at, review_token")
-        .or(`to_user_id.eq.${user.id},from_user_id.eq.${user.id}`)
+        .select("id, client_name, amount, created_at")
+        .eq("to_user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(5);
       recentProposals = data ?? [];
@@ -62,7 +62,7 @@ export default async function ReviewProposalPage({
                 {recentProposals.map((p) => (
                   <Link
                     key={p.id}
-                    href={p.review_token ? `/connect/review?token=${p.review_token}` : "/app/proposals"}
+                    href="/app/proposals"
                     className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-teal-300 hover:bg-teal-50/50 transition-colors text-xs font-semibold text-slate-800"
                   >
                     <span>{p.client_name || "Proposal"} · ${p.amount || 0} USD</span>

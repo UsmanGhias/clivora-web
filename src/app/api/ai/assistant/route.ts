@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { callGemini, sanitizeDashes } from "@/lib/gemini";
+import { getClientIp } from "@/lib/security-utils";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 interface GeneratedInvoiceItem {
@@ -9,16 +12,6 @@ interface GeneratedInvoiceItem {
   amount: number;
   category: string;
 }
-
-/**
- * Whitelisted VIP & Admin emails with unlimited AI access
- */
-const VIP_EMAILS = new Set([
-  "usmanghias1@gmail.com",
-  "iusmanghias@gmail.com",
-  "medianfireblogs@gmail.com",
-  "medianfireblogs@gmail",
-]);
 
 const USER_DAILY_LIMIT = 5;
 const GUEST_DAILY_LIMIT = 1;
@@ -83,31 +76,76 @@ function getQuotaStatus(key: string, isVip: boolean, isAuth: boolean) {
   };
 }
 
-export async function GET(req: NextRequest) {
+async function resolveAiPrivilege(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<boolean> {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, account_type, subscription_plan, is_blocked, is_restricted")
+    .eq("id", userId)
+    .maybeSingle();
+  if (!profile || profile.is_blocked || profile.is_restricted) return false;
+  return (
+    profile.role === "admin" ||
+    profile.account_type === "admin" ||
+    profile.subscription_plan === "pro_plus"
+  );
+}
+
+async function resolveRequestAuth(req: NextRequest): Promise<{
+  supabase: Awaited<ReturnType<typeof createClient>> | null;
+  user: { id: string; email?: string } | null;
+  isVip: boolean;
+}> {
   try {
-    const forwarded = req.headers.get("x-forwarded-for");
-    const clientIp = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") ?? "127.0.0.1");
+    const cookieClient = await createClient();
+    const {
+      data: { user: cookieUser },
+    } = await cookieClient.auth.getUser();
+    if (cookieUser) {
+      const isVip = await resolveAiPrivilege(cookieClient, cookieUser.id);
+      return {
+        supabase: cookieClient,
+        user: { id: cookieUser.id, email: cookieUser.email },
+        isVip,
+      };
+    }
 
-    let isAuthenticated = false;
-    let authUser: { id: string; email?: string } | null = null;
-    let isVip = false;
-
-    try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        isAuthenticated = true;
-        authUser = { id: user.id, email: user.email };
-        const userEmail = (user.email || "").toLowerCase().trim();
-        if (VIP_EMAILS.has(userEmail)) {
-          isVip = true;
+    const authHeader = req.headers.get("authorization") ?? "";
+    if (/^bearer\s+/i.test(authHeader) && SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const token = authHeader.replace(/^bearer\s+/i, "").trim();
+      if (token) {
+        const tokenClient = createSupabaseJsClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: `Bearer ${token}` } },
+          auth: { persistSession: false, autoRefreshToken: false },
+        }) as unknown as Awaited<ReturnType<typeof createClient>>;
+        const {
+          data: { user: bearerUser },
+        } = await tokenClient.auth.getUser();
+        if (bearerUser) {
+          const isVip = await resolveAiPrivilege(tokenClient, bearerUser.id);
+          return {
+            supabase: tokenClient,
+            user: { id: bearerUser.id, email: bearerUser.email },
+            isVip,
+          };
         }
       }
-    } catch {
-      // unauthenticated
     }
+  } catch {
+    // Unauthenticated or missing Supabase config
+  }
+  return { supabase: null, user: null, isVip: false };
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const clientIp = getClientIp(req);
+    const resolved = await resolveRequestAuth(req);
+    const isAuthenticated = Boolean(resolved.user);
+    const authUser = resolved.user;
+    const isVip = resolved.isVip;
 
     const quotaKey = authUser ? `usr:${authUser.id}` : `ip:${clientIp}`;
     const quota = getQuotaStatus(quotaKey, isVip, isAuthenticated);
@@ -132,30 +170,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const forwarded = req.headers.get("x-forwarded-for");
-    const clientIp = forwarded ? forwarded.split(",")[0].trim() : (req.headers.get("x-real-ip") ?? "127.0.0.1");
-
-    let isAuthenticated = false;
-    let authUser: { id: string; email?: string } | null = null;
-    let isVip = false;
-    let supabase: Awaited<ReturnType<typeof createClient>> | null = null;
-
-    try {
-      supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        isAuthenticated = true;
-        authUser = { id: user.id, email: user.email };
-        const userEmail = (user.email || "").toLowerCase().trim();
-        if (VIP_EMAILS.has(userEmail)) {
-          isVip = true;
-        }
-      }
-    } catch {
-      // Unauthenticated public request
-    }
+    const clientIp = getClientIp(req);
+    const resolved = await resolveRequestAuth(req);
+    const isAuthenticated = Boolean(resolved.user);
+    const authUser = resolved.user;
+    const isVip = resolved.isVip;
+    const supabase = resolved.supabase;
 
     const body = ((await req.json().catch(() => null)) ?? {}) as Record<string, unknown>;
     const action = typeof body.action === "string" ? body.action.trim() : "";

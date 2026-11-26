@@ -1,13 +1,13 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/**
- * Helper to extract contact email from description text
- */
 function extractEmailFromText(text: string): string | null {
   if (!text) return null;
   const matches = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
@@ -28,16 +28,39 @@ function extractEmailFromText(text: string): string | null {
   return filtered.length > 0 ? filtered[0].toLowerCase().trim() : null;
 }
 
+async function resolveAuthenticatedUser(request: Request) {
+  const supabase = await createClient();
+  const {
+    data: { user: cookieUser },
+  } = await supabase.auth.getUser();
+  if (cookieUser) return cookieUser;
+
+  const authHeader = request.headers.get("authorization") ?? "";
+  if (/^bearer\s+/i.test(authHeader)) {
+    const token = authHeader.replace(/^bearer\s+/i, "").trim();
+    if (token) {
+      const tokenClient = createServiceClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const {
+        data: { user: bearerUser },
+      } = await tokenClient.auth.getUser();
+      if (bearerUser) return bearerUser;
+    }
+  }
+  return null;
+}
+
 /**
  * POST /api/connect/notify-client-proposal
- * Automatically notifies hiring clients of newly submitted proposals on CLIVORA.
- * Dispatches Hostinger SMTP email with 1-click magic review token.
+ * Notifies hiring clients of submitted proposals. Never discloses client emails or
+ * magic review tokens back to the submitting applicant.
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !user) {
+    const user = await resolveAuthenticatedUser(request);
+    if (!user) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
@@ -45,33 +68,33 @@ export async function POST(request: Request) {
       proposalId?: string;
       jobId?: string;
       toUserId?: string;
-      companyEmail?: string;
       companyName?: string;
       amount?: number;
       timelineDays?: number;
       pitchMessage?: string;
       jobTitle?: string;
-      testRecipientEmail?: string;
     };
 
-    const proposalId = body.proposalId;
+    const proposalId = body.proposalId?.trim();
     if (!proposalId) {
       return NextResponse.json({ error: "missing_proposal_id" }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    let adminCfg: { url: string; serviceRoleKey: string };
+    try {
+      adminCfg = requireAdminServiceConfig();
+    } catch {
+      return NextResponse.json({ error: "notification_service_unavailable" }, { status: 503 });
+    }
 
-    // Use service client if available for cross-table client profile and job lookups
-    const adminDb =
-      supabaseUrl && serviceRoleKey
-        ? createServiceClient(supabaseUrl, serviceRoleKey)
-        : supabase;
+    const adminDb = createServiceClient(adminCfg.url, adminCfg.serviceRoleKey, {
+      auth: { persistSession: false },
+    });
 
-    // Verify caller ownership of proposal before issuing review tokens
+    // Verify caller ownership of proposal
     const { data: existingProposal, error: proposalErr } = await adminDb
       .from("connect_proposals")
-      .select("id, from_user_id")
+      .select("id, from_user_id, to_user_id, job_id, review_token, amount, timeline_days, message")
       .eq("id", proposalId)
       .maybeSingle();
 
@@ -83,27 +106,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "forbidden_proposal_access" }, { status: 403 });
     }
 
-    // Generate unique review token
-    const reviewToken = crypto.randomUUID();
-    const reviewUrl = `https://clivora.io/connect/review?token=${reviewToken}`;
+    const effectiveJobId = body.jobId || existingProposal.job_id || null;
+    const effectiveToUserId = body.toUserId || existingProposal.to_user_id || null;
+    const reviewToken =
+      typeof existingProposal.review_token === "string" && existingProposal.review_token.trim()
+        ? existingProposal.review_token.trim()
+        : randomUUID();
+    const reviewUrl = `https://clivora.io/connect/review?token=${encodeURIComponent(reviewToken)}`;
 
-    // Target email must only be derived from verified database entities (profiles or connect_jobs)
-    // Never trust client-supplied companyEmail to prevent arbitrary email relay / phishing
     let targetEmail: string | null = null;
     let targetName: string = body.companyName?.trim() || "";
     let resolvedTitle: string = body.jobTitle?.trim() || "";
     let externalSourceUrl: string | null = null;
 
-    // 1. Resolve from toUserId if client is an authenticated CLIVORA member (connect_need_posts)
-    if (
-      !targetEmail &&
-      body.toUserId &&
-      body.toUserId !== "00000000-0000-0000-0000-000000000000"
-    ) {
+    if (effectiveToUserId && effectiveToUserId !== "00000000-0000-0000-0000-000000000000") {
       const { data: clientProfile } = await adminDb
         .from("profiles")
         .select("email, name")
-        .eq("id", body.toUserId)
+        .eq("id", effectiveToUserId)
         .maybeSingle();
 
       if (clientProfile?.email) {
@@ -115,12 +135,11 @@ export async function POST(request: Request) {
     let isJobUnclaimed = false;
     let jobClaimToken: string | null = null;
 
-    // 2. Resolve from connect_jobs if applying to a curated / crawled job or direct client job
-    if (!targetEmail && body.jobId) {
+    if (effectiveJobId) {
       const { data: jobRow } = await adminDb
         .from("connect_jobs")
-        .select("id, title, company_name, company_email, company_domain, description, source_url, posted_by, claimed_by, claim_token")
-        .eq("id", body.jobId)
+        .select("id, title, company_name, company_email, description, source_url, posted_by, claimed_by, claim_token")
+        .eq("id", effectiveJobId)
         .maybeSingle();
 
       if (jobRow) {
@@ -131,15 +150,17 @@ export async function POST(request: Request) {
         jobClaimToken = jobRow.claim_token || null;
 
         if (isJobUnclaimed && !jobClaimToken) {
-          jobClaimToken = crypto.randomUUID().replace(/-/g, "");
-          void adminDb
+          jobClaimToken = randomUUID().replace(/-/g, "");
+          const { error: claimErr } = await adminDb
             .from("connect_jobs")
             .update({ claim_token: jobClaimToken })
-            .eq("id", body.jobId);
+            .eq("id", effectiveJobId);
+          if (claimErr) {
+            throw new Error(`Failed to persist claim token: ${claimErr.message}`);
+          }
         }
 
-        // Check if posted directly by a registered Clivora client
-        if (jobRow.posted_by) {
+        if (!targetEmail && jobRow.posted_by) {
           const { data: directClientProfile } = await adminDb
             .from("profiles")
             .select("email, name")
@@ -158,49 +179,51 @@ export async function POST(request: Request) {
             const extracted = extractEmailFromText(jobRow.description);
             if (extracted) {
               targetEmail = extracted;
-              // Also backfill connect_jobs for future proposals
-              void adminDb
+              const { error: emailUpdErr } = await adminDb
                 .from("connect_jobs")
                 .update({ company_email: extracted })
-                .eq("id", body.jobId);
+                .eq("id", effectiveJobId);
+              if (emailUpdErr) {
+                console.warn("[notify-client-proposal] company_email backfill failed:", emailUpdErr.message);
+              }
             }
           }
         }
       }
     }
 
-    // Update proposal with review token and client metadata (scoped to user)
-    await adminDb
+    const { error: propUpdErr } = await adminDb
       .from("connect_proposals")
       .update({
         review_token: reviewToken,
-        job_id: body.jobId || null,
+        job_id: effectiveJobId,
         client_email: targetEmail,
         client_name: targetName || null,
       })
       .eq("id", proposalId)
       .eq("from_user_id", user.id);
 
-    // Get freelancer's display name
+    if (propUpdErr) {
+      throw new Error(`Failed to bind proposal notification state: ${propUpdErr.message}`);
+    }
+
     const { data: freelancerProfile } = await adminDb
       .from("profiles")
-      .select("name, email")
+      .select("name")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     const freelancerName = freelancerProfile?.name || "CLIVORA Freelancer";
     let emailDispatched = false;
     let emailStatus = "no_email_available";
 
-    // If client email exists, dispatch transactional notification email via send-clivora-email edge function
-    if (targetEmail && targetEmail.includes("@") && supabaseUrl && serviceRoleKey) {
+    if (targetEmail && targetEmail.includes("@")) {
       try {
-        const claimUrl = jobClaimToken
-          ? `https://clivora.io/connect/claim?token=${jobClaimToken}&job=${body.jobId}`
-          : `https://clivora.io/connect/jobs/${body.jobId}`;
+        const claimUrl =
+          jobClaimToken && effectiveJobId
+            ? `https://clivora.io/connect/claim?token=${encodeURIComponent(jobClaimToken)}&job=${encodeURIComponent(effectiveJobId)}`
+            : `https://clivora.io/connect/jobs/${encodeURIComponent(effectiveJobId ?? "")}`;
 
-        // Gated Claim-First Flow: Unclaimed curated jobs receive claim invitation first
-        // Claimed jobs receive direct proposal review link
         const emailPayload = isJobUnclaimed
           ? {
               to: targetEmail,
@@ -217,17 +240,17 @@ export async function POST(request: Request) {
               freelancerName,
               companyName: targetName || "Hiring Team",
               jobTitle: resolvedTitle || "Open Role",
-              amount: body.amount || 0,
-              timelineDays: body.timelineDays || 7,
-              pitchMessage: body.pitchMessage || "",
+              amount: Number(body.amount ?? existingProposal.amount ?? 0),
+              timelineDays: Number(body.timelineDays ?? existingProposal.timeline_days ?? 7),
+              pitchMessage: body.pitchMessage || existingProposal.message || "",
               reviewUrl,
             };
 
-        const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-clivora-email`, {
+        const emailRes = await fetch(`${adminCfg.url}/functions/v1/send-clivora-email`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${serviceRoleKey}`,
+            Authorization: `Bearer ${adminCfg.serviceRoleKey}`,
           },
           body: JSON.stringify(emailPayload),
         });
@@ -248,9 +271,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      reviewToken,
-      reviewUrl,
-      targetEmail,
       emailDispatched,
       emailStatus,
       externalSourceUrl,

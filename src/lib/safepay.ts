@@ -1,14 +1,11 @@
 import "server-only";
 
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
 import { createClient } from "@/lib/supabase/server";
+import { isSafepayPaidState } from "@/lib/security-utils";
 
 export type SafepayEnv = "sandbox" | "production";
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://jtzjwgovqczlccyeujhq.supabase.co";
 
 function envName(rawValue?: string | null): SafepayEnv {
   const raw = (rawValue || "production").trim().toLowerCase();
@@ -20,10 +17,10 @@ function apiHost(env: SafepayEnv) {
 }
 
 async function readDbSecret(key: string): Promise<string | null> {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   try {
-    if (serviceKey) {
-      const admin = createServiceClient(SUPABASE_URL, serviceKey, {
+    try {
+      const { url, serviceRoleKey } = requireAdminServiceConfig();
+      const admin = createServiceClient(url, serviceRoleKey, {
         auth: { persistSession: false },
       });
       const { data, error } = await admin
@@ -35,6 +32,8 @@ async function readDbSecret(key: string): Promise<string | null> {
         const value = String(data.value).trim();
         if (value) return value;
       }
+    } catch {
+      // Fall back to admin cookie RPC if service role key is absent in local dev.
     }
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("admin_get_integration_secret", { p_key: key });
@@ -220,10 +219,34 @@ export async function createSafepayCheckout(input: {
   };
 }
 
+/** Parse minor-unit integer amount if reporter/webhook returns one. */
+export function parseSafepayAmountMinor(rawObj: Record<string, unknown>): number | null {
+  const candidates = [
+    rawObj.amount,
+    rawObj.amount_minor,
+    rawObj.total,
+    (rawObj.tracker as Record<string, unknown> | undefined)?.amount,
+  ];
+  for (const val of candidates) {
+    if (typeof val === "number" && Number.isFinite(val) && val > 0) {
+      return Math.round(val);
+    }
+    if (typeof val === "string" && /^\d+(\.\d+)?$/.test(val.trim())) {
+      const parsed = Number(val.trim());
+      if (Number.isFinite(parsed) && parsed > 0) {
+        return val.includes(".") ? Math.round(parsed * 100) : Math.round(parsed);
+      }
+    }
+  }
+  return null;
+}
+
 /** Poll Safepay reporter API for tracker state (redirect success + webhook backup). */
 export async function fetchSafepayTracker(tracker: string): Promise<{
   state: string | null;
   paid: boolean;
+  amountMinor: number | null;
+  currency: string | null;
   raw: Record<string, unknown>;
 }> {
   const cfg = await loadSafepayConfig();
@@ -238,14 +261,127 @@ export async function fetchSafepayTracker(tracker: string): Promise<{
   });
   const data = (payload.data ?? payload) as Record<string, unknown>;
   const trackerObj = (data.tracker ?? data) as Record<string, unknown>;
-  const state = String(trackerObj.state ?? trackerObj.status ?? "").toUpperCase();
-  const paid =
-    state.includes("ENDED") ||
-    state.includes("PAID") ||
-    state.includes("SUCCESS") ||
-    state.includes("CAPTURED") ||
-    trackerObj.success === true;
-  return { state: state || null, paid, raw: payload };
+  const rawState = String(trackerObj.state ?? trackerObj.status ?? "").trim();
+  const state = rawState ? rawState.toUpperCase() : null;
+  const paid = state ? isSafepayPaidState(state) : trackerObj.success === true;
+  const currencyRaw = String(trackerObj.currency ?? data.currency ?? "").trim().toUpperCase();
+
+  return {
+    state,
+    paid,
+    amountMinor: parseSafepayAmountMinor(trackerObj) ?? parseSafepayAmountMinor(data),
+    currency: currencyRaw || null,
+    raw: payload,
+  };
+}
+
+export async function activateSafepaySubscription(params: {
+  tracker: string;
+  requestId: string | null;
+  userId: string | null;
+  email: string | null;
+  plan: "pro" | "pro_plus";
+  source: "webhook" | "confirm";
+  state?: string | null;
+}): Promise<{ ok: true; deduplicated: boolean; userId: string | null }> {
+  const { url, serviceRoleKey } = requireAdminServiceConfig();
+  const admin = createServiceClient(url, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
+  const nowIso = new Date().toISOString();
+  const cleanTracker = params.tracker.trim();
+
+  const { data: existingEvent, error: eventReadErr } = await admin
+    .from("clivora_events")
+    .select("id")
+    .eq("event_type", "safepay_webhook")
+    .contains("payload", { tracker: cleanTracker })
+    .limit(1)
+    .maybeSingle();
+
+  if (eventReadErr) {
+    throw new Error(`Idempotency lookup failed: ${eventReadErr.message}`);
+  }
+  if (existingEvent) {
+    return { ok: true, deduplicated: true, userId: params.userId };
+  }
+
+  let resolvedUserId = params.userId;
+  const cleanEmail = params.email?.trim().toLowerCase() || null;
+
+  if (!resolvedUserId && cleanEmail) {
+    const { data: profile, error: lookupErr } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("email", cleanEmail)
+      .limit(1)
+      .maybeSingle();
+    if (lookupErr) {
+      throw new Error(`Profile lookup failed: ${lookupErr.message}`);
+    }
+    resolvedUserId = profile?.id ? String(profile.id) : null;
+  }
+
+  if (params.requestId) {
+    const { error: reqUpdateErr } = await admin
+      .from("pro_payment_requests")
+      .update({
+        status: "approved",
+        reviewed_at: nowIso,
+        payment_reference: cleanTracker,
+      })
+      .eq("id", params.requestId);
+    if (reqUpdateErr) {
+      throw new Error(`Payment request approval failed: ${reqUpdateErr.message}`);
+    }
+  }
+
+  if (resolvedUserId) {
+    const { error: profileErr } = await admin
+      .from("profiles")
+      .update({ subscription_plan: params.plan, updated_at: nowIso })
+      .eq("id", resolvedUserId);
+    if (profileErr) {
+      throw new Error(`Profile upgrade failed: ${profileErr.message}`);
+    }
+
+    const expiresAt = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString();
+    const { error: subErr } = await admin.from("subscriptions").upsert(
+      {
+        user_id: resolvedUserId,
+        product_id: `safepay_${params.plan}`,
+        purchase_token: cleanTracker,
+        package_name: "org.codcrafters.clivora",
+        status: "active",
+        expires_at: expiresAt,
+        verified_at: nowIso,
+        updated_at: nowIso,
+      },
+      { onConflict: "purchase_token" },
+    );
+    if (subErr) {
+      throw new Error(`Subscription upsert failed: ${subErr.message}`);
+    }
+  }
+
+  const { error: logErr } = await admin.from("clivora_events").insert({
+    event_type: "safepay_webhook",
+    user_email: cleanEmail ?? "",
+    plan: params.plan,
+    source: `safepay_${params.source}`,
+    payload: {
+      tracker: cleanTracker,
+      request_id: params.requestId,
+      user_id: resolvedUserId,
+      state: params.state ?? null,
+      processed_at: nowIso,
+    },
+  });
+  if (logErr) {
+    throw new Error(`SafePay ledger write failed: ${logErr.message}`);
+  }
+
+  return { ok: true, deduplicated: false, userId: resolvedUserId };
 }
 
 async function hmacHex(

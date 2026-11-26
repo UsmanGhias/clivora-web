@@ -86,7 +86,7 @@ export default async function ConnectPage({
   try {
     const { count } = await supabase
       .from("connect_jobs")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("is_public", true)
       .eq("status", "published");
     if (count && count > 0) jobCount = count;

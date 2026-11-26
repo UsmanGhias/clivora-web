@@ -36,20 +36,25 @@ export async function updateSession(request: NextRequest) {
 
     const path = request.nextUrl.pathname;
     const isApp = path.startsWith("/app") || path.startsWith("/connect/manage");
-    const isAdmin = path === "/admin" || path.startsWith("/admin/");
+    const isAdminSubRoute = path.startsWith("/admin/");
+    const isAdminArea = path === "/admin" || isAdminSubRoute;
     const isAuthPage =
       path === "/login" ||
       path === "/signup" ||
       path.startsWith("/auth/reset-password");
 
-    if ((isApp || isAdmin) && !user) {
+    if (isApp && !user) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("next", path);
       return NextResponse.redirect(url);
     }
 
-    if (isAdmin && user) {
+    if (isAdminSubRoute && !user) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+
+    if (isAdminArea && user) {
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("role, account_type, is_blocked, is_restricted")
@@ -68,6 +73,17 @@ export async function updateSession(request: NextRequest) {
           url.searchParams.set("error", "admin_required");
           return NextResponse.redirect(url);
         }
+      }
+    }
+
+    if (isApp && user) {
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("is_blocked")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!error && profile?.is_blocked === true) {
+        return NextResponse.redirect(new URL("/blocked", request.url));
       }
     }
 

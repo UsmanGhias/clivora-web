@@ -4,6 +4,7 @@ import { ChevronRight, Home, ShieldCheck } from "lucide-react";
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { BadgeGeneratorClient } from "./BadgeGeneratorClient";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Free Freelancer Badge & Hire Button Generator",
@@ -73,10 +74,7 @@ export default function BadgeGeneratorPage() {
 
   return (
     <MarketingShell>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
       {/* Header & Hero */}
       <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-b from-[#F0FDFA] via-[#F8FAFC] to-white py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">

@@ -1,35 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminRequest } from "@/lib/admin-auth";
+import { NextRequest } from "next/server";
+import { adminErrorResponse, adminJson, requireAdminRequest } from "@/lib/admin-auth";
+import { adminServiceHeaders, requireAdminServiceConfig } from "@/lib/admin-service";
 
 export const runtime = "nodejs";
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://jtzjwgovqczlccyeujhq.supabase.co";
-
-function serviceKey(): string | null {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
-}
-
-function headers(key: string, prefer = "return=minimal") {
-  return {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-    Prefer: prefer,
-  };
-}
-
-async function readError(res: Response, fallback: string) {
-  const text = await res.text().catch(() => "");
-  return text || fallback;
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    await requireAdminRequest(req, { requireAal2: false });
+    const body = (await req.json().catch(() => ({}))) as {
+      email?: string;
+      revoke?: boolean;
+      plan?: string;
+      paymentRequestId?: string;
+    };
+    await requireAdminRequest(req, { requireAal2: true });
 
     const target = String(body.email ?? "").trim().toLowerCase();
     const revoke = Boolean(body.revoke);
@@ -42,32 +25,27 @@ export async function POST(req: NextRequest) {
           ? "pro"
           : null;
     if (!plan) {
-      return NextResponse.json({ error: "Plan must be pro, pro_plus, or free (via revoke)." }, { status: 400 });
-    }
-    if (!target.includes("@")) {
-      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
-    }
-
-    const key = serviceKey();
-    if (!key) {
-      return NextResponse.json(
-        { error: "SUPABASE_SERVICE_ROLE_KEY is not configured on Vercel" },
-        { status: 500 },
+      return adminJson(
+        { error: "Plan must be pro, pro_plus, or free (via revoke)." },
+        { status: 400 },
       );
     }
+    if (!target.includes("@")) {
+      return adminJson({ error: "Valid email required" }, { status: 400 });
+    }
+
+    const { url, serviceRoleKey } = requireAdminServiceConfig();
+    const svcHeaders = adminServiceHeaders(serviceRoleKey, "return=minimal");
 
     const profileRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=id,email,subscription_plan,account_type&email=ilike.${encodeURIComponent(target)}&limit=1`,
+      `${url}/rest/v1/profiles?select=id,email,subscription_plan,account_type&email=ilike.${encodeURIComponent(target)}&limit=1`,
       {
-        headers: { apikey: key, Authorization: `Bearer ${key}` },
+        headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
         cache: "no-store",
       },
     );
     if (!profileRes.ok) {
-      return NextResponse.json(
-        { error: await readError(profileRes, "Failed to look up profile") },
-        { status: 500 },
-      );
+      return adminJson({ error: "Failed to look up profile" }, { status: 500 });
     }
     const profiles = (await profileRes.json()) as Array<{
       id: string;
@@ -75,48 +53,41 @@ export async function POST(req: NextRequest) {
       account_type?: string | null;
     }>;
     if (!profiles.length) {
-      return NextResponse.json({ error: "No profile found for that email." }, { status: 404 });
+      return adminJson({ error: "No profile found for that email." }, { status: 404 });
     }
     const userId = profiles[0].id;
     const accountType = String(profiles[0].account_type ?? "freelancer").toLowerCase();
-    // Grants apply to freelancer and client account types (and legacy empty).
     if (accountType && !["freelancer", "client", "admin"].includes(accountType)) {
-      return NextResponse.json(
+      return adminJson(
         { error: `Unsupported account type for plan grants: ${accountType}` },
         { status: 400 },
       );
     }
 
     const nowIso = new Date().toISOString();
-    const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+    const patchRes = await fetch(`${url}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`, {
       method: "PATCH",
-      headers: headers(key),
+      headers: svcHeaders,
       body: JSON.stringify({ subscription_plan: plan, updated_at: nowIso }),
     });
     if (!patchRes.ok) {
-      return NextResponse.json(
-        { error: await readError(patchRes, "Failed to update plan") },
-        { status: 400 },
-      );
+      return adminJson({ error: "Failed to update plan" }, { status: 400 });
     }
 
     if (plan === "pro" || plan === "pro_plus") {
       const delRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/subscriptions?user_id=eq.${userId}&product_id=like.admin_grant_*`,
+        `${url}/rest/v1/subscriptions?user_id=eq.${encodeURIComponent(userId)}&product_id=like.admin_grant_*`,
         {
           method: "DELETE",
-          headers: { apikey: key, Authorization: `Bearer ${key}` },
+          headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
         },
       );
       if (!delRes.ok) {
-        return NextResponse.json(
-          { error: await readError(delRes, "Failed to clear prior admin grants") },
-          { status: 400 },
-        );
+        return adminJson({ error: "Failed to clear prior admin grants" }, { status: 400 });
       }
-      const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/subscriptions`, {
+      const insertRes = await fetch(`${url}/rest/v1/subscriptions`, {
         method: "POST",
-        headers: headers(key),
+        headers: svcHeaders,
         body: JSON.stringify({
           user_id: userId,
           product_id: `admin_grant_${plan}`,
@@ -127,34 +98,28 @@ export async function POST(req: NextRequest) {
         }),
       });
       if (!insertRes.ok) {
-        return NextResponse.json(
-          { error: await readError(insertRes, "Failed to create subscription grant") },
-          { status: 400 },
-        );
+        return adminJson({ error: "Failed to create subscription grant" }, { status: 400 });
       }
     } else {
       const cancelRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/subscriptions?user_id=eq.${userId}&status=eq.active`,
+        `${url}/rest/v1/subscriptions?user_id=eq.${encodeURIComponent(userId)}&status=eq.active`,
         {
           method: "PATCH",
-          headers: headers(key),
+          headers: svcHeaders,
           body: JSON.stringify({ status: "canceled", updated_at: nowIso }),
         },
       );
       if (!cancelRes.ok) {
-        return NextResponse.json(
-          { error: await readError(cancelRes, "Failed to revoke active subscriptions") },
-          { status: 400 },
-        );
+        return adminJson({ error: "Failed to revoke active subscriptions" }, { status: 400 });
       }
     }
 
     if (body.paymentRequestId) {
       const payRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/pro_payment_requests?id=eq.${encodeURIComponent(String(body.paymentRequestId))}`,
+        `${url}/rest/v1/pro_payment_requests?id=eq.${encodeURIComponent(String(body.paymentRequestId))}`,
         {
           method: "PATCH",
-          headers: headers(key),
+          headers: svcHeaders,
           body: JSON.stringify({
             status: revoke ? "rejected" : "approved",
             reviewed_at: nowIso,
@@ -162,14 +127,14 @@ export async function POST(req: NextRequest) {
         },
       );
       if (!payRes.ok) {
-        return NextResponse.json(
-          { error: await readError(payRes, "Plan updated but payment request review failed") },
+        return adminJson(
+          { error: "Plan updated but payment request review failed" },
           { status: 400 },
         );
       }
     }
 
-    return NextResponse.json({
+    return adminJson({
       ok: true,
       plan,
       email: target,
@@ -177,9 +142,6 @@ export async function POST(req: NextRequest) {
       granted_at: nowIso,
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Failed";
-    const status =
-      msg.includes("authorized") || msg.includes("Incorrect password") ? 403 : 500;
-    return NextResponse.json({ error: msg }, { status });
+    return adminErrorResponse(e, "Failed to update subscription grant");
   }
 }

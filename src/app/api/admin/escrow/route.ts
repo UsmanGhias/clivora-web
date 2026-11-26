@@ -1,27 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminRequest } from "@/lib/admin-auth";
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ?? "https://jtzjwgovqczlccyeujhq.supabase.co";
-
-function serviceKey(): string | null {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
-}
-
-function restHeaders(key: string) {
-  return {
-    apikey: key,
-    Authorization: `Bearer ${key}`,
-    "Content-Type": "application/json",
-  };
-}
+import { NextRequest } from "next/server";
+import { adminErrorResponse, adminJson, requireAdminRequest } from "@/lib/admin-auth";
+import { adminServiceHeaders, requireAdminServiceConfig } from "@/lib/admin-service";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as {
-      action: "admin_release" | "list_milestones";
-      adminEmail?: string;
-      adminToken?: string;
+    const body = (await req.json().catch(() => ({}))) as {
+      action?: "admin_release" | "list_milestones";
       milestoneId?: string;
       requestId?: string;
       amount?: number;
@@ -29,39 +13,30 @@ export async function POST(req: NextRequest) {
       notes?: string;
     };
 
-    const { action, adminEmail, adminToken } = body;
-    await requireAdminRequest(req);
+    const { action } = body;
+    await requireAdminRequest(req, { requireAal2: action !== "list_milestones" });
 
-    const svcKey = serviceKey();
-    if (!svcKey) {
-      return NextResponse.json(
-        { error: "SUPABASE_SERVICE_ROLE_KEY not configured" },
-        { status: 503 },
-      );
-    }
-    const headers = restHeaders(svcKey);
+    const { url, serviceRoleKey } = requireAdminServiceConfig();
+    const headers = adminServiceHeaders(serviceRoleKey);
 
     if (action === "list_milestones") {
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/connect_milestones?select=*&order=created_at.desc&limit=100`,
+        `${url}/rest/v1/connect_milestones?select=*&order=created_at.desc&limit=100`,
         { headers, cache: "no-store" },
       );
       const milestones = res.ok ? await res.json() : [];
-      return NextResponse.json({ milestones });
+      return adminJson({ milestones });
     }
 
     if (action === "admin_release") {
-      return NextResponse.json(
+      return adminJson(
         { error: "Live escrow release is disabled until the transactional funds RPC is deployed." },
         { status: 410 },
       );
     }
 
-    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+    return adminJson({ error: "Unknown action" }, { status: 400 });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Request failed" },
-      { status: 400 },
-    );
+    return adminErrorResponse(err, "Escrow admin request failed");
   }
 }

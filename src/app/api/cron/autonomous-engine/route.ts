@@ -1,25 +1,28 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabase/env";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
+import { extractAuthToken, timingSafeStringEqual } from "@/lib/security-utils";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // 60s execution budget for serverless
+export const maxDuration = 60;
 
-const INDEXNOW_KEY = "9e8b2f1a6c4d7e0f8123456789abcdef";
+const INDEXNOW_KEY =
+  process.env.INDEXNOW_KEY?.trim() || "9e8b2f1a6c4d7e0f8123456789abcdef";
 const INDEXNOW_ENDPOINT = "https://www.bing.com/indexnow";
 
-function checkAuthorization(req: Request): boolean {
-  const cronSecret = process.env.CRON_SECRET;
+type AuthCheck = { ok: true } | { ok: false; status: 401 | 503; error: string };
+
+function checkAuthorization(req: Request): AuthCheck {
+  const cronSecret = process.env.CRON_SECRET?.trim() ?? "";
   if (!cronSecret) {
-    // Development or unset secret allows execution
-    return true;
+    return { ok: false, status: 503, error: "cron_secret_not_configured" };
   }
 
-  const authHeader = req.headers.get("authorization");
-  const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
-  const customHeader = req.headers.get("x-cron-secret");
-
-  return token === cronSecret || customHeader === cronSecret;
+  const token = extractAuthToken(req, ["x-cron-secret"]);
+  if (!timingSafeStringEqual(token, cronSecret)) {
+    return { ok: false, status: 401, error: "unauthorized" };
+  }
+  return { ok: true };
 }
 
 const CORE_PLATFORM_URLS = [
@@ -51,19 +54,21 @@ const CORE_PLATFORM_URLS = [
 
 async function runOptimizationCycle() {
   const startedAt = Date.now();
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
-  const supabase = createClient(SUPABASE_URL, supabaseServiceKey);
+  const { url: supabaseUrl, serviceRoleKey } = requireAdminServiceConfig();
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+  });
 
   // 1. Stage 1: Trigger External Job Crawler
   let crawlerReport: Record<string, unknown> = { status: "pending" };
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 35000); // 35s ceiling for edge function
+    const timeout = setTimeout(() => controller.abort(), 35000);
 
-    const edgeRes = await fetch(`${SUPABASE_URL}/functions/v1/sync-external-jobs`, {
+    const edgeRes = await fetch(`${supabaseUrl}/functions/v1/sync-external-jobs`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${supabaseServiceKey}`,
+        Authorization: `Bearer ${serviceRoleKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -145,7 +150,6 @@ async function runOptimizationCycle() {
       .from("connect_jobs")
       .select("id", { count: "exact", head: true });
 
-    // Clean up empty or invalid ghost events if any exist
     const { count: emptyEventsCount } = await supabase
       .from("clivora_events")
       .select("id", { count: "exact", head: true })
@@ -167,13 +171,11 @@ async function runOptimizationCycle() {
     };
   }
 
-  const durationMs = Date.now() - startedAt;
-
   return {
     ok: true,
     engine: "Clivora Autonomous Self-Optimizing Engine",
     timestamp: new Date().toISOString(),
-    durationMs,
+    durationMs: Date.now() - startedAt,
     cycle: {
       crawler: crawlerReport,
       indexing: indexNowReport,
@@ -182,20 +184,26 @@ async function runOptimizationCycle() {
   };
 }
 
-export async function GET(req: Request) {
-  if (!checkAuthorization(req)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+async function handleCron(req: Request) {
+  const auth = checkAuthorization(req);
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
+  try {
+    const result = await runOptimizationCycle();
+    return NextResponse.json(result);
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "cron_unavailable" },
+      { status: 503 },
+    );
+  }
+}
 
-  const result = await runOptimizationCycle();
-  return NextResponse.json(result);
+export async function GET(req: Request) {
+  return handleCron(req);
 }
 
 export async function POST(req: Request) {
-  if (!checkAuthorization(req)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
-  const result = await runOptimizationCycle();
-  return NextResponse.json(result);
+  return handleCron(req);
 }

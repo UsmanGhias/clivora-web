@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: Request) {
   try {
-    const admin = await requireAdmin({ requireAal2: false });
+    const admin = await requireAdmin({ requireAal2: true });
     const body = (await request.json().catch(() => ({}))) as {
       includeTracking?: boolean;
     };

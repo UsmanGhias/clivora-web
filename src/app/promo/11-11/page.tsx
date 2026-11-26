@@ -16,6 +16,7 @@ import {
 import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { CommissionSavingsCalculator } from "@/components/marketing/CommissionSavingsCalculator";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "11.11 Global Tech Festival: 1-Year Founder Pro Plus ($0) & 0% Fees | Clivora",
@@ -349,40 +350,37 @@ export default function Promo1111Page() {
       </section>
 
       {/* Schema.org Event & Offer Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SaleEvent",
-            name: "Clivora 11.11 Global Tech Festival",
-            description:
-              "1-Year complimentary Founder Pro Plus pass ($228 annual value at $0 cost) with 0% marketplace commission for software developers and hiring teams.",
-            startDate: "2026-11-01T00:00:00Z",
-            endDate: "2026-11-30T23:59:59Z",
-            eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
-            eventStatus: "https://schema.org/EventScheduled",
-            location: {
-              "@type": "VirtualLocation",
-              url: `${site.url}/promo/11-11`,
-            },
-            image: [`${site.url}/marketing/clivora_1111_founder_pass.jpg`],
-            offers: {
-              "@type": "Offer",
-              name: "1-Year Founder Pro Plus Pass",
-              price: "0",
-              priceCurrency: "USD",
-              url: `${site.url}/promo/11-11`,
-              availability: "https://schema.org/InStock",
-              validFrom: "2026-11-01T00:00:00Z",
-              validThrough: "2026-11-30T23:59:59Z",
-            },
-            organizer: {
-              "@type": "Organization",
-              name: "Clivora",
-              url: site.url,
-            },
-          }),
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "SaleEvent",
+          name: "Clivora 11.11 Global Tech Festival",
+          description:
+            "1-Year complimentary Founder Pro Plus pass ($228 annual value at $0 cost) with 0% marketplace commission for software developers and hiring teams.",
+          startDate: "2026-11-01T00:00:00Z",
+          endDate: "2026-11-30T23:59:59Z",
+          eventAttendanceMode: "https://schema.org/OnlineEventAttendanceMode",
+          eventStatus: "https://schema.org/EventScheduled",
+          location: {
+            "@type": "VirtualLocation",
+            url: `${site.url}/promo/11-11`,
+          },
+          image: [`${site.url}/marketing/clivora_1111_founder_pass.jpg`],
+          offers: {
+            "@type": "Offer",
+            name: "1-Year Founder Pro Plus Pass",
+            price: "0",
+            priceCurrency: "USD",
+            url: `${site.url}/promo/11-11`,
+            availability: "https://schema.org/InStock",
+            validFrom: "2026-11-01T00:00:00Z",
+            validThrough: "2026-11-30T23:59:59Z",
+          },
+          organizer: {
+            "@type": "Organization",
+            name: "Clivora",
+            url: site.url,
+          },
         }}
       />
     </MarketingShell>

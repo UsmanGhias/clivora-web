@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGemini, sanitizeDashes } from "@/lib/gemini";
+import { consumeIpRateLimit, escapeHtml, getClientIp } from "@/lib/security-utils";
 
 // Odoo 19 Configuration for direct CRM Lead ingestion
 const ODOO_URL = process.env.ODOO_MAIN_URL || "https://clivora.odoo.com";
@@ -38,14 +39,19 @@ async function syncToOdooCrm(email: string, messages: Array<{ role: string; cont
   }
   try {
     const transcript = messages
-      .map((m) => `${m.role === "user" ? "Visitor" : "Clivora AI"}: ${m.content}`)
+      .map(
+        (m) =>
+          `${m.role === "user" ? "Visitor" : "Clivora AI"}: ${escapeHtml(String(m.content ?? ""))}`,
+      )
       .join("\n\n");
 
     const firstUserMsg = messages.find((m) => m.role === "user")?.content || "Livechat Inquiry";
     const leadTitle = `Livechat Lead: ${firstUserMsg.slice(0, 60)}`;
+    const safeEmail = escapeHtml(email);
+    const safeSourceUrl = escapeHtml(sourceUrl || "clivora.io");
 
-    const htmlDescription = `<p><strong>Source:</strong> Clivora AI Livechat (${sourceUrl || "clivora.io"})</p>
-<p><strong>Captured Email:</strong> ${email}</p>
+    const htmlDescription = `<p><strong>Source:</strong> Clivora AI Livechat (${safeSourceUrl})</p>
+<p><strong>Captured Email:</strong> ${safeEmail}</p>
 <div style="background-color: #f8fafc; padding: 12px; border-left: 3px solid #0d9488; font-family: sans-serif; font-size: 13px; white-space: pre-wrap;">
 ${transcript}
 </div>`;
@@ -96,7 +102,15 @@ ${transcript}
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const rate = consumeIpRateLimit("ai_livechat", getClientIp(req), 20, 60_000);
+    if (!rate.allowed) {
+      return NextResponse.json(
+        { error: "Too many chat requests. Please wait a moment and try again." },
+        { status: 429, headers: { "Retry-After": String(rate.retryAfterSeconds) } },
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
     const { messages, sourceUrl } = body as {
       messages?: Array<{ role: string; content: string }>;
       sourceUrl?: string;
@@ -106,12 +120,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing messages array" }, { status: 400 });
     }
 
-    const lastMsg = messages[messages.length - 1];
+    const boundedMessages = messages.slice(-8).map((m) => ({
+      role: m?.role === "user" ? "user" : "model",
+      content: String(m?.content ?? "").slice(0, 2000),
+    }));
+
+    const lastMsg = boundedMessages[boundedMessages.length - 1];
     const userText = lastMsg.content || "";
 
     // Convert to Gemini contents format
-    const geminiContents = messages.slice(-8).map((m) => ({
-      role: m.role === "user" ? "user" : "model",
+    const geminiContents = boundedMessages.map((m) => ({
+      role: m.role,
       parts: [{ text: m.content }],
     }));
 

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getProfile, isClientAccount, planLabel } from "@/lib/profile";
 import { isProPlus } from "@/lib/plan";
 import { createClient } from "@/lib/supabase/server";
+import { buildClientShareFilter } from "@/lib/security-utils";
 import { ClientSettingsPanel } from "@/components/client/ClientSettingsPanel";
 import { FreelancerSettingsPanel } from "@/components/freelancer/FreelancerSettingsPanel";
 
@@ -26,12 +27,9 @@ export default async function SettingsPage({
     let invoices = 0;
     let totalSpent = 0;
     try {
-      const projectFilter = profile.email
-        ? `client_uid.eq.${uid},client_email.eq.${(profile.email ?? '').toLowerCase()}`
-        : `client_uid.eq.${uid}`;
-      const invoiceFilter = profile.email
-        ? `client_uid.eq.${uid},client_email.eq.${(profile.email ?? '').toLowerCase()}`
-        : `client_uid.eq.${uid}`;
+      const shareFilter = buildClientShareFilter(uid, profile.email);
+      const projectFilter = shareFilter;
+      const invoiceFilter = shareFilter;
       const [jobs, projects, inv] = await Promise.all([
         supabase
           .from("connect_need_posts")

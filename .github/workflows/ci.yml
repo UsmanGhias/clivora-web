@@ -6,9 +6,16 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
 jobs:
   web:
     runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+      NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,6 +23,8 @@ jobs:
           node-version: '22.x'
           cache: npm
       - run: npm ci
+      - run: npm run check:versions
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run build

@@ -5,6 +5,7 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
 import { InvoiceGeneratorClient } from "./InvoiceGeneratorClient";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Free Online Invoice Generator for Freelancers (PDF)",
@@ -58,10 +59,7 @@ export default function InvoiceGeneratorPage() {
 
   return (
     <MarketingShell>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
 
       <section className="relative border-b border-slate-200 bg-gradient-to-b from-[#F0FDF4] via-[#F8FAFC] to-white py-12 sm:py-16 print:hidden">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">

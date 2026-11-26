@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient as createAdminClient, type SupabaseClient } from "@supabase/supabase-js";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
+import { sanitizePostgrestToken } from "@/lib/security-utils";
 import { fetchOdooInvoicePdf } from "@/lib/services/odoo-lifecycle";
 import { createClient } from "@/lib/supabase/server";
-import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://jtzjwgovqczlccyeujhq.supabase.co";
-
-function getServiceRoleKey(): string | null {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
-}
 
 const PRIVATE_PDF_HEADERS = {
   "Content-Type": "application/pdf",
@@ -21,16 +14,61 @@ const PRIVATE_PDF_HEADERS = {
   "X-Content-Type-Options": "nosniff",
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function safeDownloadFilename(raw: string): string {
+  const cleaned = raw.replace(/[^a-zA-Z0-9._-]/g, "_").replace(/^_+|_+$/g, "");
+  const base = cleaned || "invoice";
+  return base.toLowerCase().endsWith(".pdf") ? base : `${base}.pdf`;
+}
+
+function extractOdooId(row: { custom_fields?: unknown } | null): number | null {
+  if (!row?.custom_fields || typeof row.custom_fields !== "object") return null;
+  const raw = Number((row.custom_fields as Record<string, unknown>).odoo_invoice_id);
+  return Number.isInteger(raw) && raw > 0 ? raw : null;
+}
+
+async function resolveOwnerInvoiceOdooId(
+  db: SupabaseClient,
+  ownerUid: string,
+  localInvoiceId: number | null,
+  invoiceNumber: string | null,
+): Promise<number | null> {
+  if (localInvoiceId && Number.isInteger(localInvoiceId) && localInvoiceId > 0) {
+    const { data } = await db
+      .from("crm_invoices")
+      .select("custom_fields")
+      .eq("owner_uid", ownerUid)
+      .eq("local_id", localInvoiceId)
+      .limit(1)
+      .maybeSingle();
+    const found = extractOdooId(data);
+    if (found) return found;
+  }
+  if (invoiceNumber) {
+    const { data } = await db
+      .from("crm_invoices")
+      .select("custom_fields")
+      .eq("owner_uid", ownerUid)
+      .eq("invoice_number", invoiceNumber)
+      .limit(1)
+      .maybeSingle();
+    const found = extractOdooId(data);
+    if (found) return found;
+  }
+  return null;
+}
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const resolved = await params;
-    const invoiceIdentifier = (resolved.id || "").trim();
-
+    const rawIdentifier = (resolved.id || "").trim();
+    const invoiceIdentifier = sanitizePostgrestToken(rawIdentifier, /^[a-z0-9._-]{1,120}$/i);
     if (!invoiceIdentifier) {
-      return NextResponse.json({ error: "Missing invoice ID" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid invoice ID" }, { status: 400 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -41,18 +79,26 @@ export async function GET(
       data: { user },
     } = await supabase.auth.getUser();
 
-    const serviceKey = getServiceRoleKey();
-    const adminDb = serviceKey ? createAdminClient(SUPABASE_URL, serviceKey) : supabase;
+    let adminDb: SupabaseClient | null = null;
+    try {
+      const cfg = requireAdminServiceConfig();
+      adminDb = createAdminClient(cfg.url, cfg.serviceRoleKey, {
+        auth: { persistSession: false },
+      });
+    } catch {
+      adminDb = null;
+    }
 
     let isAuthorized = false;
+    let isAdmin = false;
     let odooId: number | null = null;
-    let downloadFilename = `clivora-invoice-${invoiceIdentifier}.pdf`;
+    let downloadFilename = safeDownloadFilename(`clivora-invoice-${invoiceIdentifier}`);
 
-    // 1. Authorize via public share token if provided
-    if (publicToken) {
+    // 1. Authorize via public share token (requires admin/service client to avoid cross-tenant leakage)
+    if (publicToken && adminDb) {
       const { data: share } = await adminDb
         .from("invoice_shares")
-        .select("id, invoice_number, local_invoice_id, expires_at")
+        .select("share_id, freelancer_uid, invoice_number, local_invoice_id, expires_at")
         .eq("public_token", publicToken)
         .maybeSingle();
 
@@ -60,72 +106,124 @@ export async function GET(
         const notExpired = !share.expires_at || new Date(share.expires_at).getTime() > Date.now();
         const matchesIdentifier =
           share.invoice_number === invoiceIdentifier ||
-          String(share.local_invoice_id) === invoiceIdentifier;
+          String(share.local_invoice_id) === invoiceIdentifier ||
+          share.share_id === invoiceIdentifier;
 
-        if (notExpired && matchesIdentifier) {
+        if (notExpired && matchesIdentifier && share.freelancer_uid) {
           isAuthorized = true;
-          downloadFilename = `clivora-tax-invoice-${share.invoice_number || share.local_invoice_id}.pdf`;
-          if (share.local_invoice_id && !Number.isNaN(Number(share.local_invoice_id))) {
-            odooId = Number(share.local_invoice_id);
-          }
+          downloadFilename = safeDownloadFilename(
+            `clivora-tax-invoice-${share.invoice_number || share.local_invoice_id}`,
+          );
+          odooId = await resolveOwnerInvoiceOdooId(
+            adminDb,
+            String(share.freelancer_uid),
+            typeof share.local_invoice_id === "number" ? share.local_invoice_id : null,
+            typeof share.invoice_number === "string" ? share.invoice_number : null,
+          );
         }
       }
     }
 
     // 2. Authorize via authenticated user session
     if (!isAuthorized && user) {
-      // Check if user is an admin
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, account_type")
+        .select("role, account_type, is_blocked, is_restricted")
         .eq("id", user.id)
         .maybeSingle();
 
-      const isAdmin =
-        profile?.role === "admin" || profile?.account_type === "admin";
+      isAdmin =
+        Boolean(profile) &&
+        (profile?.role === "admin" || profile?.account_type === "admin") &&
+        profile?.is_blocked !== true &&
+        profile?.is_restricted !== true;
 
       if (isAdmin) {
         isAuthorized = true;
       } else {
-        // Query crm_invoices owned by caller
-        const numericId = Number(invoiceIdentifier);
-        const isNumeric = !Number.isNaN(numericId) && numericId > 0;
+        // Check owner's own crm_invoices via isolated eq() queries (no raw .or() injection)
+        let inv: {
+          id: string;
+          owner_uid: string;
+          invoice_number?: string | null;
+          custom_fields?: unknown;
+        } | null = null;
 
-        let query = supabase.from("crm_invoices").select("*");
-        if (isNumeric) {
-          query = query.or(
-            `id.eq.${invoiceIdentifier},invoice_number.eq.${invoiceIdentifier},custom_fields->>odoo_invoice_id.eq.${numericId}`
-          );
-        } else {
-          query = query.or(`id.eq.${invoiceIdentifier},invoice_number.eq.${invoiceIdentifier}`);
+        if (UUID_REGEX.test(invoiceIdentifier)) {
+          const { data } = await supabase
+            .from("crm_invoices")
+            .select("id, owner_uid, invoice_number, custom_fields")
+            .eq("owner_uid", user.id)
+            .eq("id", invoiceIdentifier)
+            .maybeSingle();
+          inv = data;
         }
 
-        const { data: inv } = await query.maybeSingle();
+        if (!inv) {
+          const { data } = await supabase
+            .from("crm_invoices")
+            .select("id, owner_uid, invoice_number, custom_fields")
+            .eq("owner_uid", user.id)
+            .eq("invoice_number", invoiceIdentifier)
+            .maybeSingle();
+          inv = data;
+        }
+
+        if (!inv && /^\d+$/.test(invoiceIdentifier)) {
+          const { data } = await supabase
+            .from("crm_invoices")
+            .select("id, owner_uid, invoice_number, custom_fields")
+            .eq("owner_uid", user.id)
+            .eq("local_id", Number(invoiceIdentifier))
+            .maybeSingle();
+          inv = data;
+        }
+
         if (inv && inv.owner_uid === user.id) {
           isAuthorized = true;
-          downloadFilename = `clivora-${inv.invoice_number || inv.id}.pdf`;
-          if (inv.custom_fields && typeof inv.custom_fields === "object") {
-            const rawOdoo = Number((inv.custom_fields as Record<string, any>).odoo_invoice_id);
-            if (rawOdoo > 0) odooId = rawOdoo;
-          }
+          downloadFilename = safeDownloadFilename(`clivora-${inv.invoice_number || inv.id}`);
+          odooId = extractOdooId(inv);
         }
 
-        // Also check if user is the authorized client in invoice_shares
-        if (!isAuthorized) {
+        // Check authorized client invoice_shares without unescaped .or() string filters
+        if (!isAuthorized && adminDb) {
           const userEmail = (user.email || "").toLowerCase().trim();
-          const { data: sharedToUser } = await adminDb
+          const { data: byUidShares } = await adminDb
             .from("invoice_shares")
-            .select("local_invoice_id, invoice_number")
-            .or(`client_uid.eq.${user.id},client_email.ilike.${userEmail}`)
-            .or(`invoice_number.eq.${invoiceIdentifier},local_invoice_id.eq.${invoiceIdentifier}`)
-            .maybeSingle();
+            .select("share_id, freelancer_uid, local_invoice_id, invoice_number, client_uid, client_email")
+            .eq("client_uid", user.id)
+            .limit(50);
+          const { data: byEmailShares } = userEmail
+            ? await adminDb
+                .from("invoice_shares")
+                .select("share_id, freelancer_uid, local_invoice_id, invoice_number, client_uid, client_email")
+                .eq("client_email", userEmail)
+                .limit(50)
+            : { data: [] };
 
-          if (sharedToUser) {
+          const allShares = [...(byUidShares ?? []), ...(byEmailShares ?? [])];
+          const matchedShare = allShares.find(
+            (s) =>
+              s.invoice_number === invoiceIdentifier ||
+              String(s.local_invoice_id) === invoiceIdentifier ||
+              s.share_id === invoiceIdentifier,
+          );
+
+          if (matchedShare && matchedShare.freelancer_uid) {
             isAuthorized = true;
-            downloadFilename = `clivora-invoice-${sharedToUser.invoice_number || invoiceIdentifier}.pdf`;
-            if (sharedToUser.local_invoice_id) {
-              odooId = Number(sharedToUser.local_invoice_id);
-            }
+            downloadFilename = safeDownloadFilename(
+              `clivora-invoice-${matchedShare.invoice_number || invoiceIdentifier}`,
+            );
+            odooId = await resolveOwnerInvoiceOdooId(
+              adminDb,
+              String(matchedShare.freelancer_uid),
+              typeof matchedShare.local_invoice_id === "number"
+                ? matchedShare.local_invoice_id
+                : null,
+              typeof matchedShare.invoice_number === "string"
+                ? matchedShare.invoice_number
+                : null,
+            );
           }
         }
       }
@@ -134,14 +232,14 @@ export async function GET(
     if (!isAuthorized) {
       return NextResponse.json(
         { error: "Unauthorized: You do not have permission to view this invoice PDF." },
-        { status: user ? 403 : 401 }
+        { status: user ? 403 : 401 },
       );
     }
 
-    // 3. Resolve Odoo ID if not already resolved and caller is admin with direct numeric ID
-    if (!odooId) {
+    // 3. Only admins may fall back to direct Odoo move ID lookup
+    if (!odooId && isAdmin && /^\d+$/.test(invoiceIdentifier)) {
       const numericId = Number(invoiceIdentifier);
-      if (!Number.isNaN(numericId) && numericId > 0) {
+      if (Number.isInteger(numericId) && numericId > 0) {
         odooId = numericId;
       }
     }
@@ -152,7 +250,7 @@ export async function GET(
           error: "Invoice PDF not available or not yet generated in Odoo accounting engine.",
           invoiceId: invoiceIdentifier,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -163,7 +261,7 @@ export async function GET(
           error: "Failed to render invoice PDF from accounting engine.",
           invoiceId: invoiceIdentifier,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -174,10 +272,10 @@ export async function GET(
         "Content-Disposition": `inline; filename="${downloadFilename}"`,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
     );
   }
 }

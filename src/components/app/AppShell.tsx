@@ -455,33 +455,37 @@ export function AppShell({
   useEffect(() => {
     const supabase = createClient();
     if (!profile?.id) return;
-    
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        timer = null;
+        router.refresh();
+      }, 600);
+    };
+
     const channel = supabase
-      .channel('app-shell-realtime')
+      .channel("app-shell-realtime")
       .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${profile.id}` },
-        () => {
-          router.refresh();
-        }
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${profile.id}` },
+        scheduleRefresh,
       )
       .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_uid=eq.${profile.id}` },
-        () => {
-          router.refresh();
-        }
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_uid=eq.${profile.id}` },
+        scheduleRefresh,
       )
       .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'client_messages', filter: `to_uid=eq.${profile.id}` },
-        () => {
-          router.refresh();
-        }
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "client_messages", filter: `to_uid=eq.${profile.id}` },
+        scheduleRefresh,
       )
       .subscribe();
 
     return () => {
+      if (timer) clearTimeout(timer);
       void supabase.removeChannel(channel);
     };
   }, [profile?.id, router]);

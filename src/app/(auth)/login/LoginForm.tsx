@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   authErrorMessage,
   isEmailNotConfirmedError,
+  isRateLimitError,
 } from "@/lib/auth-errors";
 import { ResendVerification } from "@/components/auth/ResendVerification";
 import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
@@ -50,7 +51,7 @@ export default function LoginForm() {
     setLoading(false);
     if (err) {
       setError(authErrorMessage(err.message));
-      setNeedsVerify(isEmailNotConfirmedError(err.message));
+      setNeedsVerify(isEmailNotConfirmedError(err.message) || isRateLimitError(err.message));
       setShake(true);
       triggerError();
       return;
@@ -121,12 +122,13 @@ export default function LoginForm() {
             {error}
           </div>
         )}
-        {needsVerify && <ResendVerification email={email} />}
 
         <button type="submit" className="aa-btn-primary" disabled={loading}>
           {loading ? "Signing in…" : "Log in"}
         </button>
       </form>
+
+      {needsVerify && <ResendVerification email={email} />}
 
       <div className="aa-divider">OR</div>
       <div className="aa-google-wrap">

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { buildClientShareFilter } from "@/lib/security-utils";
 import { getProfile, isClientAccount } from "@/lib/profile";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -93,9 +94,7 @@ export default async function TimesheetsPage() {
     let shares: Share[] = [];
     let entries: TimeEntry[] = [];
     try {
-      const clientFilter = profile.email
-        ? `client_uid.eq.${uid},client_email.eq.${(profile.email ?? '').toLowerCase()}`
-        : `client_uid.eq.${uid}`;
+      const clientFilter = buildClientShareFilter(uid, profile.email);
       const { data: shareRows } = await supabase
         .from("project_shares")
         .select("share_id, project_name, freelancer_uid, freelancer_email, status")

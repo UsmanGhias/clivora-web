@@ -1,6 +1,9 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import {
+  adminServiceHeaders,
+  requireAdminServiceConfig,
+} from "@/lib/admin-service";
 
 const PRIMARY_KEY = (process.env.GEMINI_API_KEY || "").trim();
 const KEY_CLIVORA_APP = (process.env.GEMINI_API_KEY_APP || "").trim();
@@ -17,20 +20,12 @@ const TERTIARY_KEY = (
   ""
 ).trim();
 
-// Verified production failovers decoded at runtime to protect git push integrity
-const BUILTIN_KEYS = [
-  Buffer.from("QVEuQWI4Uk42TE1ZQVhZdS00U2dZR1FPZzBlSHNYTC15MFh4dGRLQ0Nab2VTSWowSzQ2OXc=", "base64").toString("utf-8"),
-  Buffer.from("QVEuQWI4Uk42SWdhM1gwVEJMVU1hUUNBQ2lzMU1JMlpjUUdqdlM5a25RRkRiTWRndGxwa3c=", "base64").toString("utf-8"),
-  Buffer.from("QVEuQWI4Uk42SlFGbkNza1k1U29lWXJCd1N1eVZUOGZla05pQVh1Nk1xR3lkWnUwMHJ2RUE=", "base64").toString("utf-8"),
-];
-
 export const ALL_GEMINI_KEYS = [
   PRIMARY_KEY,
   KEY_CLIVORA_APP,
   KEY_CLIVORA_AI,
   FALLBACK_KEY,
   TERTIARY_KEY,
-  ...BUILTIN_KEYS,
 ].filter(Boolean);
 
 /**
@@ -42,25 +37,34 @@ export function sanitizeDashes(text: string): string {
 }
 
 /**
- * Resolves the active Gemini API keys
+ * Resolves the active Gemini API keys from server env vars or admin secrets.
  */
 export async function getGeminiApiKeys(): Promise<{
   primary: string;
   keys: string[];
 }> {
   try {
-    const supabase = await createClient();
-    const { data } = await supabase.rpc("admin_get_integration_secret", {
-      p_key: "GEMINI_API_KEY",
-    });
-    if (typeof data === "string" && data.trim()) {
-      return {
-        primary: data.trim(),
-        keys: [data.trim(), ...ALL_GEMINI_KEYS.filter((k) => k !== data.trim())],
-      };
+    const { url, serviceRoleKey } = requireAdminServiceConfig();
+    const res = await fetch(
+      `${url}/rest/v1/admin_integration_secrets?select=value&key=eq.GEMINI_API_KEY&limit=1`,
+      {
+        headers: adminServiceHeaders(serviceRoleKey),
+        cache: "no-store",
+        signal: AbortSignal.timeout(4000),
+      },
+    );
+    if (res.ok) {
+      const rows = (await res.json()) as Array<{ value?: unknown }>;
+      const dbKey = typeof rows[0]?.value === "string" ? rows[0].value.trim() : "";
+      if (dbKey) {
+        return {
+          primary: dbKey,
+          keys: [dbKey, ...ALL_GEMINI_KEYS.filter((k) => k !== dbKey)],
+        };
+      }
     }
   } catch {
-    // Database lookup unavailable, use default keys
+    // Database or service key unavailable; use configured environment keys only.
   }
   return { primary: PRIMARY_KEY || ALL_GEMINI_KEYS[0] || "", keys: ALL_GEMINI_KEYS };
 }
@@ -90,6 +94,7 @@ const WORKING_MODELS = [
 
 async function executeGeminiRequest(
   apiKey: string,
+  keySlot: number,
   options: GeminiGenerateOptions,
   modelName: string
 ): Promise<string | null> {
@@ -143,7 +148,7 @@ async function executeGeminiRequest(
     });
 
     if (!res.ok) {
-      console.warn(`[executeGeminiRequest] HTTP ${res.status} with model ${modelName} on key ${apiKey.slice(0, 10)}...`);
+      console.warn(`[executeGeminiRequest] HTTP ${res.status} with model ${modelName} on key#${keySlot}`);
       return null;
     }
 
@@ -158,7 +163,7 @@ async function executeGeminiRequest(
     const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
     return rawText ? sanitizeDashes(rawText) : null;
   } catch (err) {
-    console.warn(`[executeGeminiRequest] Model ${modelName} on key ${apiKey.slice(0, 10)} error or timeout:`, err);
+    console.warn(`[executeGeminiRequest] Model ${modelName} on key#${keySlot} error or timeout:`, err);
     return null;
   }
 }
@@ -175,7 +180,7 @@ export async function callGemini(options: GeminiGenerateOptions): Promise<string
     if (!key) continue;
 
     for (const model of modelsToTry) {
-      const result = await executeGeminiRequest(key, options, model);
+      const result = await executeGeminiRequest(key, i + 1, options, model);
       if (result) {
         return result;
       }

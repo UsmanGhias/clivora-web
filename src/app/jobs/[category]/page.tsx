@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { PUBLIC_CONNECT_JOB_COLUMNS } from "@/lib/connect-columns";
 import { site } from "@/lib/site";
 import { JobListingCard, type JobCardData } from "@/components/jobs/JobListingCard";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
@@ -62,7 +63,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const supabase = await createClient();
   let query = supabase
     .from("connect_jobs")
-    .select("*")
+    .select(PUBLIC_CONNECT_JOB_COLUMNS)
     .eq("is_public", true)
     .eq("status", "published")
     .eq("category", category)

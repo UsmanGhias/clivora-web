@@ -6,6 +6,7 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { Markdown } from "@/components/docs/Markdown";
 import { BLOG_AUTHOR, formatPostDate, getAllPosts, getPostBySlug } from "@/lib/blog";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -84,7 +85,7 @@ export default async function BlogPostPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-text-primary">
       <MarketingNav variant="light" />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLd data={jsonLd} />
       <main className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-text-secondary">
           <Link href="/" className="hover:underline">Home</Link>

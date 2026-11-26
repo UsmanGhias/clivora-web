@@ -9,7 +9,7 @@ export function getSupabaseUrl(): string {
     if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE) {
       console.warn("WARN: NEXT_PUBLIC_SUPABASE_URL is not set in environment.");
     }
-    return "https://your-project-ref.supabase.co";
+    return "";
   }
   return url;
 }
@@ -20,7 +20,7 @@ export function getSupabaseAnonKey(): string {
     if (process.env.NODE_ENV === "production" && !process.env.NEXT_PHASE) {
       console.warn("WARN: NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in environment.");
     }
-    return "your-development-anon-key";
+    return "";
   }
   return key;
 }

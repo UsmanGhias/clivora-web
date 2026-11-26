@@ -27,6 +27,25 @@ export default function AdminFreelancersPage() {
   const { data, loading, refresh } = useAdminData();
   const freelancers = useMemo(() => data?.freelancers ?? [], [data?.freelancers]);
 
+  const topSkills = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const f of freelancers) {
+      const raw = f.skills;
+      const list = Array.isArray(raw)
+        ? raw.map((x) => String(x).trim())
+        : typeof raw === "string"
+          ? raw.split(",").map((x) => x.trim())
+          : [];
+      for (const s of list) {
+        if (!s) continue;
+        counts.set(s, (counts.get(s) ?? 0) + 1);
+      }
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+  }, [freelancers]);
+
   const kpis = useMemo(() => {
     const total = freelancers.length;
     const verified = freelancers.filter((f) => f.verified || f.email_verified).length;
@@ -134,15 +153,20 @@ export default function AdminFreelancersPage() {
         side={
           <SidePanel>
             <SideCard title="Top skills">
-              <p className="text-xs text-slate-500">Top skills placeholder - skill analytics coming soon.</p>
-              <ul className="mt-3 space-y-2 text-sm">
-                {["UI/UX Design", "React", "Copywriting", "Video Editing"].map((s) => (
-                  <li key={s} className="flex items-center justify-between">
-                    <span className="text-slate-600">{s}</span>
-                    <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700">-</span>
-                  </li>
-                ))}
-              </ul>
+              {topSkills.length === 0 ? (
+                <p className="text-xs text-slate-500">No freelancer skill tags recorded yet.</p>
+              ) : (
+                <ul className="mt-1 space-y-2 text-sm">
+                  {topSkills.map(([skill, count]) => (
+                    <li key={skill} className="flex items-center justify-between">
+                      <span className="truncate text-slate-600">{skill}</span>
+                      <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-bold text-teal-700">
+                        {count}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </SideCard>
           </SidePanel>
         }

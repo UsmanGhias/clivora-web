@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { PUBLIC_CONNECT_JOB_COLUMNS } from "@/lib/connect-columns";
 import { site } from "@/lib/site";
 import { JobListingCard, type JobCardData } from "@/components/jobs/JobListingCard";
 import { JobAdSenseSlot } from "@/components/ads/JobAdSenseSlot";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Building2 } from "lucide-react";
 import {
   VALID_CATEGORY_SLUGS,
@@ -61,7 +63,7 @@ export default async function CategorySkillPage({ params }: Props) {
   const supabase = await createClient();
   const { data: jobs } = await supabase
     .from("connect_jobs")
-    .select("*")
+    .select(PUBLIC_CONNECT_JOB_COLUMNS)
     .eq("is_public", true)
     .eq("status", "published")
     .eq("category", category)
@@ -99,10 +101,7 @@ export default async function CategorySkillPage({ params }: Props) {
 
   return (
     <main className="min-h-screen bg-slate-50/50 py-10">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbsJsonLd) }}
-      />
+      <JsonLd data={breadcrumbsJsonLd} />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex items-center gap-2 text-xs font-semibold text-slate-500">
           <Link href="/jobs" className="hover:text-teal-700">All Jobs</Link>

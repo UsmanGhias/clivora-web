@@ -1,73 +1,53 @@
-import { NextRequest, NextResponse } from "next/server";
-import { requireAdminRequest } from "@/lib/admin-auth";
+import { NextRequest } from "next/server";
+import { adminErrorResponse, adminJson, requireAdminRequest } from "@/lib/admin-auth";
+import { adminServiceHeaders, requireAdminServiceConfig } from "@/lib/admin-service";
 
 export const runtime = "nodejs";
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://jtzjwgovqczlccyeujhq.supabase.co";
-
-function serviceKey(): string | null {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    await requireAdminRequest(req);
+    const body = (await req.json().catch(() => ({}))) as { email?: string };
+    await requireAdminRequest(req, { requireAal2: true });
 
     const target = String(body.email ?? "").trim().toLowerCase();
     if (!target.includes("@")) {
-      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
+      return adminJson({ error: "Valid email required" }, { status: 400 });
     }
 
-    const key = serviceKey();
-    if (!key) {
-      return NextResponse.json(
-        { error: "SUPABASE_SERVICE_ROLE_KEY is not configured on Vercel" },
-        { status: 500 },
-      );
-    }
+    const { url, serviceRoleKey } = requireAdminServiceConfig();
 
     const profileRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=id,email&email=ilike.${encodeURIComponent(target)}&limit=1`,
+      `${url}/rest/v1/profiles?select=id,email&email=ilike.${encodeURIComponent(target)}&limit=1`,
       {
         headers: {
-          apikey: key,
-          Authorization: `Bearer ${key}`,
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
         },
         cache: "no-store",
       },
     );
     if (!profileRes.ok) {
-      return NextResponse.json({ error: "Failed to look up profile" }, { status: 500 });
+      return adminJson({ error: "Failed to look up profile" }, { status: 500 });
     }
     const profiles = (await profileRes.json()) as Array<{ id: string }>;
     if (!profiles.length) {
-      return NextResponse.json({ error: "No profile found for that email." }, { status: 404 });
+      return adminJson({ error: "No profile found for that email." }, { status: 404 });
     }
 
-    const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${profiles[0].id}`, {
-      method: "PATCH",
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${key}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal",
+    const patchRes = await fetch(
+      `${url}/rest/v1/profiles?id=eq.${encodeURIComponent(profiles[0].id)}`,
+      {
+        method: "PATCH",
+        headers: adminServiceHeaders(serviceRoleKey, "return=minimal"),
+        body: JSON.stringify({ role: "admin", updated_at: new Date().toISOString() }),
       },
-      body: JSON.stringify({ role: "admin", updated_at: new Date().toISOString() }),
-    });
+    );
     if (!patchRes.ok) {
-      const text = await patchRes.text();
-      return NextResponse.json({ error: text || "Failed to grant admin" }, { status: 400 });
+      return adminJson({ error: "Failed to grant admin" }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, email: target });
+    return adminJson({ ok: true, email: target });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Failed" },
-      { status: e instanceof Error && e.message.includes("authorized") ? 403 : 500 },
-    );
+    return adminErrorResponse(e, "Failed to grant admin role");
   }
 }

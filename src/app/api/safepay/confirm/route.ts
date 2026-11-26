@@ -1,213 +1,193 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
+import { PRO_PLUS_PRICE_USD, PRO_PRICE_USD } from "@/lib/pricing";
+import { activateSafepaySubscription, fetchSafepayTracker } from "@/lib/safepay";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-import { fetchSafepayTracker } from "@/lib/safepay";
-import { getSupabaseUrl } from "@/lib/supabase/env";
 
 export const runtime = "nodejs";
-
-function serviceKey() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
-}
 
 /** After SafePay redirect, confirm tracker and unlock Pro if paid and authenticated. */
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as { tracker?: string; orderId?: string };
-    const tracker = String(body.tracker ?? "").trim();
-    const orderId = String(body.orderId ?? "").trim() || null;
+    const serverSupabase = await createServerClient();
+    const {
+      data: { user },
+      error: authErr,
+    } = await serverSupabase.auth.getUser();
+    if (authErr || !user) {
+      return NextResponse.json(
+        { error: "Authentication required to confirm payment and unlock subscription." },
+        { status: 401 },
+      );
+    }
+
+    const body = (await req.json().catch(() => null)) as {
+      tracker?: string;
+      orderId?: string;
+    } | null;
+    const tracker = String(body?.tracker ?? "").trim();
+    const orderId = String(body?.orderId ?? "").trim() || null;
     if (!tracker && !orderId) {
       return NextResponse.json({ error: "tracker or orderId required" }, { status: 400 });
     }
 
-    const key = serviceKey();
-    if (!key) {
-      return NextResponse.json({ error: "Service role missing" }, { status: 503 });
-    }
-    const admin = createAdminClient(getSupabaseUrl(), key);
-
-    // Verify authenticated caller session
-    let callerUser: { id: string; email?: string } | null = null;
+    let adminCfg: { url: string; serviceRoleKey: string };
     try {
-      const serverSupabase = await createServerClient();
-      const {
-        data: { user },
-      } = await serverSupabase.auth.getUser();
-      if (user) {
-        callerUser = { id: user.id, email: user.email?.toLowerCase() };
-      }
+      adminCfg = requireAdminServiceConfig();
     } catch {
-      // Inability to read session will be enforced below
+      return NextResponse.json({ error: "Payment service unavailable" }, { status: 503 });
     }
+    const admin = createAdminClient(adminCfg.url, adminCfg.serviceRoleKey, {
+      auth: { persistSession: false },
+    });
 
-    let requestId = orderId;
-    let email: string | null = null;
-    let plan = "pro_plus";
-    let paymentRef = tracker;
-    let requestUserId: string | null = null;
+    const callerEmail = user.email?.trim().toLowerCase() ?? null;
 
-    if (tracker) {
-      const status = await fetchSafepayTracker(tracker);
-      if (!status.paid) {
-        return NextResponse.json({
-          ok: true,
-          paid: false,
-          state: status.state,
-          message: "Payment not completed yet",
-        });
-      }
-      paymentRef = tracker;
-      const { data: byRef } = await admin
+    type RequestRow = {
+      id: string;
+      user_id: string | null;
+      email: string | null;
+      plan: string | null;
+      amount_usd: number | null;
+      currency: string | null;
+      payment_reference: string | null;
+      status: string | null;
+    };
+
+    let requestRow: RequestRow | null = null;
+    if (orderId) {
+      const { data: byId, error: idErr } = await admin
         .from("pro_payment_requests")
-        .select("id, user_id, email, plan, status")
+        .select("id, user_id, email, plan, amount_usd, currency, payment_reference, status")
+        .eq("id", orderId)
+        .maybeSingle();
+      if (idErr) {
+        return NextResponse.json({ error: idErr.message }, { status: 500 });
+      }
+      if (!byId) {
+        return NextResponse.json({ error: "Payment request not found" }, { status: 404 });
+      }
+      requestRow = byId as RequestRow;
+    } else if (tracker) {
+      const { data: byRef, error: refErr } = await admin
+        .from("pro_payment_requests")
+        .select("id, user_id, email, plan, amount_usd, currency, payment_reference, status")
         .eq("payment_reference", tracker)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (byRef) {
-        requestId = String(byRef.id);
-        requestUserId = byRef.user_id ? String(byRef.user_id) : null;
-        email = String(byRef.email || "").toLowerCase() || null;
-        plan = String(byRef.plan || plan).toLowerCase() === "pro" ? "pro" : "pro_plus";
-        if (byRef.status === "approved") {
-          return NextResponse.json({
-            ok: true,
-            paid: true,
-            tracker: paymentRef,
-            requestId,
-            plan,
-          });
-        }
+      if (refErr) {
+        return NextResponse.json({ error: refErr.message }, { status: 500 });
       }
-    }
-
-    if (requestId && !email) {
-      const { data: byId } = await admin
-        .from("pro_payment_requests")
-        .select("id, user_id, email, plan, payment_reference, status")
-        .eq("id", requestId)
-        .maybeSingle();
-      if (byId) {
-        requestId = String(byId.id);
-        requestUserId = byId.user_id ? String(byId.user_id) : null;
-        email = String(byId.email || "").toLowerCase() || null;
-        plan = String(byId.plan || plan).toLowerCase() === "pro" ? "pro" : "pro_plus";
-        paymentRef = tracker || String(byId.payment_reference || requestId);
-        if (byId.status === "approved") {
-          return NextResponse.json({
-            ok: true,
-            paid: true,
-            tracker: paymentRef,
-            requestId,
-            plan,
-          });
-        }
-        if (!tracker) {
-          const status = await fetchSafepayTracker(paymentRef);
-          if (!status.paid) {
-            return NextResponse.json({
-              ok: true,
-              paid: false,
-              state: status.state,
-              message: "Payment not completed yet",
-            });
-          }
-        }
+      if (!byRef) {
+        return NextResponse.json({ error: "Payment request not found for tracker" }, { status: 404 });
       }
+      requestRow = byRef as RequestRow;
     }
 
-    // Assert caller authentication against payment record ownership
-    if (!callerUser) {
-      return NextResponse.json(
-        { error: "Authentication required to confirm payment and unlock subscription." },
-        { status: 401 }
-      );
+    if (!requestRow) {
+      return NextResponse.json({ error: "Payment request not found" }, { status: 404 });
     }
 
-    const isAuthorized =
-      Boolean(requestUserId && callerUser.id === requestUserId) ||
-      Boolean(email && callerUser.email && callerUser.email.toLowerCase() === email.toLowerCase());
-
-    if (!isAuthorized) {
+    const ownsByUserId = Boolean(requestRow.user_id && requestRow.user_id === user.id);
+    const ownsByEmail = Boolean(
+      !requestRow.user_id &&
+        requestRow.email &&
+        callerEmail &&
+        requestRow.email.toLowerCase() === callerEmail,
+    );
+    if (!ownsByUserId && !ownsByEmail) {
       return NextResponse.json(
         { error: "Forbidden: You are not authorized to confirm this payment record." },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
-    if (requestId) {
-      await admin
-        .from("pro_payment_requests")
-        .update({
-          status: "approved",
-          reviewed_at: new Date().toISOString(),
-          payment_reference: paymentRef,
-        })
-        .eq("id", requestId);
+    const storedRef = String(requestRow.payment_reference ?? "").trim();
+    if (tracker && storedRef && storedRef !== tracker) {
+      return NextResponse.json(
+        { error: "Tracker does not match the payment request reference." },
+        { status: 400 },
+      );
+    }
+    const paymentRef = tracker || storedRef;
+    if (!paymentRef) {
+      return NextResponse.json(
+        { error: "Payment request has no registered SafePay tracker." },
+        { status: 400 },
+      );
     }
 
-    // Resolve profile to upgrade: prefer callerUser.id
-    const targetUserId = requestUserId || callerUser.id;
-    const targetEmail = email || callerUser.email;
+    const plan = String(requestRow.plan ?? "").toLowerCase() === "pro" ? "pro" : "pro_plus";
 
-    if (targetUserId) {
-      const nowIso = new Date().toISOString();
-      await admin
-        .from("profiles")
-        .update({ subscription_plan: plan, updated_at: nowIso })
-        .eq("id", targetUserId);
-
-      await admin
-        .from("subscriptions")
-        .delete()
-        .eq("user_id", targetUserId)
-        .like("product_id", "safepay_%");
-
-      await admin.from("subscriptions").insert({
-        user_id: targetUserId,
-        product_id: `safepay_${plan}`,
-        purchase_token: paymentRef || `safepay_${targetUserId}_${Date.now()}`,
-        status: "active",
-        expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
-        verified_at: nowIso,
+    if (requestRow.status === "approved") {
+      return NextResponse.json({
+        ok: true,
+        paid: true,
+        deduplicated: true,
+        tracker: paymentRef,
+        requestId: requestRow.id,
+        plan,
       });
-    } else if (targetEmail) {
-      const { data: profile } = await admin
-        .from("profiles")
-        .select("id")
-        .ilike("email", targetEmail)
-        .limit(1)
-        .maybeSingle();
-
-      if (profile?.id) {
-        const nowIso = new Date().toISOString();
-        await admin
-          .from("profiles")
-          .update({ subscription_plan: plan, updated_at: nowIso })
-          .eq("id", profile.id);
-
-        await admin
-          .from("subscriptions")
-          .delete()
-          .eq("user_id", profile.id)
-          .like("product_id", "safepay_%");
-
-        await admin.from("subscriptions").insert({
-          user_id: profile.id,
-          product_id: `safepay_${plan}`,
-          purchase_token: paymentRef || `safepay_${profile.id}_${Date.now()}`,
-          status: "active",
-          expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
-          verified_at: nowIso,
-        });
-      }
     }
 
-    return NextResponse.json({ ok: true, paid: true, tracker: paymentRef, requestId, plan });
+    const status = await fetchSafepayTracker(paymentRef);
+    if (!status.paid) {
+      return NextResponse.json({
+        ok: true,
+        paid: false,
+        state: status.state,
+        message: "Payment not completed yet",
+      });
+    }
+
+    const expectedCurrency = String(
+      requestRow.currency || process.env.SAFEPAY_CURRENCY || "USD",
+    ).toUpperCase();
+    if (status.currency && status.currency !== expectedCurrency) {
+      return NextResponse.json(
+        { error: `Payment currency mismatch: expected ${expectedCurrency}, received ${status.currency}` },
+        { status: 400 },
+      );
+    }
+
+    const expectedAmountUsd =
+      typeof requestRow.amount_usd === "number" && Number.isFinite(requestRow.amount_usd)
+        ? requestRow.amount_usd
+        : plan === "pro"
+          ? PRO_PRICE_USD
+          : PRO_PLUS_PRICE_USD;
+    const expectedMinor = Math.max(0, Math.round(expectedAmountUsd * 100));
+    if (status.amountMinor != null && status.amountMinor < expectedMinor) {
+      return NextResponse.json(
+        { error: "Paid amount is less than the expected checkout amount." },
+        { status: 400 },
+      );
+    }
+
+    const activation = await activateSafepaySubscription({
+      tracker: paymentRef,
+      requestId: requestRow.id,
+      userId: requestRow.user_id || user.id,
+      email: requestRow.email || callerEmail,
+      plan,
+      source: "confirm",
+      state: status.state,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      paid: true,
+      deduplicated: activation.deduplicated,
+      tracker: paymentRef,
+      requestId: requestRow.id,
+      plan,
+    });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Confirm failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -9,6 +9,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { getProfile, isClientAccount } from "@/lib/profile";
+import { buildClientShareFilter } from "@/lib/security-utils";
 import { createClient } from "@/lib/supabase/server";
 import {
   ClientCard,
@@ -32,9 +33,7 @@ export default async function PaymentsOverviewPage() {
   let count = 0;
 
   try {
-    const invoiceFilter = profile.email
-      ? `client_uid.eq.${profile.id},client_email.eq.${(profile.email ?? '').toLowerCase()}`
-      : `client_uid.eq.${profile.id}`;
+    const invoiceFilter = buildClientShareFilter(profile.id, profile.email);
     const { data } = await supabase
       .from("invoice_shares")
       .select("total, status")

@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { site } from "@/lib/site";
 import { earlyAccessPlanForSignup } from "@/lib/early-access";
+import { safeNextPath } from "@/lib/safe-redirect";
+import { getPublicSiteUrl } from "@/lib/site-url";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/app";
+  const next = safeNextPath(searchParams.get("next"));
   const accountTypeParam = searchParams.get("account_type");
-  // Always land on production host (never localhost from email templates).
-  const base = site.url.replace(/\/$/, "");
+  const base = getPublicSiteUrl();
 
   if (code) {
     const supabase = await createClient();
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
         "freelancer";
       const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("id, subscription_plan")
+        .select("id, subscription_plan, account_type")
         .eq("id", data.user.id)
         .maybeSingle();
 
@@ -35,17 +35,17 @@ export async function GET(request: Request) {
           (meta.name as string | undefined) ||
           data.user.email?.split("@")[0] ||
           "",
-        account_type: accountType === "client" ? "client" : "freelancer",
         updated_at: new Date().toISOString(),
       };
 
-      // Never overwrite an existing paid (or free) plan on login - only set plan for brand-new profiles.
+      // Never overwrite an existing role or paid/free plan on login.
       if (!existingProfile) {
+        patch.account_type = accountType === "client" ? "client" : "freelancer";
         patch.subscription_plan = earlyAccessPlanForSignup();
       }
 
       await supabase.from("profiles").upsert(patch);
-      return NextResponse.redirect(`${base}${next.startsWith("/") ? next : `/${next}`}`);
+      return NextResponse.redirect(`${base}${next}`);
     }
   }
 

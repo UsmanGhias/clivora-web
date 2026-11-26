@@ -13,11 +13,15 @@ export function GoogleAnalytics() {
           __html: `
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
+            var savedConsent = null;
+            try { savedConsent = localStorage.getItem('clivora_cookie_consent'); } catch (e) {}
+            var consentState = savedConsent === 'all' ? 'granted' : 'denied';
             gtag('consent', 'default', {
-              'analytics_storage': 'granted',
-              'ad_storage': 'granted',
-              'ad_user_data': 'granted',
-              'ad_personalization': 'granted'
+              'analytics_storage': consentState,
+              'ad_storage': consentState,
+              'ad_user_data': consentState,
+              'ad_personalization': consentState,
+              'wait_for_update': 500
             });
             gtag('js', new Date());
             gtag('config', '${gaId}', {

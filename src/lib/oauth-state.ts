@@ -1,10 +1,14 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-const OAUTH_SIGNING_SECRET =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.GOOGLE_CLIENT_SECRET ||
-  "clivora_oauth_state_signing_fallback_key";
+function getOAuthSigningSecret(): string | null {
+  const secret =
+    process.env.OAUTH_STATE_SECRET?.trim() ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    process.env.GOOGLE_CLIENT_SECRET?.trim() ||
+    "";
+  return secret || null;
+}
 
 export interface OAuthStatePayload {
   uid: string;
@@ -13,6 +17,11 @@ export interface OAuthStatePayload {
 }
 
 export function createSignedOAuthState(userId: string, action: string): string {
+  const secret = getOAuthSigningSecret();
+  if (!secret) {
+    throw new Error("OAUTH_STATE_SECRET (or service/client signing key) is not configured.");
+  }
+
   const payload: OAuthStatePayload = {
     uid: userId,
     action,
@@ -21,7 +30,7 @@ export function createSignedOAuthState(userId: string, action: string): string {
 
   const json = JSON.stringify(payload);
   const payloadB64 = Buffer.from(json, "utf8").toString("base64url");
-  const signature = createHmac("sha256", OAUTH_SIGNING_SECRET)
+  const signature = createHmac("sha256", secret)
     .update(payloadB64)
     .digest("base64url");
 
@@ -34,6 +43,11 @@ export function verifySignedOAuthState(
   expectedAction: string,
   maxAgeMs = 15 * 60 * 1000 // 15 minutes
 ): { valid: boolean; error?: string } {
+  const secret = getOAuthSigningSecret();
+  if (!secret) {
+    return { valid: false, error: "missing_signing_secret" };
+  }
+
   if (!rawState || typeof rawState !== "string") {
     return { valid: false, error: "missing_state" };
   }
@@ -45,7 +59,7 @@ export function verifySignedOAuthState(
 
   const [payloadB64, providedSig] = parts;
 
-  const expectedSig = createHmac("sha256", OAUTH_SIGNING_SECRET)
+  const expectedSig = createHmac("sha256", secret)
     .update(payloadB64)
     .digest("base64url");
 

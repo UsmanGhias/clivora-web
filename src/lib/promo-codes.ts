@@ -1,10 +1,6 @@
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js";
+import { AdminServiceConfigurationError, requireAdminServiceConfig } from "@/lib/admin-service";
 import { createClient as createServerClient } from "@/lib/supabase/server";
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://jtzjwgovqczlccyeujhq.supabase.co";
 
 type Plan = "pro" | "pro_plus";
 
@@ -28,9 +24,11 @@ export type ValidatedPromo = {
 };
 
 async function promoClient(): Promise<Pick<SupabaseClient, "rpc">> {
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (serviceKey) {
-    return createServiceClient(SUPABASE_URL, serviceKey, { auth: { persistSession: false } });
+  try {
+    const { url, serviceRoleKey } = requireAdminServiceConfig();
+    return createServiceClient(url, serviceRoleKey, { auth: { persistSession: false } });
+  } catch (err) {
+    if (!(err instanceof AdminServiceConfigurationError)) throw err;
   }
   return createServerClient();
 }

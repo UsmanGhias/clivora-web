@@ -1,58 +1,77 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { requireAdminServiceConfig } from "@/lib/admin-service";
 import { createClient } from "@/lib/supabase/server";
 import { createSafepayCheckout, loadSafepayConfig } from "@/lib/safepay";
 import { PRO_PLUS_PRICE_USD, PRO_PRICE_USD } from "@/lib/pricing";
 import { validatePromoCode } from "@/lib/promo-codes";
-import { site } from "@/lib/site";
+import { getPublicSiteUrl } from "@/lib/site-url";
 
 export const runtime = "nodejs";
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  "https://jtzjwgovqczlccyeujhq.supabase.co";
-
-function serviceKey() {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY ?? null;
-}
 
 export async function GET() {
   const cfg = await loadSafepayConfig();
   return NextResponse.json({
     configured: cfg.configured,
     env: cfg.env,
-    missing: cfg.missing,
   });
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user?.email) {
+      return NextResponse.json(
+        { error: "Sign in required before starting SafePay checkout." },
+        { status: 401 },
+      );
+    }
+
+    const body = (await req.json().catch(() => null)) as {
       plan?: string;
       accountType?: string;
       fullName?: string;
       email?: string;
       promoCode?: string;
-      amountUsd?: number;
-    };
+    } | null;
+    if (!body) {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
 
     const plan = body.plan === "pro" ? "pro" : "pro_plus";
     const accountType = body.accountType === "client" ? "client" : "freelancer";
-    const email = String(body.email ?? "").trim().toLowerCase();
-    const fullName = String(body.fullName ?? "").trim();
-    if (!email.includes("@")) {
-      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
+    const accountEmail = user.email.trim().toLowerCase();
+    const requestedEmail = String(body.email ?? "").trim().toLowerCase();
+    if (requestedEmail && requestedEmail !== accountEmail) {
+      return NextResponse.json(
+        { error: "Checkout email must match your signed-in account." },
+        { status: 403 },
+      );
     }
+    const fullName = String(body.fullName ?? user.user_metadata?.name ?? "").trim();
 
     const cfg = await loadSafepayConfig();
     if (!cfg.configured) {
       return NextResponse.json(
-        {
-          error: "SafePay is not configured",
-          missing: cfg.missing,
-          hint: "Set SAFEPAY_SECRET_KEY and SAFEPAY_API_KEY (sec_… UUID) in Vercel or admin_integration_secrets.",
-        },
+        { error: "SafePay is not configured." },
+        { status: 503 },
+      );
+    }
+
+    let adminUrl: string;
+    let serviceRoleKey: string;
+    try {
+      const adminCfg = requireAdminServiceConfig();
+      adminUrl = adminCfg.url;
+      serviceRoleKey = adminCfg.serviceRoleKey;
+    } catch {
+      return NextResponse.json(
+        { error: "Checkout service is unavailable." },
         { status: 503 },
       );
     }
@@ -66,70 +85,74 @@ export async function POST(req: NextRequest) {
         })
       : null;
     const amount = promo?.finalAmountUsd ?? baseAmount;
+    const currency = (process.env.SAFEPAY_CURRENCY || "USD").toUpperCase();
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const writer = createServiceClient(adminUrl, serviceRoleKey, {
+      auth: { persistSession: false },
+    });
 
-    const key = serviceKey();
-    const writer = key
-      ? createServiceClient(SUPABASE_URL, key, { auth: { persistSession: false } })
-      : supabase;
-
-    const orderId = `clivora_${plan}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const orderId = `clivora_${plan}_${randomUUID()}`;
     const { data: requestRow, error: insertError } = await writer
       .from("pro_payment_requests")
       .insert({
-        email,
-        full_name: fullName || email,
+        email: accountEmail,
+        full_name: fullName || accountEmail,
         account_type: accountType,
         plan,
         amount_usd: amount,
-        currency: process.env.SAFEPAY_CURRENCY || "USD",
+        currency,
         country: "PK",
         payment_method: "safepay",
         payment_reference: orderId,
         notes: promo ? `Promo: ${promo.code} (${promo.note})` : "Safepay hosted checkout",
         promo_code: promo?.code ?? null,
         status: "pending",
-        user_id: user?.id ?? null,
+        user_id: user.id,
       })
       .select("id")
-      .maybeSingle();
+      .single();
 
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 400 });
+    if (insertError || !requestRow?.id) {
+      return NextResponse.json(
+        { error: insertError?.message || "Failed to initialize payment request" },
+        { status: 400 },
+      );
     }
 
-    const origin = req.nextUrl.origin || site.url;
+    const origin = getPublicSiteUrl();
     const checkout = await createSafepayCheckout({
       amountUsd: amount,
-      orderId: String(requestRow?.id || orderId),
-      customerEmail: email,
-      customerName: fullName || email,
+      currency,
+      orderId: String(requestRow.id),
+      customerEmail: accountEmail,
+      customerName: fullName || accountEmail,
       plan,
       accountType,
-      successUrl: `${origin}/pro?safepay=success&order=${encodeURIComponent(String(requestRow?.id || orderId))}`,
+      successUrl: `${origin}/pro?safepay=success&order=${encodeURIComponent(String(requestRow.id))}`,
       cancelUrl: `${origin}/pro?safepay=cancel`,
     });
 
-    if (requestRow?.id) {
-      const promoNote = promo ? `Promo: ${promo.code} (${promo.note})` : "Safepay hosted checkout";
-      await writer
-        .from("pro_payment_requests")
-        .update({
-          payment_reference: checkout.tracker,
-          notes: `${promoNote}\nSafepay tracker ${checkout.tracker}`,
-        })
-        .eq("id", requestRow.id);
+    const promoNote = promo ? `Promo: ${promo.code} (${promo.note})` : "Safepay hosted checkout";
+    const { error: updateErr } = await writer
+      .from("pro_payment_requests")
+      .update({
+        payment_reference: checkout.tracker,
+        notes: `${promoNote}\nSafepay tracker ${checkout.tracker}`,
+      })
+      .eq("id", requestRow.id);
+
+    if (updateErr) {
+      return NextResponse.json(
+        { error: `Failed to bind payment tracker: ${updateErr.message}` },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
       ok: true,
       checkoutUrl: checkout.checkoutUrl,
       tracker: checkout.tracker,
-      requestId: requestRow?.id ?? null,
+      requestId: requestRow.id,
       env: checkout.env,
     });
   } catch (err) {

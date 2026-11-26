@@ -5,6 +5,7 @@ import { canCreateProject } from "@/lib/plan-gates";
 import { ProjectsCrmPanel } from "@/components/crm/CrmPanels";
 import { ProjectKanban } from "@/components/crm/ProjectKanban";
 import { createClient } from "@/lib/supabase/server";
+import { buildClientShareFilter } from "@/lib/security-utils";
 
 const STATUS_LABELS: Record<string, string> = {
   not_started: "Backlog",
@@ -88,9 +89,7 @@ export default async function ProjectsPage() {
       updated_at?: string | null;
     }> = [];
     try {
-      const clientFilter = profile?.email
-        ? `client_uid.eq.${profile.id},client_email.eq.${(profile.email ?? '').toLowerCase()}`
-        : `client_uid.eq.${profile?.id ?? ""}`;
+      const clientFilter = buildClientShareFilter(profile?.id ?? "", profile?.email);
       const { data } = await supabase
         .from("project_shares")
         .select("share_id, project_name, freelancer_email, status, budget, currency, updated_at")

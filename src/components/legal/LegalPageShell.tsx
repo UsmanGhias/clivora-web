@@ -3,6 +3,7 @@ import { ChevronRight, Home } from "lucide-react";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 interface LegalPageShellProps {
   children: React.ReactNode;
@@ -39,10 +40,7 @@ export function LegalPageShell({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-navy">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
+      <JsonLd data={breadcrumbSchema} />
       <MarketingNav variant="light" />
 
       <main className="mx-auto max-w-4xl px-6 py-14 lg:py-16">

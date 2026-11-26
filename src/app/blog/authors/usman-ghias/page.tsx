@@ -4,6 +4,7 @@ import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { BLOG_AUTHOR, formatPostDate, getAllPosts } from "@/lib/blog";
 import { site } from "@/lib/site";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: `${BLOG_AUTHOR.name}, ${BLOG_AUTHOR.jobTitle}`,
@@ -29,7 +30,7 @@ export default function AuthorPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-text-primary">
       <MarketingNav variant="light" />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLd data={jsonLd} />
       <main className="mx-auto max-w-3xl px-4 py-12 sm:py-16">
         <h1 className="font-display text-3xl font-extrabold text-navy sm:text-4xl">{BLOG_AUTHOR.name}</h1>
         <p className="mt-2 text-text-secondary">
